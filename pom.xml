@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.timux.ports</groupId>
+    <artifactId>ports</artifactId>
+    <version>0.1.0</version>
+
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>annotation</module>
+        <module>library</module>
+        <module>agent</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>A framework that enables decoupling of components by employing a purely
+        component-based design paradigm.</description>
+    <url>http://www.timux.org/ports/</url>
+
+    <developers>
+        <developer>
+            <name>Tim Rohlfs</name>
+            <email>tiroh@users.sf.net</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/trohlfs/ports.git</connection>
+        <developerConnection>scm:git:git://github.com/trohlfs/ports.git</developerConnection>
+        <url>https://github.com/trohlfs/ports/tree/master</url>
+    </scm>
+</project>
