@@ -21,7 +21,7 @@ import java.lang.instrument.Instrumentation;
 class Agent {
 
     public static void premain(String args, Instrumentation instrumentation) {
-        Transformer transformer = new Transformer();
+        Transformer transformer = new Transformer(args);
         instrumentation.addTransformer(transformer);
     }
 }

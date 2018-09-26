@@ -26,6 +26,8 @@ import java.util.Set;
 
 public class Visitor extends ClassVisitor {
 
+    private final static int OPCODE_VERSION = Opcodes.ASM5;
+
     public final static String HANDLER_PREFIX = "__handler_";
 
     private final static String EVENT_TYPE = getDescriptor(Event.class);
@@ -58,7 +60,7 @@ public class Visitor extends ClassVisitor {
     private class FVisitor extends FieldVisitor {
 
         public FVisitor(FieldVisitor delegate) {
-            super(Opcodes.ASM6, delegate);
+            super(OPCODE_VERSION, delegate);
         }
 
         @Override
@@ -97,7 +99,7 @@ public class Visitor extends ClassVisitor {
     private class MVisitor extends MethodVisitor {
 
         public MVisitor(MethodVisitor delegate) {
-            super(Opcodes.ASM6, delegate);
+            super(OPCODE_VERSION, delegate);
         }
 
         @Override
@@ -127,7 +129,7 @@ public class Visitor extends ClassVisitor {
         private boolean isFirstInvokespecial = true;
 
         public CreateInitializerCallVisitor(MethodVisitor delegate) {
-            super(Opcodes.ASM6, delegate);
+            super(OPCODE_VERSION, delegate);
         }
 
         @Override
@@ -146,7 +148,7 @@ public class Visitor extends ClassVisitor {
     }
 
     protected Visitor(ClassVisitor delegate) {
-        super(Opcodes.ASM6, delegate);
+        super(OPCODE_VERSION, delegate);
 
         Random random = new Random();
         FLIMFLAM = String.format("%016x", random.nextLong());

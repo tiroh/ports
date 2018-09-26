@@ -16,6 +16,7 @@
 
 package org.timux.ports.agent;
 
+import com.sun.org.apache.xml.internal.utils.ThreadControllerWrapper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -23,8 +24,18 @@ import org.objectweb.asm.ClassWriter;
 import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
+import java.util.*;
 
 class Transformer implements ClassFileTransformer {
+
+    private final List<String> packages = new ArrayList<>();
+
+    public Transformer(String args) {
+        if (args != null) {
+            Arrays.stream(args.replace('.', '/').split(","))
+                    .forEach(e -> packages.add(e + "/"));
+        }
+    }
 
     @Override
     public byte[] transform(
@@ -34,33 +45,52 @@ class Transformer implements ClassFileTransformer {
             ProtectionDomain protectionDomain,
             byte[] classfileBuffer)
     {
-//        if (!className.contains("org/timux/ports/")) {
-//            return classfileBuffer;
-//        }
-
-        ClassReader cr = new ClassReader(classfileBuffer);
-        ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
-        ClassVisitor cv = new Visitor(cw);
+        if (className == null) {
+            return null;
+        }
 
         try {
-            cr.accept(cv, 0);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            if (!packages.isEmpty()) {
+                boolean isClassIncluded = false;
 
-        final byte[] newClassBytes = cw.toByteArray();
+                for (String pkg : packages) {
+                    if (className.startsWith(pkg)) {
+                        isClassIncluded = true;
+                        break;
+                    }
+                }
 
-        // The following check is necessary, otherwise we get a BootstrapMethodError.
-        // I think this is related to bug https://bugs.openjdk.java.net/browse/JDK-8175806.
+                if (!isClassIncluded) {
+                    return null;
+                }
+            }
 
-        if (className.contains("org/timux/ports/")) {
-//            try (FileOutputStream fos = new FileOutputStream(String.format("%s.class", className.substring(className.lastIndexOf('/') + 1)))) {
-//                fos.write(newClassBytes);
-//            } catch (Exception e) {
-//                e.printStackTrace();
+            ClassReader cr = new ClassReader(classfileBuffer);
+            ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
+            ClassVisitor cv = new Visitor(cw);
+
+            try {
+                cr.accept(cv, 0);
+            } catch (Throwable e) {
+                System.err.println(e.getMessage() + ": " + className);
+                e.printStackTrace();
+                return null;
+            }
+
+            final byte[] newClassBytes = cw.toByteArray();
+
+//            if (className.contains("service")) {
+//                try (FileOutputStream fos = new FileOutputStream(String.format("%s.class", className.substring(className.lastIndexOf('/') + 1)))) {
+//                    fos.write(newClassBytes);
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
 //            }
-        }
 
-        return newClassBytes;
+            return newClassBytes;
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
