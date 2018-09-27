@@ -70,6 +70,16 @@ public class Request<I, O> {
     }
 
     /**
+     * Sends a call without payload to the connected IN port. This is equivalent to calling {@link #call(Object)} with
+     * <code>null</code> as argument.
+     *
+     * @return The response of the connected component.
+     */
+    public O call() {
+        return call(null);
+    }
+
+    /**
      * Returns true if this OUT port is connected to an IN port, false otherwise.
      */
     public boolean isConnected() {

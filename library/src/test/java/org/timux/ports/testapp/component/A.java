@@ -36,6 +36,7 @@ public class A {
         test.trigger(3700);
         double d = request.call((short) 2);
         Object o = testRequest.call(9);
-        System.out.println("A got replies: " + d + " and " + o);
+        Object o2 = testRequest.call();
+        System.out.println("A got replies: " + d + " and " + o + ", " + o2);
     }
 }
