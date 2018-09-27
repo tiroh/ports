@@ -14,6 +14,7 @@
         <module>annotation</module>
         <module>library</module>
         <module>agent</module>
+        <module>spring</module>
     </modules>
 
     <properties>
@@ -46,4 +47,5 @@
         <developerConnection>scm:git:git://github.com/trohlfs/ports.git</developerConnection>
         <url>https://github.com/trohlfs/ports/tree/master</url>
     </scm>
+
 </project>
