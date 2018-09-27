@@ -16,7 +16,7 @@
 
 package org.timux.ports;
 
-import org.timux.ports.agent.Visitor;
+import org.timux.ports.agent.TransformingVisitor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -47,15 +47,18 @@ public final class Ports {
      * @return An object that enables specifying the second component of the connection.
      */
     public static AndClause connect(Object a) {
-        return new AndClause(a);
+        return new AndClause((b, portsOptions) -> connectBoth(a, b, portsOptions));
     }
 
-    static void connectBoth(Object a, Object b) {
-        connectBoth(a, b, PortsOptions.DEFAULT);
-    }
-
-    static void connectDirected(Object from, Object to) {
-        connectDirected(from, to, PortsOptions.DEFAULT);
+    /**
+     * Begins disconnecting two components using the style of a fluent API.
+     *
+     * @param a The first component of the connection.
+     *
+     * @return An object that enables specifying the second component of the connection.
+     */
+    public static AndClause disconnect(Object a) {
+        return new AndClause((b, portsOptions) -> disconnectBoth(a, b, portsOptions));
     }
 
     static void connectBoth(Object a, Object b, int portsOptions) {
@@ -132,6 +135,56 @@ public final class Ports {
         }
     }
 
+    static void disconnectBoth(Object a, Object b, int portsOptions) {
+        disconnectDirected(a, b, portsOptions);
+        disconnectDirected(b, a, portsOptions);
+    }
+
+    static void disconnectDirected(Object from, Object to, int portsOptions) {
+        Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
+        Map<String, Field> inPortHandlerFieldsByName = getInPortHandlerFieldsByName(to);
+
+        Map<String, Field> outPortFieldsByType;
+        Map<String, Field> inPortFieldsByType;
+
+        try {
+            outPortFieldsByType = getPortFieldsByType(from, Out.class, false);
+            inPortFieldsByType = getPortFieldsByType(to, In.class, false);
+        } catch (DuplicateTypesException e) {
+            throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), e.getMessage());
+        }
+
+        for (Map.Entry<String, Field> e : outPortFieldsByType.entrySet()) {
+            String outPortFieldType = e.getKey();
+            Field outPortField = e.getValue();
+
+            Method inPortHandlerMethod = inPortHandlerMethodsByType.get(outPortFieldType);
+            Field inPortField = inPortFieldsByType.get(outPortFieldType);
+
+            try {
+                if (outPortField.getType() == Event.class) {
+                    Event event = (Event) outPortField.get(from);
+
+                    if (inPortHandlerMethod != null) {
+                        Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
+                        event.disconnect(inPortHandlerField.get(to));
+                    }
+
+                    if (inPortField != null) {
+                        event.disconnect(inPortField.get(to));
+                    }
+                }
+
+                if (outPortField.getType() == Request.class) {
+                    Request request = (Request) outPortField.get(from);
+                    request.disconnect();
+                }
+            } catch (IllegalAccessException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
     private static Map<String, Field> getPortFieldsByType(Object component, Class annotationType, boolean allowDuplicateTypes) {
         Map<String, Field> fieldsByType = new HashMap<>();
         Field[] fromFields = getFields(component);
@@ -194,8 +247,8 @@ public final class Ports {
         for (Field field : toFields) {
             final String fieldName = field.getName();
 
-            if (fieldName.startsWith(Visitor.HANDLER_PREFIX) && fieldName.endsWith(flimflam)) {
-                handlersByName.put(fieldName.substring(Visitor.HANDLER_PREFIX.length(), fieldName.lastIndexOf('_')), field);
+            if (fieldName.startsWith(TransformingVisitor.HANDLER_PREFIX) && fieldName.endsWith(flimflam)) {
+                handlersByName.put(fieldName.substring(TransformingVisitor.HANDLER_PREFIX.length(), fieldName.lastIndexOf('_')), field);
 
                 if (flimflam.isEmpty()) {
                     flimflam = fieldName.substring(fieldName.length() - 64 / 4);

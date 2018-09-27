@@ -17,16 +17,19 @@
 package org.timux.ports.agent;
 
 import org.objectweb.asm.*;
-import org.timux.ports.*;
+import org.timux.ports.Event;
+import org.timux.ports.Queue;
+import org.timux.ports.Request;
+import org.timux.ports.Stack;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
 
-public class Visitor extends ClassVisitor {
+import static org.timux.ports.agent.VisitorSettings.*;
 
-    private final static int OPCODE_VERSION = Opcodes.ASM5;
+public class TransformingVisitor extends ClassVisitor {
 
     public final static String HANDLER_PREFIX = "__handler_";
 
@@ -35,9 +38,6 @@ public class Visitor extends ClassVisitor {
 
     private final static String QUEUE_TYPE = getDescriptor(Queue.class);
     private final static String STACK_TYPE = getDescriptor(Stack.class);
-
-    private final static String OUT_DESCRIPTOR = getDescriptor(Out.class);
-    private final static String IN_DESCRIPTOR = getDescriptor(In.class);
 
     private final String INIT_METHOD_NAME;
     private final String INITIALIZED_FLAG_NAME;
@@ -147,7 +147,7 @@ public class Visitor extends ClassVisitor {
         }
     }
 
-    protected Visitor(ClassVisitor delegate) {
+    protected TransformingVisitor(ClassVisitor delegate) {
         super(OPCODE_VERSION, delegate);
 
         Random random = new Random();
@@ -155,14 +155,6 @@ public class Visitor extends ClassVisitor {
 
         INIT_METHOD_NAME = "__init_" + FLIMFLAM;
         INITIALIZED_FLAG_NAME = "__initialized_" + FLIMFLAM;
-    }
-
-    private static String getDescriptor(Class clazz) {
-        if (clazz.isArray()) {
-            throw new IllegalArgumentException("Ports types must not be arrays");
-        }
-
-        return "L" + clazz.getName().replace('.', '/') + ";";
     }
 
     @Override

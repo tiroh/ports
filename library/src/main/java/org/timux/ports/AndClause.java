@@ -16,8 +16,10 @@
 
 package org.timux.ports;
 
+import java.util.function.BiConsumer;
+
 /**
- * A class that allows specifying the second component of a connection.
+ * A class that allows specifying the second component of a two-component operation.
  *
  * @author Tim Rohlfs
  *
@@ -25,28 +27,30 @@ package org.timux.ports;
  */
 public class AndClause {
 
-    private Object a;
+    private BiConsumer<Object, Integer> terminalOperation;
 
-    protected AndClause(Object a) {
-        this.a = a;
+    protected AndClause(BiConsumer<Object, Integer> terminalOperation) {
+        this.terminalOperation = terminalOperation;
     }
 
     /**
-     * Connects the given component with the component that has been configured earlier. Default options are used.
+     * Executes the operation on the given component and the component that has been configured
+     * earlier. Default options are used.
      *
      * @param b The second component of the connection.
      */
     public void and(Object b) {
-        Ports.connectBoth(a, b);
+        terminalOperation.accept(b, PortsOptions.DEFAULT);
     }
 
     /**
-     * Connects the given component with the component that has been configured earlier.
+     * Executes the operation on the given component and the component that has been configured
+     * earlier.
      *
      * @param b The second component of the connection.
      * @param portsOptions A bit field specifying a set of {@link PortsOptions}.
      */
     public void and(Object b, int portsOptions) {
-        Ports.connectBoth(a, b, portsOptions);
+        terminalOperation.accept(b, portsOptions);
     }
 }

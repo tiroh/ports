@@ -26,5 +26,13 @@ public class TestApplication {
         c.doStringWork();
         c.doIntWork();
         f.doWork();
+
+        Ports.disconnect(c).and(d);
+        Ports.connect(c).and(e);
+
+        Ports.verify(c, e);
+
+        c.doStringWork();
+        c.doIntWork();
     }
 }

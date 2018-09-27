@@ -37,10 +37,21 @@ public class Request<I, O> {
     /**
      * Connects this OUT port to the given IN port.
      *
-     * @param port The IN port that this OUT port should be connected to.
+     * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
     public void connect(Function<I, O> port) {
+        if (port == null) {
+            throw new IllegalArgumentException("port must not be null");
+        }
+
         this.port = port;
+    }
+
+    /**
+     * Disconnects this OUT port.
+     */
+    public void disconnect() {
+        port = null;
     }
 
     /**

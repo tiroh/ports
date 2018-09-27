@@ -41,9 +41,13 @@ public class Event<T> {
      * Connects this OUT port to the given IN port. In case this OUT port is already connected to any IN ports,
      * the new connection will be added to the existing ones.
      *
-     * @param port The IN port that this OUT port should be connected to.
+     * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
     public void connect(Consumer<T> port) {
+        if (port == null) {
+            throw new IllegalArgumentException("port must not be null");
+        }
+
         ports.add(port);
 
         singlePort = ports.size() == 1
@@ -69,6 +73,17 @@ public class Event<T> {
      */
     public void connect(Stack<T> port) {
         connect(port::push);
+    }
+
+    /**
+     * Disconnects this OUT port from the given IN port.
+     */
+    public void disconnect(Object port) {
+        ports.remove(port);
+
+        singlePort = ports.size() == 1
+                ? ports.get(0)
+                : null;
     }
 
     /**

@@ -16,17 +16,18 @@
 
 package org.timux.ports.agent;
 
-import com.sun.org.apache.xml.internal.utils.ThreadControllerWrapper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.*;
 
 class Transformer implements ClassFileTransformer {
+
+    private static final AnalyzingVisitor ANALYZING_VISITOR =
+            new AnalyzingVisitor(new ClassVisitor(VisitorSettings.OPCODE_VERSION) {});
 
     private final List<String> packages = new ArrayList<>();
 
@@ -49,33 +50,35 @@ class Transformer implements ClassFileTransformer {
             return null;
         }
 
-        try {
-            if (!packages.isEmpty()) {
-                boolean isClassIncluded = false;
+        if (!packages.isEmpty()) {
+            boolean isClassIncluded = false;
 
-                for (String pkg : packages) {
-                    if (className.startsWith(pkg)) {
-                        isClassIncluded = true;
-                        break;
-                    }
-                }
-
-                if (!isClassIncluded) {
-                    return null;
+            for (String pkg : packages) {
+                if (className.startsWith(pkg)) {
+                    isClassIncluded = true;
+                    break;
                 }
             }
 
-            ClassReader cr = new ClassReader(classfileBuffer);
-            ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
-            ClassVisitor cv = new Visitor(cw);
-
-            try {
-                cr.accept(cv, 0);
-            } catch (Throwable e) {
-                System.err.println(e.getMessage() + ": " + className);
-                e.printStackTrace();
+            if (!isClassIncluded) {
                 return null;
             }
+        }
+
+        try {
+            ClassReader cr = new ClassReader(classfileBuffer);
+
+            ANALYZING_VISITOR.reset();
+            cr.accept(ANALYZING_VISITOR, 0);
+
+            if (!ANALYZING_VISITOR.isPortsComponentDetected()) {
+                return null;
+            }
+
+            ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES);
+            TransformingVisitor tcv = new TransformingVisitor(cw);
+
+            cr.accept(tcv, 0);
 
             final byte[] newClassBytes = cw.toByteArray();
 

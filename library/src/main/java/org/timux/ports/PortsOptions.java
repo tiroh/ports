@@ -29,16 +29,16 @@ public class PortsOptions {
      * The default behavior is to connect only unconnected ports and to fail with an exception if a port cannot be
      * connected due to a missing handler.
      */
-    public static final int DEFAULT = 0;
+    public static final Integer DEFAULT = 0;
 
     /**
      * Connect all ports, even those that are already connected. (By default, ports that are already connected would
      * not be reconnected.)
      */
-    public static final int FORCE_CONNECT_ALL = 1;
+    public static final Integer FORCE_CONNECT_ALL = 1;
 
     /**
      * If an OUT port cannot be connected because of a missing IN port, do not tolerate this and fail with an error.
      */
-    public static final int DO_NOT_ALLOW_MISSING_PORTS = 2;
+    public static final Integer DO_NOT_ALLOW_MISSING_PORTS = 2;
 }
