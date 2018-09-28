@@ -20,7 +20,7 @@ class AmbiguousPortsException extends RuntimeException {
 
     public AmbiguousPortsException(String componentFrom, String componentTo, String type) {
         super(String.format(
-                "Cannot auto-connect %s to %s due to multiple port candidates for message type <%s>.",
+                "Cannot auto-connect [%s] to [%s] due to multiple port candidates for message type %s.",
                 componentFrom,
                 componentTo,
                 type));

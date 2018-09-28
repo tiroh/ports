@@ -19,6 +19,6 @@ package org.timux.ports;
 class PortNotFoundException extends RuntimeException {
 
     public PortNotFoundException(String component, String type) {
-        super(String.format("Cannot find an IN port for message type <%s> in %s.", type, component));
+        super(String.format("Cannot find an IN port for message type %s in %s.", type, component));
     }
 }
