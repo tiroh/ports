@@ -103,6 +103,10 @@ public final class Ports {
                 if (outPortField.getType() == Event.class) {
                     Event event = (Event) outPortField.get(from);
 
+                    if (event == null) {
+                        throw new UninitializedPortException(from.getClass().getName(), outPortField.getName());
+                    }
+
                     if (!event.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
                         if (inPortHandlerMethod != null) {
                             Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
@@ -123,6 +127,10 @@ public final class Ports {
 
                 if (outPortField.getType() == Request.class) {
                     Request request = (Request) outPortField.get(from);
+
+                    if (request == null) {
+                        throw new UninitializedPortException(from.getClass().getName(), outPortField.getName());
+                    }
 
                     if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
                         Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
