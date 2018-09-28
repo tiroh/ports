@@ -51,7 +51,7 @@ class AnalyzingVisitor extends ClassVisitor {
 
         @Override
         public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-            if (descriptor.equals(IN_DESCRIPTOR) || descriptor.equals(OUT_DESCRIPTOR)) {
+            if (descriptor.equals(IN_DESCRIPTOR)) {
                 isPortsComponentDetected = true;
             }
 
