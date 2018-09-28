@@ -26,8 +26,9 @@ import java.util.function.Consumer;
  *
  * @param <T> The type of the payload.
  *
- * @author Tim Rohlfs
+ * @see Request
  *
+ * @author Tim Rohlfs
  * @since 0.1
  */
 public class Event<T> {

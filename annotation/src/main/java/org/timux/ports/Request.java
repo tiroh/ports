@@ -24,8 +24,9 @@ import java.util.function.Function;
  * @param <I> The type of the request data (input).
  * @param <O> The type of the response data (output).
  *
- * @author Tim Rohlfs
+ * @see Event
  *
+ * @author Tim Rohlfs
  * @since 0.1
  */
 public class Request<I, O> {

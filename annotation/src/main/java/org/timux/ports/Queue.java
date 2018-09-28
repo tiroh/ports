@@ -19,6 +19,23 @@ package org.timux.ports;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+/**
+ * <p>A class that represents an IN port with queue semantics. That is, incoming data does not trigger an event, but
+ * is stored and can be retrieved in FIFO order.</p>
+ *
+ * <p>Any field of this type that is supposed to serve as an IN port must be annotated with the {@link In}
+ * annotation.</p>
+ *
+ * <p>(If you want incoming data to trigger an event, create a handler method and annotate it with the
+ * {@link In} annotation).)</p>
+ *
+ * @param <T> The type of data items stored in this queue.
+ *
+ * @see Stack
+ *
+ * @author Tim Rohlfs
+ * @since 0.1
+ */
 public class Queue<T> {
 
     private Deque<T> deque = new ArrayDeque<>();
