@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.timux.ports</groupId>
         <artifactId>ports</artifactId>
-        <version>0.1.1</version>
+        <version>0.2.0</version>
     </parent>
 
     <artifactId>ports-annotation</artifactId>

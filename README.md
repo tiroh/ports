@@ -16,7 +16,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-library</artifactId>
-   <version>0.1.1</version>
+   <version>0.2.0</version>
 </dependency>
 ```
 
@@ -76,12 +76,17 @@ With this setup, your application is ready to use the Ports Framework.
 
 ## IDE setup
 
+The following setup is optional, yet recommended. If you choose not to do it,
+Ports will use a fallback that is less efficient. (However, the performance
+penalty is so small that it would only be noticable in relatively rare corner
+cases that involve very large numbers of consecutive port calls.)
+
 You probably also want to setup your IDE so that you can run and debug
 your application from there. For this, add the following entry to the JVM
 options (and replace `HOME_DIR` with your user home directory):
 
 ```
--javaagent:HOME_DIR/.m2/repository/org/timux/ports/ports-agent/0.1.1/ports-agent-0.1.1-jar-with-dependencies.jar
+-javaagent:HOME_DIR/.m2/repository/org/timux/ports/ports-agent/0.2.0/ports-agent-0.2.0-jar-with-dependencies.jar
 ``` 
 
 
