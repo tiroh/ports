@@ -77,8 +77,7 @@ public class Request<I, O> {
                     try {
                         return (O) portMethod.invoke(methodOwner, x);
                     } catch (IllegalAccessException | InvocationTargetException e) {
-                        e.printStackTrace();
-                        return null;
+                        throw new RuntimeException(e);
                     }
                 });
 

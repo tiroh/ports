@@ -85,7 +85,7 @@ public class Event<T> {
                     try {
                         portMethod.invoke(methodOwner, x);
                     } catch (IllegalAccessException | InvocationTargetException e) {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 });
 
