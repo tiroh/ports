@@ -115,17 +115,8 @@ public final class Ports {
 
                         warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
 
-                        outPortField.set(from, new Event());
-
-                        event = (Event) outPortField.get(from);
-
-                        Field nameField = event.getClass().getDeclaredField("name");
-                        nameField.setAccessible(true);
-                        nameField.set(event, outPortField.getName());
-
-                        Field ownerField = event.getClass().getDeclaredField("owner");
-                        ownerField.setAccessible(true);
-                        ownerField.set(event, to);
+                        event = new Event(outPortField.getName(), from);
+                        outPortField.set(from, event);
 
                         if (inPortHandlerMethod != null) {
                             event.connect(inPortHandlerMethod, to);
@@ -184,9 +175,8 @@ public final class Ports {
 
                         warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
 
-                        outPortField.set(from, new Request());
-
-                        request = (Request) outPortField.get(from);
+                        request = new Request(outPortField.getName(), from);
+                        outPortField.set(from, request);
 
                         Field nameField = request.getClass().getDeclaredField("name");
                         nameField.setAccessible(true);

@@ -40,6 +40,15 @@ public class Request<I, O> {
     private Object owner;
     private String name;
 
+    public Request() {
+        //
+    }
+
+    protected Request(String name, Object owner) {
+        this.name = name;
+        this.owner = owner;
+    }
+
     /**
      * Connects this OUT port to the given IN port.
      *

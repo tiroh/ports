@@ -43,6 +43,15 @@ public class Event<T> {
     private Object owner;
     private String name;
 
+    public Event() {
+        //
+    }
+
+    protected Event(String name, Object owner) {
+        this.name = name;
+        this.owner = owner;
+    }
+
     /**
      * Connects this OUT port to the given IN port. In case this OUT port is already connected to any IN ports,
      * the new connection will be added to the existing ones.
