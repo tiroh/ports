@@ -62,10 +62,6 @@ public final class Ports {
     }
 
     static void connectBoth(Object a, Object b, int portsOptions) {
-        if (b instanceof ComponentBuilder) {
-            throw new RuntimeException("test not finalized");
-        }
-
         connectDirected(a, b, portsOptions);
         connectDirected(b, a, portsOptions);
     }
@@ -397,10 +393,6 @@ public final class Ports {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static ComponentBuilder test() {
-        return new ComponentBuilder();
     }
 
     private static Field[] getFields(Object o) {
