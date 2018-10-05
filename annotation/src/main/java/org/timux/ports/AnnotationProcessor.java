@@ -170,7 +170,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
         }
 
-        portsClassNames.forEach(name -> writeClassFile(name));
+//        portsClassNames.forEach(name -> writeClassFile(name));
 
         return true;
     }
