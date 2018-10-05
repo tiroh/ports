@@ -178,14 +178,6 @@ public final class Ports {
                         request = new Request(outPortField.getName(), from);
                         outPortField.set(from, request);
 
-                        Field nameField = request.getClass().getDeclaredField("name");
-                        nameField.setAccessible(true);
-                        nameField.set(request, outPortField.getName());
-
-                        Field ownerField = request.getClass().getDeclaredField("owner");
-                        ownerField.setAccessible(true);
-                        ownerField.set(request, to);
-
                         request.connect(inPortHandlerMethod, to);
                     } else {
                         if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
@@ -194,7 +186,7 @@ public final class Ports {
                         }
                     }
                 }
-            } catch (IllegalAccessException | NoSuchFieldException ex) {
+            } catch (IllegalAccessException ex) {
                 throw new RuntimeException(ex);
             }
         }
