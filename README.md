@@ -30,11 +30,16 @@ Super POM to make sure the compiler is set up correctly:
 </properties>
 ```
 
-Then, add the following manifest entry to your JAR file:
+Then, you may add the following manifest entry to your JAR file:
 
 ```
 Premain-Class: org.timux.ports.agent.Agent
 ```
+
+This is optional, yet recommended. If you choose not to do it,
+Ports will use a fallback that is less efficient. (However, the performance
+penalty is so small that it would only be noticable in relatively rare corner
+cases that involve very large numbers of consecutive port calls.)
 
 For example, if you use the `maven-assembly-plugin` in order to build a JAR
 with all dependencies, the complete plugin setup could look like this:
