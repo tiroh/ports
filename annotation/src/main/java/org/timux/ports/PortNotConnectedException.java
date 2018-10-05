@@ -19,6 +19,6 @@ package org.timux.ports;
 class PortNotConnectedException extends RuntimeException {
 
     public PortNotConnectedException(String port, String component) {
-        super(String.format("Port <%s> in %s is not connected.", port, component));
+        super(String.format("Port [%s] in %s is not connected.", port, component));
     }
 }

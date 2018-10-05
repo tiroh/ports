@@ -16,6 +16,10 @@
 
 package org.timux.ports;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -32,6 +36,7 @@ import java.util.function.Function;
 public class Request<I, O> {
 
     private Function<I, O> port;
+    private Map<Method, Function<I, O>> portMethods = null;
     private Object owner;
     private String name;
 
@@ -46,6 +51,29 @@ public class Request<I, O> {
         }
 
         this.port = port;
+    }
+
+    protected void connect(Method portMethod, Object methodOwner) {
+        if (portMethod == null) {
+            throw new IllegalArgumentException("port must not be null");
+        }
+
+        if (portMethods == null) {
+            portMethods = new HashMap<>();
+        }
+
+        portMethods.put(
+                portMethod,
+                x -> {
+                    try {
+                        return (O) portMethod.invoke(methodOwner, x);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                });
+
+        connect(portMethods.get(portMethod));
     }
 
     /**

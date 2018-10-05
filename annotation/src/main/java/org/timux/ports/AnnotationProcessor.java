@@ -6,6 +6,9 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
+import javax.tools.JavaFileObject;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.*;
 
 public class AnnotationProcessor extends AbstractProcessor {
@@ -48,11 +51,12 @@ public class AnnotationProcessor extends AbstractProcessor {
                         element);
             }
 
-            HashSet<String> names = elementNames.get(element.getEnclosingElement());
+            HashSet<String> names = inPortClassNames.get(element.getEnclosingElement());
 
             if (names == null) {
                 names = new HashSet<>();
-                elementNames.put(element.getEnclosingElement(), names);
+                inPortClassNames.put(element.getEnclosingElement(), names);
+                portsClassNames.add(element.getEnclosingElement().toString());
             }
 
             if (names.contains(elementName)) {
@@ -78,15 +82,17 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private final static String EVENT_TYPE = "org.timux.ports.Event";
-    private final static String REQUEST_TYPE = "org.timux.ports.Request";
+    private final static String EVENT_TYPE = Event.class.getName();
+    private final static String REQUEST_TYPE = Request.class.getName();
 
-    private final static String STACK_TYPE = "org.timux.ports.Stack";
-    private final static String QUEUE_TYPE = "org.timux.ports.Queue";
+    private final static String STACK_TYPE = Stack.class.getName();
+    private final static String QUEUE_TYPE = Queue.class.getName();
 
     private final MethodCheckerVisitor methodCheckerVisitor = new MethodCheckerVisitor();
 
-    private final Map<Element, HashSet<String>> elementNames = new HashMap<>();
+    private final Map<Element, HashSet<String>> inPortClassNames = new HashMap<>();
+
+    private final Set<String> portsClassNames = new HashSet<>();
 
     private final Set<String> unmodifiableSupportedAnnotationTypes;
 
@@ -107,11 +113,11 @@ public class AnnotationProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
         if (set.isEmpty()) {
-            System.out.println(elementNames);
             return true;
         }
 
-        elementNames.clear();
+        inPortClassNames.clear();
+        portsClassNames.clear();
 
         for (Element element : roundEnvironment.getElementsAnnotatedWith(Out.class)) {
             if (element.getModifiers().contains(Modifier.STATIC)) {
@@ -133,6 +139,8 @@ public class AnnotationProcessor extends AbstractProcessor {
                         String.format("type '%s' is not a valid OUT port type", elementType),
                         element);
             }
+
+            portsClassNames.add(element.getEnclosingElement().toString());
         }
 
         for (Element element : roundEnvironment.getElementsAnnotatedWith(In.class)) {
@@ -162,7 +170,28 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
         }
 
+        portsClassNames.forEach(name -> writeClassFile(name));
+
         return true;
+    }
+
+    private void writeClassFile(String className) {
+        JavaFileObject jfo = null;
+        try {
+            String processedName = className.toString().replace('.', '_');
+            jfo = processingEnv.getFiler().createSourceFile("org.timux.ports.spec." + processedName);
+
+            Writer writer = jfo.openWriter();
+            writer.write("package org.timux.ports.spec;\nimport javax.lang.model.element.*;\nimport java.util.*;\n");
+            writer.write("public class " + processedName + " {\npublic final static List<String> elementNames = new ArrayList<>();\n");
+            writer.write("static {\n");
+
+            writer.write("elementNames.add(\"" + className + "\");\n");
+            writer.write("}\n}\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

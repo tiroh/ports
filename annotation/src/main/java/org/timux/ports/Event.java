@@ -16,8 +16,12 @@
 
 package org.timux.ports;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -34,6 +38,7 @@ import java.util.function.Consumer;
 public class Event<T> {
 
     private List<Consumer<T>> ports = new ArrayList<>();
+    private Map<Method, Consumer<T>> portMethods = null;
     private Consumer<T> singlePort = null;
     private Object owner;
     private String name;
@@ -54,6 +59,28 @@ public class Event<T> {
         singlePort = ports.size() == 1
                 ? port
                 : null;
+    }
+
+    protected void connect(Method portMethod, Object methodOwner) {
+        if (portMethod == null) {
+            throw new IllegalArgumentException("port must not be null");
+        }
+
+        if (portMethods == null) {
+            portMethods = new HashMap<>();
+        }
+
+        portMethods.put(
+                portMethod,
+                x -> {
+                    try {
+                        portMethod.invoke(methodOwner, x);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+        connect(portMethods.get(portMethod));
     }
 
     /**
@@ -85,6 +112,10 @@ public class Event<T> {
         singlePort = ports.size() == 1
                 ? ports.get(0)
                 : null;
+    }
+
+    protected void disconnect(Method portMethod) {
+        disconnect(portMethods.get(portMethod));
     }
 
     /**

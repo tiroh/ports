@@ -38,7 +38,7 @@ public class PortsOptions {
     public static final Integer FORCE_CONNECT_ALL = 1;
 
     /**
-     * If an OUT port cannot be connected because of a missing IN port, do not tolerate this and fail with an error.
+     * If an OUT port cannot be connected because of a missing IN port, fail with an error.
      */
     public static final Integer DO_NOT_ALLOW_MISSING_PORTS = 2;
 }
