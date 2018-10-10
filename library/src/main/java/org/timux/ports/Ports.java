@@ -178,7 +178,12 @@ public final class Ports {
                     } else {
                         if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
                             Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-                            request.connect((Function) inPortHandlerField.get(to));
+
+                            if (inPortHandlerField != null) {
+                                request.connect((Function) inPortHandlerField.get(to));
+                            } else {
+                                request.connect(inPortHandlerMethod, to);
+                            }
                         }
                     }
                 }
