@@ -239,8 +239,10 @@ public final class Ports {
                 }
 
                 if (outPortField.getType() == Request.class) {
-                    Request request = (Request) outPortField.get(from);
-                    request.disconnect();
+                    if (inPortHandlerMethod != null) {
+                        Request request = (Request) outPortField.get(from);
+                        request.disconnect();
+                    }
                 }
             } catch (IllegalAccessException ex) {
                 throw new RuntimeException(ex);
