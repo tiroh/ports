@@ -16,7 +16,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-library</artifactId>
-   <version>0.2.2</version>
+   <version>0.2.3</version>
 </dependency>
 ```
 
@@ -91,7 +91,7 @@ your application from there. For this, add the following entry to the JVM
 options (and replace `HOME_DIR` with your user home directory):
 
 ```
--javaagent:HOME_DIR/.m2/repository/org/timux/ports/ports-agent/0.2.2/ports-agent-0.2.2-jar-with-dependencies.jar
+-javaagent:HOME_DIR/.m2/repository/org/timux/ports/ports-agent/0.2.3/ports-agent-0.2.3-jar-with-dependencies.jar
 ``` 
 
 

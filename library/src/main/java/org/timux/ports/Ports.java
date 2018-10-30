@@ -136,7 +136,10 @@ public final class Ports {
                             }
                         }
                     } else {
-                        if (!event.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
+                        if (!event.isConnected()
+                                || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
+                                || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
+                        {
                             if (inPortHandlerMethod != null) {
                                 Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
 

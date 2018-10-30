@@ -38,7 +38,13 @@ public class PortsOptions {
     public static final Integer FORCE_CONNECT_ALL = 1;
 
     /**
+     * Connect all event ports, even those that are already connected. Also connect Request ports, but do not reconnect
+     * those.
+     */
+    public static final Integer FORCE_CONNECT_EVENT_PORTS = 2;
+
+    /**
      * If an OUT port cannot be connected because of a missing IN port, fail with an error.
      */
-    public static final Integer DO_NOT_ALLOW_MISSING_PORTS = 2;
+    public static final Integer DO_NOT_ALLOW_MISSING_PORTS = 4;
 }
