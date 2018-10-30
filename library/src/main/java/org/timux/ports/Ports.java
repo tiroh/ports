@@ -386,7 +386,7 @@ public final class Ports {
                     if (field.getType() == Event.class) {
                         Event event = (Event) field.get(component);
 
-                        if (!event.isConnected()) {
+                        if (event == null || !event.isConnected()) {
                             throw new PortNotConnectedException(field.getName(), component.getClass().getName());
                         }
                     }
@@ -394,7 +394,7 @@ public final class Ports {
                     if (field.getType() == Request.class) {
                         Request request = (Request) field.get(component);
 
-                        if (!request.isConnected()) {
+                        if (request == null || !request.isConnected()) {
                             throw new PortNotConnectedException(field.getName(), component.getClass().getName());
                         }
                     }
