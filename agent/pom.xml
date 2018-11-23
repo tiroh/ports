@@ -58,12 +58,12 @@
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                     <archive>
-                        <!--<manifestEntries>-->
-                            <!--<Premain-Class>org.timux.ports.agent.Agent</Premain-Class>-->
-                        <!--</manifestEntries>-->
                         <manifestEntries>
-                            <Launcher-Agent-Class>org.timux.ports.agent.Agent</Launcher-Agent-Class>
+                            <Premain-Class>org.timux.ports.agent.Agent</Premain-Class>
                         </manifestEntries>
+                        <!--<manifestEntries>-->
+                            <!--<Launcher-Agent-Class>org.timux.ports.agent.Agent</Launcher-Agent-Class>-->
+                        <!--</manifestEntries>-->
                     </archive>
                 </configuration>
 
