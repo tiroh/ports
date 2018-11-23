@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.timux.ports</groupId>
         <artifactId>ports</artifactId>
-        <version>0.2.3</version>
+        <version>0.2.4</version>
     </parent>
 
     <artifactId>ports-library</artifactId>
@@ -49,7 +49,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.12.4</version>
                 <configuration>
-                    <argLine>-javaagent:${pom.basedir}/../agent/target/ports-agent-${project.version}-jar-with-dependencies.jar=org.timux.ports</argLine>
+                    <!--<argLine>-javaagent:${pom.basedir}/../agent/target/ports-agent-${project.version}-jar-with-dependencies.jar=org.timux.ports</argLine>-->
                 </configuration>
             </plugin>
         </plugins>

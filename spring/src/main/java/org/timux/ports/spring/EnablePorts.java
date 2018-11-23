@@ -8,6 +8,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Configures a Spring application so that Ports can be used. This annotation is not
+ * required if Spring is not used.
+ *
+ * @author Tim Rohlfs
+ *
+ * @since 0.2.2
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Configuration

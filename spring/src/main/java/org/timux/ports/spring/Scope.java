@@ -10,7 +10,7 @@ class Scope {
 
     private Scope parentScope = null;
 
-    private Map<String, Object> beans = new HashMap<>();
+    private Map<Object, String> beans = new HashMap<>();
 
     public Scope(String name) {
         this(name, null);
@@ -40,14 +40,14 @@ class Scope {
     }
 
     public void addBean(Object bean, String beanName) {
-        beans.put(beanName, bean);
+        beans.put(bean, beanName);
     }
 
     public Iterable<Scope> getChildScopes() {
         return childScopes.values();
     }
 
-    public Iterable<Map.Entry<String, Object>> getBeans() {
+    public Iterable<Map.Entry<Object, String>> getBeans() {
         return beans.entrySet();
     }
 }

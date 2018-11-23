@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.timux.ports</groupId>
         <artifactId>ports</artifactId>
-        <version>0.2.3</version>
+        <version>0.2.4</version>
     </parent>
 
     <artifactId>ports-agent</artifactId>
@@ -41,7 +41,8 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                         <manifestEntries>
-                            <Premain-Class>org.timux.ports.agent.Agent</Premain-Class>
+                            <!--<Premain-Class>org.timux.ports.agent.Agent</Premain-Class>-->
+                            <Launcher-Agent-Class>org.timux.ports.agent.Agent</Launcher-Agent-Class>
                         </manifestEntries>
                     </archive>
                 </configuration>
@@ -57,8 +58,11 @@
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                     <archive>
+                        <!--<manifestEntries>-->
+                            <!--<Premain-Class>org.timux.ports.agent.Agent</Premain-Class>-->
+                        <!--</manifestEntries>-->
                         <manifestEntries>
-                            <Premain-Class>org.timux.ports.agent.Agent</Premain-Class>
+                            <Launcher-Agent-Class>org.timux.ports.agent.Agent</Launcher-Agent-Class>
                         </manifestEntries>
                     </archive>
                 </configuration>

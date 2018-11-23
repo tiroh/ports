@@ -24,4 +24,9 @@ class Agent {
         Transformer transformer = new Transformer(args);
         instrumentation.addTransformer(transformer);
     }
+
+    public static void agentmain(String args, Instrumentation instrumentation) {
+        Transformer transformer = new Transformer(args);
+        instrumentation.addTransformer(transformer);
+    }
 }

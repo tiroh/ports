@@ -147,19 +147,19 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     }
 
     private void connectBeans(Scope scope, Object bean, String beanName) {
-        for (Map.Entry<String, Object> e : scope.getBeans()) {
-            if (!beanName.equals(e.getKey())) {
-                logger.debug("Connecting ports: {} <-> {}", beanName, e.getKey());
-                Ports.connect(bean).and(e.getValue(), PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+        for (Map.Entry<Object, String> e : scope.getBeans()) {
+            if (bean != e.getKey()) {
+                logger.debug("Connecting ports: {} <-> {}", beanName, e.getValue());
+                Ports.connect(bean).and(e.getKey(), PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             }
         }
     }
 
     private void disconnectBeans(Scope scope, Object bean, String beanName) {
-        for (Map.Entry<String, Object> e : scope.getBeans()) {
-            if (!beanName.equals(e.getKey())) {
-                logger.debug("Disconnecting ports: {} <-> {}", beanName, e.getKey());
-                Ports.disconnect(bean).and(e.getValue());
+        for (Map.Entry<Object, String> e : scope.getBeans()) {
+            if (bean != e.getKey()) {
+                logger.debug("Disconnecting ports: {} <-> {}", beanName, e.getValue());
+                Ports.disconnect(bean).and(e.getKey());
             }
         }
     }
@@ -214,4 +214,57 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
         return scope;
     }
+
+//    @Override
+//    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+//        boolean isPortsComponent = false;
+//
+//        for (Field field : bean.getClass().getDeclaredFields()) {
+//            Out outAnno = field.getAnnotation(Out.class);
+//            In inAnno = field.getAnnotation(In.class);
+//
+//            if (outAnno != null || inAnno != null) {
+//                isPortsComponent = true;
+//                break;
+//            }
+//        }
+//
+//        if (!isPortsComponent) {
+//            for (Method method : bean.getClass().getDeclaredMethods()) {
+//                In inAnno = method.getAnnotation(In.class);
+//
+//                if (inAnno != null) {
+//                    isPortsComponent = true;
+//                    break;
+//                }
+//            }
+//        }
+//
+//        if (isPortsComponent) {
+//            for (Map.Entry<String, Object> e : beans.entrySet()) {
+//                if (!beanName.equals(e.getKey())) {
+//                    logger.debug("Connecting ports: {} <-> {}", beanName, e.getKey());
+//                    Ports.connect(bean).and(e.getValue(), PortsOptions.FORCE_CONNECT_ALL);
+//                }
+//            }
+//
+//            beans.put(beanName, bean);
+//        }
+//
+//        return bean;
+//    }
+//
+//    @Override
+//    public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
+//        if (beans.containsKey(beanName)) {
+//            for (Map.Entry<String, Object> e : beans.entrySet()) {
+//                if (!beanName.equals(e.getKey())) {
+//                    logger.debug("Disconnecting ports: {} <-> {}", beanName, e.getKey());
+//                    Ports.disconnect(bean).and(e.getValue());
+//                }
+//            }
+//
+//            beans.remove(beanName);
+//        }
+//    }
 }
