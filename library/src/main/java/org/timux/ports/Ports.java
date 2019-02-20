@@ -39,6 +39,8 @@ public final class Ports {
 
     private static Map<Object, Method[]> methodCache = new HashMap<>();
 
+    private static boolean warningHasBeenIssued = false;
+
     /**
      * Begins connecting two components using the style of a fluent API.
      *
@@ -61,12 +63,28 @@ public final class Ports {
         return new AndClause((b, portsOptions) -> disconnectBoth(a, b, portsOptions));
     }
 
-    static void connectBoth(Object a, Object b, int portsOptions) {
-        connectDirected(a, b, portsOptions);
-        connectDirected(b, a, portsOptions);
+    static boolean connectBoth(Object a, Object b, int portsOptions) {
+        try {
+            boolean s = connectDirectedInternal(a, b, portsOptions);
+            boolean t = connectDirectedInternal(b, a, portsOptions);
+
+            return s || t;
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    static void connectDirected(Object from, Object to, int portsOptions) {
+    public static boolean connectDirected(Object from, Object to, int portsOptions) {
+        try {
+            return connectDirectedInternal(from, to, portsOptions);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static boolean connectDirectedInternal(Object from, Object to, int portsOptions) throws IllegalAccessException {
+        boolean portsWereConnected = false;
+
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
         Map<String, Field> inPortHandlerFieldsByName = getInPortHandlerFieldsByName(to);
 
@@ -99,101 +117,109 @@ public final class Ports {
                 throw new PortNotFoundException(to.getClass().getName(), outPortFieldType);
             }
 
-            try {
-                if (outPortField.getType() == Event.class) {
-                    Event event = (Event) outPortField.get(from);
+            if (outPortField.getType() == Event.class) {
+                Event event = (Event) outPortField.get(from);
 
-                    if (event == null) {
-                        /*
-                         * In this situation, it is most likely that the Java agent was not set up, so we resort to
-                         * reflection.
-                         */
+                if (event == null) {
+                    /*
+                     * In this situation, it is most likely that the Java agent was not set up,
+                     * so we resort to reflection.
+                     */
 
-                        warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
+                    warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
 
-                        event = new Event(outPortField.getName(), from);
-                        outPortField.set(from, event);
+                    event = new Event(outPortField.getName(), from);
+                    outPortField.set(from, event);
 
+                    if (inPortHandlerMethod != null) {
+                        event.connect(inPortHandlerMethod, to);
+                        portsWereConnected = true;
+                    }
+
+                    if (inPortField != null) {
+                        if (inPortField.getType() == Queue.class) {
+                            if (inPortField.get(to) == null) {
+                                inPortField.set(to, new Queue());
+                            }
+
+                            event.connect((Queue) inPortField.get(to));
+                            portsWereConnected = true;
+                        }
+
+                        if (inPortField.getType() == Stack.class) {
+                            if (inPortField.get(to) == null) {
+                                inPortField.set(to, new Stack());
+                            }
+
+                            event.connect((Stack) inPortField.get(to));
+                            portsWereConnected = true;
+                        }
+                    }
+                } else {
+                    if (!event.isConnected()
+                            || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
+                            || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
+                    {
                         if (inPortHandlerMethod != null) {
-                            event.connect(inPortHandlerMethod, to);
+                            Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
+
+                            if (inPortHandlerField != null) {
+                                event.connect((Consumer) inPortHandlerField.get(to));
+                                portsWereConnected = true;
+                            } else {
+                                event.connect(inPortHandlerMethod, to);
+                                portsWereConnected = true;
+                            }
                         }
 
                         if (inPortField != null) {
                             if (inPortField.getType() == Queue.class) {
-                                if (inPortField.get(to) == null) {
-                                    inPortField.set(to, new Queue());
-                                }
-
                                 event.connect((Queue) inPortField.get(to));
+                                portsWereConnected = true;
                             }
 
                             if (inPortField.getType() == Stack.class) {
-                                if (inPortField.get(to) == null) {
-                                    inPortField.set(to, new Stack());
-                                }
-
                                 event.connect((Stack) inPortField.get(to));
-                            }
-                        }
-                    } else {
-                        if (!event.isConnected()
-                                || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
-                                || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
-                        {
-                            if (inPortHandlerMethod != null) {
-                                Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-
-                                if (inPortHandlerField != null) {
-                                    event.connect((Consumer) inPortHandlerField.get(to));
-                                } else {
-                                    event.connect(inPortHandlerMethod, to);
-                                }
-                            }
-
-                            if (inPortField != null) {
-                                if (inPortField.getType() == Queue.class) {
-                                    event.connect((Queue) inPortField.get(to));
-                                }
-
-                                if (inPortField.getType() == Stack.class) {
-                                    event.connect((Stack) inPortField.get(to));
-                                }
+                                portsWereConnected = true;
                             }
                         }
                     }
                 }
+            }
 
-                if (outPortField.getType() == Request.class) {
-                    Request request = (Request) outPortField.get(from);
+            if (outPortField.getType() == Request.class) {
+                Request request = (Request) outPortField.get(from);
 
-                    if (request == null) {
-                        /*
-                         * In this situation, it is most likely that the Java agent was not set up, so we resort to
-                         * reflection.
-                         */
+                if (request == null) {
+                    /*
+                     * In this situation, it is most likely that the Java agent was not set up,
+                     * so we resort to reflection.
+                     */
 
-                        warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
+                    warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
 
-                        request = new Request(outPortField.getName(), from);
-                        outPortField.set(from, request);
+                    request = new Request(outPortField.getName(), from);
+                    outPortField.set(from, request);
 
-                        request.connect(inPortHandlerMethod, to);
-                    } else {
-                        if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
-                            Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
+                    request.connect(inPortHandlerMethod, to);
+                    portsWereConnected = true;
+                } else {
+                    if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
+                        Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
 
-                            if (inPortHandlerField != null) {
-                                request.connect((Function) inPortHandlerField.get(to));
-                            } else {
-                                request.connect(inPortHandlerMethod, to);
-                            }
+                        if (inPortHandlerField != null) {
+                            request.connect((Function) inPortHandlerField.get(to));
+                            portsWereConnected = true;
+                        } else {
+                            request.connect(inPortHandlerMethod, to);
+                            portsWereConnected = true;
                         }
                     }
                 }
-            } catch (IllegalAccessException ex) {
-                throw new RuntimeException(ex);
             }
         }
+
+        return portsWereConnected;
     }
 
     static void disconnectBoth(Object a, Object b, int portsOptions) {
@@ -447,6 +473,9 @@ public final class Ports {
     }
 
     private static void warnAboutUninitializedPort(String port, String component) {
-        System.err.println(String.format("[ports] warning: uninitialized port [%s] in %s detected, using fallback", port, component));
+        if (!warningHasBeenIssued) {
+            warningHasBeenIssued = true;
+            System.err.println(String.format("[ports] warning: uninitialized port detected, using fallback"));
+        }
     }
 }
