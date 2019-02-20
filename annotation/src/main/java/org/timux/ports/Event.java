@@ -71,6 +71,10 @@ public class Event<T> {
     }
 
     protected void connect(Method portMethod, Object methodOwner) {
+        connect(portMethod, methodOwner, null);
+    }
+
+    protected void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -79,15 +83,27 @@ public class Event<T> {
             portMethods = new HashMap<>();
         }
 
-        portMethods.put(
-                portMethod,
-                x -> {
-                    try {
-                        portMethod.invoke(methodOwner, x);
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        if (eventWrapper == null) {
+            portMethods.put(
+                    portMethod,
+                    x -> {
+                        try {
+                            portMethod.invoke(methodOwner, x);
+                        } catch (IllegalAccessException | InvocationTargetException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+        } else {
+            portMethods.put(
+                    portMethod,
+                    x -> eventWrapper.execute(() -> {
+                        try {
+                            portMethod.invoke(methodOwner, x);
+                        } catch (IllegalAccessException | InvocationTargetException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }));
+        }
 
         connect(portMethods.get(portMethod));
     }

@@ -1,5 +1,6 @@
 package org.timux.ports.spring;
 
+import com.vaadin.flow.component.UI;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -13,6 +14,8 @@ class Scope {
     private Scope parentScope = null;
 
     private Map<Object, String> beans = new HashMap<>();
+
+    private UI ui = null;
 
     public Scope(String name) {
         this(name, null);
@@ -75,6 +78,14 @@ class Scope {
 
     public Iterable<Map.Entry<Object, String>> getBeans() {
         return beans.entrySet();
+    }
+
+    public void setUi(UI ui) {
+        this.ui = ui;
+    }
+
+    public UI getUi() {
+        return ui;
     }
 
     @Override

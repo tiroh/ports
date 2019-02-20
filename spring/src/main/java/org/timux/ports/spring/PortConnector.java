@@ -1,6 +1,7 @@
 package org.timux.ports.spring;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,11 +101,11 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
             Scope beanScope = getScope(beanScopeName, bean);
 
-            connectParentScopes(beanScope, bean, beanName);
-            connectChildScopes(beanScope, bean, beanName);
-
             beanScope.addBean(bean, beanName);
             beans.put(bean, beanScope);
+
+            connectParentScopes(beanScope, bean, beanName);
+            connectChildScopes(beanScope, bean, beanName);
         }
 
 //        System.out.println(rootScope.toString());
@@ -126,16 +127,16 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
     private void connectParentScopes(Scope scope, Object bean, String beanName) {
         Scope currentScope = scope;
-        boolean isScopeInSession = isScopeInSession(scope);
+        boolean isScopeInUi = isScopeInUi(scope);
 
         do {
-            connectBeans(currentScope, bean, beanName, isScopeInSession);
+            connectBeans(currentScope, bean, beanName, isScopeInUi);
             currentScope = currentScope.getParentScope();
         } while (currentScope != null);
     }
 
     private void connectChildScopes(Scope scope, Object bean, String beanName) {
-        boolean isScopeInSession = isScopeInSession(scope);
+        boolean isScopeInSession = isScopeInUi(scope);
 
         for (Scope childScope : scope.getChildScopes()) {
             connectChildScopes(childScope, bean, beanName);
@@ -163,8 +164,8 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         }
     }
 
-    private void connectBeans(Scope scope, Object bean, String beanName, boolean isBeanScopeInSession) {
-        final boolean isScopeInSession = isScopeInSession(scope);
+    private void connectBeans(Scope scope, Object bean, String beanName, boolean isBeanScopeInUi) {
+        final boolean isScopeInUi = isScopeInUi(scope);
 
         for (Map.Entry<Object, String> e : scope.getBeans()) {
             final Object otherBean = e.getKey();
@@ -174,33 +175,38 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 continue;
             }
 
-//            if (isBeanScopeInSession == isScopeInSession) {
+            if (isBeanScopeInUi == isScopeInUi) {
                 boolean a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
                 boolean b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
 
                 if (a && b) {
-//                    logger.debug("Connected ports: {} <-> {}", beanName, otherBeanName);
                     logConnection(bean, beanName, otherBean, otherBeanName, true);
                 } else if (a) {
-//                    logger.debug("Connected ports: {} -> {}", beanName, otherBeanName);
                     logConnection(bean, beanName, otherBean, otherBeanName, false);
                 } else if (b) {
-//                    logger.debug("Connected ports: {} -> {}", otherBeanName, beanName);
                     logConnection(otherBean, otherBeanName, bean, beanName, false);
                 }
-//            } else if (isBeanScopeInSession) {
-//                if (Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
-//                    logger.debug("Connected ports: {} -> {}", beanName, otherBeanName);
-//                }
-//
-//                connectBeanToPushBroadcaster(otherBean, otherBeanName);
-//            } else {
-//                if (Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
-//                    logger.debug("Connected ports: {} -> {}", otherBeanName, beanName);
-//                }
-//
-//                connectBeanToPushBroadcaster(bean, beanName);
-//            }
+            } else if (isBeanScopeInUi) {
+                if (Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
+                    logConnection(bean, beanName, otherBean, otherBeanName, false);
+                }
+
+                UI ui = beans.get(bean).getUi();
+
+                if (Ports.connectDirected(otherBean, bean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
+                    logConnection(otherBean, otherBeanName, bean, beanName, false);
+                }
+            } else {
+                if (Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
+                    logConnection(otherBean, otherBeanName, bean, beanName, false);
+                }
+
+                UI ui = beans.get(otherBean).getUi();
+
+                if (Ports.connectDirected(bean, otherBean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
+                    logConnection(bean, beanName, otherBean, otherBeanName, false);
+                }
+            }
         }
     }
 
@@ -225,10 +231,10 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
             return;
         }
 
-        logger.debug("destroying scope {} of session {}", scope.toString(), session.toString());
+        logger.debug("destroying scope {} of session {}", scope.getName(), session.toString());
 
         disconnectChildBeans(scope);
-        scope.getParentScope().removeChildScope(session);;
+        scope.getParentScope().removeChildScope(session);
     }
 
     private void disconnectChildBeans(Scope scope) {
@@ -297,14 +303,17 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 }
 
                 scope = scope.getChildScope(ui.getUIId());
+                scope.setUi(ui);
             }
 
             if (scopeOrder >= 4) {
                 scope = scope.getChildScope(VAADIN_VIEW_SCOPE);
+                scope.setUi(scope.getParentScope().getUi());
             }
 
             if (scopeOrder >= 5) {
                 scope = scope.getChildScope(PROTOTYPE_SCOPE);
+                scope.setUi(scope.getParentScope().getUi());
             }
         } else {
             switch (scopeName) {
@@ -319,7 +328,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         return scope;
     }
 
-    private boolean isScopeInSession(Scope scope) {
+    private boolean isScopeInUi(Scope scope) {
         if (SINGLETON_SCOPE.equals(scope.getName()) || ROOT_SCOPE.equals(scope.getName())) {
             return false;
         }
@@ -327,19 +336,16 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         Integer scopeOrder = SCOPE_ORDERING.get(scope.getName());
 
         if (scopeOrder != null) {
-            return scopeOrder >= 1;
+            return scopeOrder >= 3;
         }
 
-        return isScopeInSession(scope.getParentScope());
+        return isScopeInUi(scope.getParentScope());
     }
 
     private static void logConnection(Object from, String fromName, Object to, String toName, boolean isBidirectional) {
-        if (isBidirectional) {
-            logger.debug("Connected ports: {}/{} <-> {}/{}",
-                    fromName, Integer.toHexString(from.hashCode()), toName, Integer.toHexString(to.hashCode()));
-        } else {
-            logger.debug("Connected ports: {}/{} -> {}/{}",
-                    fromName, Integer.toHexString(from.hashCode()), toName, Integer.toHexString(to.hashCode()));
-        }
+        String operator = isBidirectional ? "<->" : "->";
+
+        logger.debug("Connected ports: {}:{} {} {}:{}",
+                fromName, Integer.toHexString(from.hashCode()), operator, toName, Integer.toHexString(to.hashCode()));
     }
 }

@@ -32,7 +32,7 @@ public class UiWatchdog implements
     public void serviceInit(ServiceInitEvent serviceInitEvent) {
         VaadinService service = serviceInitEvent.getSource();
 
-        logger.debug("register service {} {}", service, this);
+        logger.debug("register service {}", service);
 
         serviceUiMap.put(service, new HashSet<>());
 
@@ -76,9 +76,9 @@ public class UiWatchdog implements
 
     @Override
     public void run() {
-        serviceUiMap.forEach((service, uis) -> {
-            logger.debug("registry status: {} {}", service.getServiceName(), uis.toString());
-        });
+//        serviceUiMap.forEach((service, uis) -> {
+//            logger.debug("registry status: {} {}", service.getServiceName(), uis.toString());
+//        });
     }
 
     public static void setPortConnector(PortConnector portConnector) {

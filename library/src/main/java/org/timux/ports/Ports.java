@@ -75,14 +75,22 @@ public final class Ports {
     }
 
     public static boolean connectDirected(Object from, Object to, int portsOptions) {
+        return connectDirected(from, to, null, portsOptions);
+    }
+
+    public static boolean connectDirected(Object from, Object to, EventWrapper eventWrapper, int portsOptions) {
         try {
-            return connectDirectedInternal(from, to, portsOptions);
+            return connectDirectedInternal(from, to, eventWrapper, portsOptions);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     static boolean connectDirectedInternal(Object from, Object to, int portsOptions) throws IllegalAccessException {
+        return connectDirectedInternal(from, to, null, portsOptions);
+    }
+
+    static boolean connectDirectedInternal(Object from, Object to, EventWrapper eventWrapper, int portsOptions) throws IllegalAccessException {
         boolean portsWereConnected = false;
 
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
@@ -132,7 +140,7 @@ public final class Ports {
                     outPortField.set(from, event);
 
                     if (inPortHandlerMethod != null) {
-                        event.connect(inPortHandlerMethod, to);
+                        event.connect(inPortHandlerMethod, to, eventWrapper);
                         portsWereConnected = true;
                     }
 
@@ -167,7 +175,7 @@ public final class Ports {
                                 event.connect((Consumer) inPortHandlerField.get(to));
                                 portsWereConnected = true;
                             } else {
-                                event.connect(inPortHandlerMethod, to);
+                                event.connect(inPortHandlerMethod, to, eventWrapper);
                                 portsWereConnected = true;
                             }
                         }
