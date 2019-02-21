@@ -33,12 +33,12 @@ import java.util.function.Consumer;
  * @see Request
  *
  * @author Tim Rohlfs
- * @since 0.1
+ * @since 0.1.0
  */
 public class Event<T> {
 
     private List<Consumer<T>> ports = new ArrayList<>();
-    private Map<Method, Consumer<T>> portMethods = null;
+    private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
     private Consumer<T> singlePort = null;
     private Object owner;
     private String name;
@@ -83,9 +83,16 @@ public class Event<T> {
             portMethods = new HashMap<>();
         }
 
+        Map<Object, Consumer<T>> portOwners = portMethods.get(portMethod);
+
+        if (portOwners == null) {
+            portOwners = new HashMap<>();
+            portMethods.put(portMethod, portOwners);
+        }
+
         if (eventWrapper == null) {
-            portMethods.put(
-                    portMethod,
+            portOwners.put(
+                    methodOwner,
                     x -> {
                         try {
                             portMethod.invoke(methodOwner, x);
@@ -94,8 +101,8 @@ public class Event<T> {
                         }
                     });
         } else {
-            portMethods.put(
-                    portMethod,
+            portOwners.put(
+                    methodOwner,
                     x -> eventWrapper.execute(() -> {
                         try {
                             portMethod.invoke(methodOwner, x);
@@ -105,7 +112,7 @@ public class Event<T> {
                     }));
         }
 
-        connect(portMethods.get(portMethod));
+        connect(portOwners.get(methodOwner));
     }
 
     /**
@@ -139,8 +146,16 @@ public class Event<T> {
                 : null;
     }
 
-    protected void disconnect(Method portMethod) {
-        disconnect(portMethods.get(portMethod));
+    protected void disconnect(Method portMethod, Object methodOwner) {
+        Map<Object, Consumer<T>> portOwners = portMethods.get(portMethod);
+
+        disconnect(portOwners.get(methodOwner));
+
+        portOwners.remove(methodOwner);
+
+        if (portOwners.isEmpty()) {
+            portMethods.remove(portMethod);
+        }
     }
 
     /**

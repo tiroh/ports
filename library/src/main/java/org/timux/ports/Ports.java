@@ -264,7 +264,7 @@ public final class Ports {
                         Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
 
                         if (inPortHandlerField == null) {
-                            event.disconnect(inPortHandlerMethod);
+                            event.disconnect(inPortHandlerMethod, to);
                         } else {
                             event.disconnect(inPortHandlerField.get(to));
                         }

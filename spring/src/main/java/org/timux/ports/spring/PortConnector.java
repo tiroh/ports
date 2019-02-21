@@ -1,7 +1,6 @@
 package org.timux.ports.spring;
 
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,37 +174,30 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 continue;
             }
 
+            boolean a;
+            boolean b;
+
             if (isBeanScopeInUi == isScopeInUi) {
-                boolean a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                boolean b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-
-                if (a && b) {
-                    logConnection(bean, beanName, otherBean, otherBeanName, true);
-                } else if (a) {
-                    logConnection(bean, beanName, otherBean, otherBeanName, false);
-                } else if (b) {
-                    logConnection(otherBean, otherBeanName, bean, beanName, false);
-                }
+                a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             } else if (isBeanScopeInUi) {
-                if (Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
-                    logConnection(bean, beanName, otherBean, otherBeanName, false);
-                }
-
                 UI ui = beans.get(bean).getUi();
 
-                if (Ports.connectDirected(otherBean, bean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
-                    logConnection(otherBean, otherBeanName, bean, beanName, false);
-                }
+                a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(otherBean, bean, f -> ui.access(f::execute), PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             } else {
-                if (Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
-                    logConnection(otherBean, otherBeanName, bean, beanName, false);
-                }
-
                 UI ui = beans.get(otherBean).getUi();
 
-                if (Ports.connectDirected(bean, otherBean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS)) {
-                    logConnection(bean, beanName, otherBean, otherBeanName, false);
-                }
+                a = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(bean, otherBean, f -> ui.access(f::execute), PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+            }
+
+            if (a && b) {
+                logConnection(bean, beanName, otherBean, otherBeanName, true);
+            } else if (a) {
+                logConnection(bean, beanName, otherBean, otherBeanName, false);
+            } else if (b) {
+                logConnection(otherBean, otherBeanName, bean, beanName, false);
             }
         }
     }
