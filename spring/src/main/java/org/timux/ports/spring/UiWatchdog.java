@@ -1,11 +1,11 @@
 package org.timux.ports.spring;
 
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.ComponentEventListener;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.server.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -21,11 +21,9 @@ public class UiWatchdog implements
         SessionInitListener,
         SessionDestroyListener,
         UIInitListener,
-        Runnable
+        ComponentEventListener<DetachEvent>
 {
     private final static Logger logger = LoggerFactory.getLogger(UiWatchdog.class);
-
-    private Map<VaadinService, Set<UI>> serviceUiMap = new HashMap<>();
 
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -35,18 +33,11 @@ public class UiWatchdog implements
     public void serviceInit(ServiceInitEvent serviceInitEvent) {
         VaadinService service = serviceInitEvent.getSource();
 
-        logger.debug("register service {}", service);
-
-        synchronized (serviceUiMap) {
-            serviceUiMap.put(service, new HashSet<>());
-        }
+        logger.debug("init service {}", service);
 
         service.addSessionInitListener(this);
         service.addSessionDestroyListener(this);
-
-        // Functionality not implemented in current version.
-        // service.addUIInitListener(this);
-        // scheduler.scheduleAtFixedRate(this, 5, 5, TimeUnit.SECONDS);
+        service.addUIInitListener(this);
     }
 
     @Override
@@ -58,21 +49,13 @@ public class UiWatchdog implements
 
     @Override
     public void sessionDestroy(SessionDestroyEvent sessionDestroyEvent) {
-        logger.debug("destroy session {} of service {}",
+        logger.debug("unregister session {} of service {}",
                 sessionDestroyEvent.getSession().getPushId(),
                 sessionDestroyEvent.getSource().getServiceName());
 
         if (portConnector == null) {
             logger.error("cannot handle session destruction: no PortConnector has been configured");
             return;
-        }
-
-        Collection<UI> sessionUis = sessionDestroyEvent.getSession().getUIs();
-
-        synchronized (serviceUiMap) {
-            serviceUiMap.forEach((service, uis) -> {
-                uis.removeAll(sessionUis);
-            });
         }
 
         portConnector.onSessionDestroyed(sessionDestroyEvent.getSession());
@@ -85,18 +68,19 @@ public class UiWatchdog implements
                 uiInitEvent.getUI().getSession().getPushId(),
                 uiInitEvent.getSource().getServiceName());
 
-        synchronized (serviceUiMap) {
-            serviceUiMap.get(uiInitEvent.getSource()).add(uiInitEvent.getUI());
-        }
+        uiInitEvent.getUI().addDetachListener(this);
     }
 
     @Override
-    public void run() {
-        synchronized (serviceUiMap) {
-            serviceUiMap.forEach((service, uis) -> {
-                logger.debug("registry status: {} {}", service.getServiceName(), uis.toString());
-            });
+    public void onComponentEvent(DetachEvent detachEvent) {
+        logger.debug("unregister UI {} in session {}", detachEvent.getUI().getUIId(), detachEvent.getUI().getSession().getPushId());
+
+        if (portConnector == null) {
+            logger.error("cannot handle UI destruction: no PortConnector has been configured");
+            return;
         }
+
+        portConnector.onUiDestroyed(detachEvent.getUI());
     }
 
     public static void setPortConnector(PortConnector portConnector) {
