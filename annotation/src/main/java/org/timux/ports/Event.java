@@ -149,6 +149,10 @@ public class Event<T> {
     protected void disconnect(Method portMethod, Object methodOwner) {
         Map<Object, Consumer<T>> portOwners = portMethods.get(portMethod);
 
+        if (portOwners == null) {
+            return;
+        }
+
         disconnect(portOwners.get(methodOwner));
 
         portOwners.remove(methodOwner);

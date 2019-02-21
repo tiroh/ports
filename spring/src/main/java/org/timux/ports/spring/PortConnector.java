@@ -230,6 +230,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     }
 
     void onUiDestroyed(UI ui) {
+//        System.out.println(rootScope);
         Scope scope = findScope(rootScope, ui);
 
         if (scope == null) {
@@ -241,6 +242,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
         disconnectChildBeans(scope);
         scope.getParentScope().removeChildScope(ui);
+//        System.out.println(rootScope);
     }
 
     private void disconnectChildBeans(Scope scope) {
