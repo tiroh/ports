@@ -54,7 +54,7 @@ public class UiWatchdog implements
                 sessionDestroyEvent.getSource().getServiceName());
 
         if (portConnector == null) {
-            logger.warn("cannot handle session destruction: no PortConnector has been configured");
+            logger.error("cannot handle session destruction: no PortConnector has been configured");
             return;
         }
 
@@ -76,7 +76,7 @@ public class UiWatchdog implements
         logger.debug("unregister UI {} in session {}", detachEvent.getUI().getUIId(), detachEvent.getUI().getSession().getPushId());
 
         if (portConnector == null) {
-            logger.warn("cannot handle UI destruction: no PortConnector has been configured");
+            logger.error("cannot handle UI destruction: no PortConnector has been configured");
             return;
         }
 

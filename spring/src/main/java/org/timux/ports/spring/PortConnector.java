@@ -219,7 +219,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         Scope scope = findScope(rootScope, session);
 
         if (scope == null) {
-            logger.error("cannot handle session destruction: cannot find scope of session {}", session.getPushId());
+            logger.warn("cannot handle session destruction: cannot find scope of session {}", session.getPushId());
             return;
         }
 
@@ -234,7 +234,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         Scope scope = findScope(rootScope, ui);
 
         if (scope == null) {
-            logger.error("cannot handle UI destruction: cannot find scope of UI {}", ui.getUIId());
+            logger.warn("cannot handle UI destruction: cannot find scope of UI {}", ui.getUIId());
             return;
         }
 
