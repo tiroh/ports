@@ -1,4 +1,4 @@
-package org.timux.ports.spring;
+package org.timux.ports.vaadinspring;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;

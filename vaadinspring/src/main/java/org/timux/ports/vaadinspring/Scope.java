@@ -1,4 +1,4 @@
-package org.timux.ports.spring;
+package org.timux.ports.vaadinspring;
 
 import com.vaadin.flow.component.UI;
 import org.apache.commons.lang3.StringUtils;

@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>ports</artifactId>
         <groupId>org.timux.ports</groupId>
+        <artifactId>ports</artifactId>
         <version>0.3.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ports-spring</artifactId>
+    <artifactId>ports-vaadinspring</artifactId>
 
     <packaging>jar</packaging>
 

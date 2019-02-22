@@ -1,4 +1,4 @@
-package org.timux.ports.spring;
+package org.timux.ports.vaadinspring;
 
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.DetachEvent;

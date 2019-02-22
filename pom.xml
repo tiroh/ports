@@ -14,7 +14,7 @@
         <module>annotation</module>
         <module>library</module>
         <module>agent</module>
-        <module>spring</module>
+        <module>vaadinspring</module>
     </modules>
 
     <properties>
