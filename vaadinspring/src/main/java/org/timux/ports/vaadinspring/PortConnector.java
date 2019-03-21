@@ -184,12 +184,12 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 UI ui = beans.get(bean).getUi();
 
                 a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(otherBean, bean, f -> ui.access(f::execute), PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(otherBean, bean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             } else {
                 UI ui = beans.get(otherBean).getUi();
 
                 a = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(bean, otherBean, f -> ui.access(f::execute), PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(bean, otherBean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             }
 
             if (a && b) {
