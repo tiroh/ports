@@ -10,10 +10,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.stereotype.Component;
-import org.timux.ports.In;
-import org.timux.ports.Out;
-import org.timux.ports.Ports;
-import org.timux.ports.PortsOptions;
+import org.timux.ports.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -182,14 +179,16 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             } else if (isBeanScopeInUi) {
                 UI ui = beans.get(bean).getUi();
+                EventWrapper eventWrapper = createEventWrapper(ui);
 
                 a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(otherBean, bean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(otherBean, bean, eventWrapper, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             } else {
                 UI ui = beans.get(otherBean).getUi();
+                EventWrapper eventWrapper = createEventWrapper(ui);
 
                 a = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(bean, otherBean, f -> { ui.access(f::execute); ui.push(); }, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                b = Ports.connectDirected(bean, otherBean, eventWrapper, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
             }
 
             if (a && b) {
@@ -200,6 +199,20 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 logConnection(otherBean, otherBeanName, bean, beanName, false);
             }
         }
+    }
+
+    private EventWrapper createEventWrapper(UI ui) {
+        return
+                f -> {
+                    if (PortsPushMode.isManual) {
+                        ui.access(() -> {
+                            f.execute();
+                            ui.push();
+                        });
+                    } else {
+                        ui.access(f::execute);
+                    }
+                };
     }
 
     private void connectBeanToPushBroadcaster(Object bean, String beanName) {

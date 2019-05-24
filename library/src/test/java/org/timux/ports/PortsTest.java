@@ -26,6 +26,15 @@ public class PortsTest {
         }
     }
 
+    class C {
+
+        int data;
+
+        @In void in1(Integer data) {
+            this.data = data;
+        }
+    }
+
     @Test
     public void smokeTest() {
         A a = new A();
@@ -36,5 +45,52 @@ public class PortsTest {
         a.out1.trigger(3);
 
         Assert.assertThat(b.receivedData, IsEqual.equalTo(4.5));
+    }
+
+    @Test
+    public void multipleReceiversWithoutReconnection() {
+        A a = new A();
+        C c1 = new C();
+        C c2 = new C();
+
+        Ports.connect(a).and(c1);
+        Ports.connect(a).and(c2);
+
+        a.out1.trigger(3);
+
+        Assert.assertThat(c1.data, IsEqual.equalTo(3));
+        Assert.assertThat(c2.data, IsEqual.equalTo(0));
+    }
+
+    @Test
+    public void multipleReceiversWithReconnection() {
+        A a = new A();
+        C c1 = new C();
+        C c2 = new C();
+
+        Ports.connect(a).and(c1);
+        Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+
+        a.out1.trigger(3);
+
+        Assert.assertThat(c1.data, IsEqual.equalTo(3));
+        Assert.assertThat(c2.data, IsEqual.equalTo(c1.data));
+    }
+
+    @Test
+    public void disconnect() {
+        A a = new A();
+        C c1 = new C();
+        C c2 = new C();
+
+        Ports.connect(a).and(c1);
+        Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+
+        Ports.disconnect(a).and(c1);
+
+        a.out1.trigger(3);
+
+        Assert.assertThat(c1.data, IsEqual.equalTo(0));
+        Assert.assertThat(c2.data, IsEqual.equalTo(3));
     }
 }

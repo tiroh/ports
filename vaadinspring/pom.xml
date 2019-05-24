@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.timux.ports</groupId>
         <artifactId>ports</artifactId>
-        <version>0.3.1-SNAPSHOT</version>
+        <version>0.3.1</version>
     </parent>
 
     <artifactId>ports-vaadinspring</artifactId>
@@ -21,8 +21,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Dependencies -->
-        <spring.version>5.0.5.RELEASE</spring.version>
-        <vaadin.version>12.0.7</vaadin.version>
+        <spring.version>5.1.6.RELEASE</spring.version>
+        <vaadin.version>13.0.4</vaadin.version>
     </properties>
 
     <repositories>
