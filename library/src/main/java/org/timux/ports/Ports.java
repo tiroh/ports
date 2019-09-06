@@ -20,6 +20,7 @@ import org.timux.ports.agent.TransformingVisitor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,7 @@ public final class Ports {
 
     private static Map<Object, Method[]> methodCache = new HashMap<>();
 
-    private static boolean warningHasBeenIssued = false;
+    private static boolean isUninitializedWarningIssued = false;
 
 
 
@@ -112,8 +113,41 @@ public final class Ports {
             String outPortFieldType = e.getKey();
             Field outPortField = e.getValue();
 
+            if (outPortField.get(from) == null) {
+                /*
+                 * In this situation, it is most likely that the Java agent was not set up,
+                 * so we resort to reflection.
+                 */
+
+                warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
+
+                if (outPortField.getType() == Event.class) {
+                    Event event = new Event(outPortField.getName(), from);
+                    outPortField.set(from, event);
+                }
+
+                if (outPortField.getType() == Request.class) {
+                    Request request = new Request(outPortField.getName(), from);
+                    outPortField.set(from, request);
+                }
+            }
+
             Method inPortHandlerMethod = inPortHandlerMethodsByType.get(outPortFieldType);
             Field inPortField = inPortFieldsByType.get(outPortFieldType);
+
+            if (inPortField != null) {
+                if (inPortField.getType() == Queue.class) {
+                    if (inPortField.get(to) == null) {
+                        inPortField.set(to, new Queue());
+                    }
+                }
+
+                if (inPortField.getType() == Stack.class) {
+                    if (inPortField.get(to) == null) {
+                        inPortField.set(to, new Stack());
+                    }
+                }
+            }
 
             if (inPortHandlerMethod != null && inPortField != null) {
                 throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), outPortFieldType);
@@ -130,68 +164,31 @@ public final class Ports {
             if (outPortField.getType() == Event.class) {
                 Event event = (Event) outPortField.get(from);
 
-                if (event == null) {
-                    /*
-                     * In this situation, it is most likely that the Java agent was not set up,
-                     * so we resort to reflection.
-                     */
-
-                    warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
-
-                    event = new Event(outPortField.getName(), from);
-                    outPortField.set(from, event);
-
+                if (!event.isConnected()
+                        || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
+                        || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
+                {
                     if (inPortHandlerMethod != null) {
-                        event.connect(inPortHandlerMethod, to, eventWrapper);
-                        portsWereConnected = true;
+                        Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
+
+                        if (inPortHandlerField != null) {
+                            event.connect((Consumer) inPortHandlerField.get(to));
+                            portsWereConnected = true;
+                        } else {
+                            event.connect(inPortHandlerMethod, to, eventWrapper);
+                            portsWereConnected = true;
+                        }
                     }
 
                     if (inPortField != null) {
                         if (inPortField.getType() == Queue.class) {
-                            if (inPortField.get(to) == null) {
-                                inPortField.set(to, new Queue());
-                            }
-
                             event.connect((Queue) inPortField.get(to));
                             portsWereConnected = true;
                         }
 
                         if (inPortField.getType() == Stack.class) {
-                            if (inPortField.get(to) == null) {
-                                inPortField.set(to, new Stack());
-                            }
-
                             event.connect((Stack) inPortField.get(to));
                             portsWereConnected = true;
-                        }
-                    }
-                } else {
-                    if (!event.isConnected()
-                            || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
-                            || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
-                    {
-                        if (inPortHandlerMethod != null) {
-                            Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-
-                            if (inPortHandlerField != null) {
-                                event.connect((Consumer) inPortHandlerField.get(to));
-                                portsWereConnected = true;
-                            } else {
-                                event.connect(inPortHandlerMethod, to, eventWrapper);
-                                portsWereConnected = true;
-                            }
-                        }
-
-                        if (inPortField != null) {
-                            if (inPortField.getType() == Queue.class) {
-                                event.connect((Queue) inPortField.get(to));
-                                portsWereConnected = true;
-                            }
-
-                            if (inPortField.getType() == Stack.class) {
-                                event.connect((Stack) inPortField.get(to));
-                                portsWereConnected = true;
-                            }
                         }
                     }
                 }
@@ -200,30 +197,15 @@ public final class Ports {
             if (outPortField.getType() == Request.class) {
                 Request request = (Request) outPortField.get(from);
 
-                if (request == null) {
-                    /*
-                     * In this situation, it is most likely that the Java agent was not set up,
-                     * so we resort to reflection.
-                     */
+                if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
+                    Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
 
-                    warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
-
-                    request = new Request(outPortField.getName(), from);
-                    outPortField.set(from, request);
-
-                    request.connect(inPortHandlerMethod, to);
-                    portsWereConnected = true;
-                } else {
-                    if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
-                        Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-
-                        if (inPortHandlerField != null) {
-                            request.connect((Function) inPortHandlerField.get(to));
-                            portsWereConnected = true;
-                        } else {
-                            request.connect(inPortHandlerMethod, to);
-                            portsWereConnected = true;
-                        }
+                    if (inPortHandlerField != null) {
+                        request.connect((Function) inPortHandlerField.get(to));
+                        portsWereConnected = true;
+                    } else {
+                        request.connect(inPortHandlerMethod, to);
+                        portsWereConnected = true;
                     }
                 }
             }
@@ -327,16 +309,8 @@ public final class Ports {
                 continue;
             }
 
-//            String requestTypeString = Arrays.stream(method.getGenericParameterTypes())
-//                    .map(x -> x.getTypeName())
-//                    .reduce((r, x) -> r + "," + x)
-//                    .orElse("-")
-//                    + ", ";
-//
-//            addInPortHandlerMethodsTypeHierarchy(method.getReturnType(), requestTypeString, methodsByType);
-
             String typeString = Arrays.stream(method.getGenericParameterTypes())
-                    .map(x -> x.getTypeName())
+                    .map(Type::getTypeName)
                     .reduce((r, x) -> r + "," + x)
                     .orElse("-")
                     + ", " + method.getGenericReturnType().getTypeName();
@@ -350,20 +324,6 @@ public final class Ports {
 
         return methodsByType;
     }
-
-//    private static void addInPortHandlerMethodsTypeHierarchy(Class type, String requestTypeString, Map<String, Method> methodsByType) {
-//        Class parentType = type.getSuperclass();
-//
-//        String typeString = requestTypeString +
-//
-//        if (methodsByType.containsKey(typeString)) {
-//            throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), typeString);
-//        }
-//
-//        methodsByType.put(typeString, method);
-//
-//        addInPortHandlerMethodsTypeHierarchy(type.getSuperclass(), methodsByType);
-//    }
 
     private static Map<String, Field> getInPortHandlerFieldsByName(Object to) {
         Map<String, Field> handlersByName = new HashMap<>();
@@ -483,9 +443,9 @@ public final class Ports {
     }
 
     private static void warnAboutUninitializedPort(String port, String component) {
-        if (!warningHasBeenIssued) {
-            warningHasBeenIssued = true;
-            System.err.println(String.format("[ports] warning: uninitialized port detected, using fallback"));
+        if (!isUninitializedWarningIssued) {
+            isUninitializedWarningIssued = true;
+            System.err.println("[ports] warning: uninitialized port detected, using fallback");
         }
     }
 }
