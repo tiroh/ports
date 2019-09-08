@@ -64,13 +64,15 @@ public class Request<I, O> {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        connect(x -> {
+        Function<I, O> port = x -> {
             try {
                 return (O) portMethod.invoke(methodOwner, x);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
-        });
+        };
+
+        connect(port);
     }
 
     /**

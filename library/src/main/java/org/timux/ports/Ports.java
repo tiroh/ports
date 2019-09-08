@@ -99,6 +99,8 @@ public final class Ports {
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
         Map<String, Field> inPortHandlerFieldsByName = getInPortHandlerFieldsByName(to);
 
+        Async async = to.getClass().getDeclaredAnnotation(Async.class);
+
         Map<String, Field> outPortFieldsByType;
         Map<String, Field> inPortFieldsByType;
 
@@ -175,7 +177,7 @@ public final class Ports {
                             event.connect((Consumer) inPortHandlerField.get(to));
                             portsWereConnected = true;
                         } else {
-                            event.connect(inPortHandlerMethod, to, eventWrapper);
+                            event.connect(inPortHandlerMethod, to, eventWrapper, async != null, async != null ? async.multiplicity() : 0);
                             portsWereConnected = true;
                         }
                     }
@@ -447,5 +449,13 @@ public final class Ports {
             isUninitializedWarningIssued = true;
             System.err.println("[ports] warning: uninitialized port detected, using fallback");
         }
+    }
+
+    public static void shutdown() {
+        Threading.shutdown();
+    }
+
+    public static void kill() {
+        Threading.kill();
     }
 }

@@ -14,18 +14,24 @@ public class TestApplication {
         E e = new E();
         F f = new F();
         G g = new G();
+        H h = new H();
+        J j = new J();
 
         Ports.connect(a).and(b, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
         Ports.connect(c).and(d);
         Ports.connect(c).and(e, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
         Ports.connect(f).and(g, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
+        Ports.connect(h).and(j);
 
-        Ports.verify(a, b, c, d, e, f, g);
+        Ports.verify(a, b, c, d, e, f, g, h, j);
+
+        System.out.println(String.format("Main thread is %d.", Thread.currentThread().getId()));
 
         a.doWork();
         c.doStringWork();
         c.doIntWork();
         f.doWork();
+        h.doWork();
 
         Ports.disconnect(c).and(d);
         Ports.connect(c).and(e);
@@ -34,5 +40,7 @@ public class TestApplication {
 
         c.doStringWork();
         c.doIntWork();
+
+        Ports.shutdown();
     }
 }

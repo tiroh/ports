@@ -70,11 +70,11 @@ public class Event<T> {
                 : null;
     }
 
-    protected void connect(Method portMethod, Object methodOwner) {
-        connect(portMethod, methodOwner, null);
-    }
+//    protected void connect(Method portMethod, Object methodOwner) {
+//        connect(portMethod, methodOwner, null);
+//    }
 
-    protected void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
+    protected void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper, boolean isAsynchronous, int multiplicity) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -112,7 +112,11 @@ public class Event<T> {
                     }));
         }
 
-        connect(portOwners.get(methodOwner));
+        if ( ! isAsynchronous) {
+            connect(portOwners.get(methodOwner));
+        } else {
+            connect(Threading.execute(methodOwner, portOwners.get(methodOwner), multiplicity));
+        }
     }
 
     /**
