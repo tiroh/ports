@@ -9,5 +9,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Async {
 
+    int SL_CLASS = 1;
+    int SL_PORT = 2;
+
     int multiplicity() default 1;
+    int syncLevel() default SL_CLASS;
 }

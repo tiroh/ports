@@ -6,43 +6,71 @@ import java.util.function.Consumer;
 
 class ThreadQueue {
 
-    private final Consumer port;
-    private final Deque queue = new ArrayDeque();
+    private final Object portOwner;
+    private final int syncLevel;
+    private final Deque<DataQueueEntry> dataQueue = new ArrayDeque<>();
     private final Deque<PortsThread> threadStack = new ArrayDeque<>();
     private boolean isShutdown = false;
+
+    private static class DataQueueEntry {
+
+        Consumer port;
+        Object payload;
+
+        public DataQueueEntry(Object payload, Consumer port) {
+            this.port = port;
+            this.payload = payload;
+        }
+    }
 
     private class PortsThread extends Thread {
 
         @Override
         public void run() {
             while (!isShutdown) {
-                Object payload;
+                DataQueueEntry dataQueueEntry;
 
-                synchronized (queue) {
-                    while (queue.isEmpty()) {
+                synchronized (dataQueue) {
+                    while (dataQueue.isEmpty()) {
                         try {
-                            queue.wait();
+                            dataQueue.wait();
                         } catch (InterruptedException e) {
-                            if (isShutdown) {
-                                return;
-                            }
+                            ;
+                        }
+
+                        if (isShutdown) {
+                            return;
                         }
                     }
 
-                    if (isShutdown) {
-                        return;
-                    }
-
-                    payload = queue.remove();
+                    dataQueueEntry = dataQueue.remove();
                 }
 
-                port.accept(payload);
+                switch (syncLevel) {
+                    case Async.SL_CLASS:
+                        synchronized (portOwner) {
+                            dataQueueEntry.port.accept(dataQueueEntry.payload);
+                        }
+
+                        break;
+
+                    case Async.SL_PORT:
+                        synchronized (dataQueueEntry.port) {
+                            dataQueueEntry.port.accept(dataQueueEntry.payload);
+                        }
+
+                        break;
+
+                    default:
+                        throw new IllegalStateException("unhandled sync level: " + syncLevel);
+                }
             }
         }
     }
 
-    ThreadQueue(Consumer port, int multiplicity) {
-        this.port = port;
+    ThreadQueue(Object portOwner, int multiplicity, int syncLevel) {
+        this.portOwner = portOwner;
+        this.syncLevel = syncLevel;
 
         for (int i = 0; i < multiplicity; i++) {
             threadStack.push(new PortsThread());
@@ -50,17 +78,17 @@ class ThreadQueue {
         }
     }
 
-    void enqueue(Object data) {
-        synchronized (queue) {
-            queue.add(data);
-            queue.notify();
+    void enqueue(Object data, Consumer port) {
+        synchronized (dataQueue) {
+            dataQueue.add(new DataQueueEntry(data, port));
+            dataQueue.notify();
         }
     }
 
     void shutdown() {
-        synchronized (queue) {
+        synchronized (dataQueue) {
             isShutdown = true;
-            queue.notifyAll();
+            dataQueue.notifyAll();
         }
     }
 
