@@ -99,7 +99,8 @@ public final class Ports {
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
         Map<String, Field> inPortHandlerFieldsByName = getInPortHandlerFieldsByName(to);
 
-        Async async = to.getClass().getDeclaredAnnotation(Async.class);
+        Async asyncFrom = from.getClass().getDeclaredAnnotation(Async.class);
+        Async asyncTo = to.getClass().getDeclaredAnnotation(Async.class);
 
         Map<String, Field> outPortFieldsByType;
         Map<String, Field> inPortFieldsByType;
@@ -177,7 +178,7 @@ public final class Ports {
                             event.connect((Consumer) inPortHandlerField.get(to));
                             portsWereConnected = true;
                         } else {
-                            event.connect(inPortHandlerMethod, to, eventWrapper, async);
+                            event.connect(inPortHandlerMethod, to, eventWrapper, asyncFrom, asyncTo);
                             portsWereConnected = true;
                         }
                     }

@@ -4,6 +4,8 @@ import org.hamcrest.core.IsEqual;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Random;
+
 public class PortsTest {
 
     class A {
@@ -32,6 +34,37 @@ public class PortsTest {
 
         @In void in1(Integer data) {
             this.data = data;
+        }
+    }
+
+    class D {
+
+        static final int NUMBER = 20000000;
+
+        int data = 0;
+
+        @Out Event<Integer> intEvent;
+
+        @In void onResponseEvent(Integer data) {
+            this.data += data;
+        }
+
+        void execute() {
+            for (int i = 0; i < NUMBER; i++) {
+                intEvent.trigger(-1);
+            }
+        }
+    }
+
+    @Async(multiplicity = 100, syncLevel = Async.SL_PORT)
+    class E {
+
+        Random rnd = new Random();
+
+        @Out Event<Integer> responseEvent;
+
+        @In void onIntEvent(Integer data) {
+            responseEvent.trigger(data + 2);
         }
     }
 
@@ -92,5 +125,23 @@ public class PortsTest {
 
         Assert.assertThat(c1.data, IsEqual.equalTo(0));
         Assert.assertThat(c2.data, IsEqual.equalTo(3));
+    }
+
+    @Test
+    public void asynchronousEvents() {
+        D d = new D();
+        E e = new E();
+
+        Ports.connect(d).and(e);
+
+        d.execute();
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+
+        Assert.assertThat(d.data, IsEqual.equalTo(D.NUMBER));
     }
 }

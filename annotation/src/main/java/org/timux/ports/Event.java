@@ -78,7 +78,8 @@ public class Event<T> {
             Method portMethod,
             Object methodOwner,
             EventWrapper eventWrapper,
-            Async async)
+            Async asyncFrom,
+            Async asyncTo)
     {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
@@ -95,32 +96,69 @@ public class Event<T> {
             portMethods.put(portMethod, portOwners);
         }
 
+        final boolean isSenderSynchronous = asyncFrom == null;
+        final boolean isReceiverSynchronous = asyncTo == null;
+
+        final boolean isSynchronizationRequired = ! isSenderSynchronous && isReceiverSynchronous;
+
         if (eventWrapper == null) {
-            portOwners.put(
-                    methodOwner,
-                    x -> {
-                        try {
-                            portMethod.invoke(methodOwner, x);
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+            if ( ! isSynchronizationRequired) {
+                portOwners.put(
+                        methodOwner,
+                        x -> {
+                            try {
+                                portMethod.invoke(methodOwner, x);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            } else {
+                portOwners.put(
+                        methodOwner,
+                        x -> {
+                            try {
+//                                synchronized (methodOwner) {
+                                    portMethod.invoke(methodOwner, x);
+//                                }
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            }
         } else {
-            portOwners.put(
-                    methodOwner,
-                    x -> eventWrapper.execute(() -> {
-                        try {
-                            portMethod.invoke(methodOwner, x);
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }));
+            if ( ! isSynchronizationRequired) {
+                portOwners.put(
+                        methodOwner,
+                        x -> eventWrapper.execute(() -> {
+                            try {
+                                portMethod.invoke(methodOwner, x);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }));
+            } else {
+                portOwners.put(
+                        methodOwner,
+                        x -> eventWrapper.execute(() -> {
+                            try {
+                                synchronized (methodOwner) {
+                                    portMethod.invoke(methodOwner, x);
+                                }
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }));
+            }
         }
 
-        if (async == null) {
+        if (isReceiverSynchronous) {
             connect(portOwners.get(methodOwner));
         } else {
-            connect(Threading.execute(methodOwner, portOwners.get(methodOwner), async.multiplicity(), async.syncLevel()));
+            connect(Threading.execute(
+                    methodOwner,
+                    portOwners.get(methodOwner),
+                    asyncTo.multiplicity(),
+                    asyncTo.syncLevel()));
         }
     }
 

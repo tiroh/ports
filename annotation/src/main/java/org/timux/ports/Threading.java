@@ -6,17 +6,17 @@ import java.util.function.Consumer;
 
 class Threading {
 
-    private static Map<Object, ThreadQueue> queues = new HashMap<>();
+    private static Map<Object, ThreadQueue> queues = new HashMap<>(); // maps a receiver to its event port queue
 
-    static <T> Consumer<T> execute(Object component, Consumer<T> port, int multiplicity, int syncLevel) {
-        ThreadQueue threadQueue = queues.get(component);
+    static <T> Consumer<T> execute(Object portOwner, Consumer<T> port, int multiplicity, int syncLevel) {
+        ThreadQueue threadQueue = queues.get(portOwner);
 
         if (threadQueue == null) {
-            threadQueue = new ThreadQueue(component, multiplicity, syncLevel);
-            queues.put(component, threadQueue);
+            threadQueue = new ThreadQueue(portOwner, multiplicity, syncLevel);
+            queues.put(portOwner, threadQueue);
         }
 
-        final ThreadQueue finalThreadQueue = queues.get(component);
+        final ThreadQueue finalThreadQueue = threadQueue;
 
         return x -> finalThreadQueue.enqueue(x, port);
     }

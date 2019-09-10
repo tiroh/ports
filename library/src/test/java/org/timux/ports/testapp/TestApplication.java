@@ -41,6 +41,8 @@ public class TestApplication {
         c.doStringWork();
         c.doIntWork();
 
+        h.waitForEvents();
+
         Ports.shutdown();
     }
 }

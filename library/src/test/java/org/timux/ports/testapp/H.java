@@ -19,7 +19,7 @@ public class H {
     private int eventCounter = 0;
 
     @In
-    private synchronized void onDoneEvent(Void nothing) {
+    private void onDoneEvent(Void nothing) {
         System.out.println("Received done event.");
         eventCounter++;
     }
