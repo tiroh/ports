@@ -1,4 +1,4 @@
-package org.timux.ports.testapp;
+package org.timux.ports.testapp.component;
 
 import org.timux.ports.Event;
 import org.timux.ports.In;

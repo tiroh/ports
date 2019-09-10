@@ -29,7 +29,7 @@ import java.util.function.Function;
  * @see Event
  *
  * @author Tim Rohlfs
- * @since 0.1
+ * @since 0.1.0
  */
 public class Request<I, O> {
 

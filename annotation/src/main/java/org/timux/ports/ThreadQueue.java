@@ -4,6 +4,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
 
+/**
+ * @author Tim Rohlfs
+ * @since 0.4.0
+ */
 class ThreadQueue {
 
     private final Object portOwner;
@@ -43,18 +47,22 @@ class ThreadQueue {
                         }
                     }
 
-                    dataQueueEntry = dataQueue.remove();
+                    dataQueueEntry = dataQueue.poll();
                 }
 
                 switch (syncLevel) {
-                    case Async.SL_CLASS:
+                    case SyncLevel.NONE:
+                        dataQueueEntry.port.accept(dataQueueEntry.payload);
+                        break;
+
+                    case SyncLevel.COMPONENT:
                         synchronized (portOwner) {
                             dataQueueEntry.port.accept(dataQueueEntry.payload);
                         }
 
                         break;
 
-                    case Async.SL_PORT:
+                    case SyncLevel.PORT:
                         synchronized (dataQueueEntry.port) {
                             dataQueueEntry.port.accept(dataQueueEntry.payload);
                         }

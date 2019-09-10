@@ -70,10 +70,6 @@ public class Event<T> {
                 : null;
     }
 
-//    protected void connect(Method portMethod, Object methodOwner) {
-//        connect(portMethod, methodOwner, null);
-//    }
-
     protected void connect(
             Method portMethod,
             Object methodOwner,
@@ -113,13 +109,14 @@ public class Event<T> {
                             }
                         });
             } else {
+                System.out.println("SYNC: " + portMethod);
                 portOwners.put(
                         methodOwner,
                         x -> {
                             try {
-//                                synchronized (methodOwner) {
+                                synchronized (methodOwner) {
                                     portMethod.invoke(methodOwner, x);
-//                                }
+                                }
                             } catch (IllegalAccessException | InvocationTargetException e) {
                                 throw new RuntimeException(e);
                             }

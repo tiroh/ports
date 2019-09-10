@@ -4,7 +4,6 @@ import org.hamcrest.core.IsEqual;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Random;
 
 public class PortsTest {
 
@@ -42,11 +41,17 @@ public class PortsTest {
         static final int NUMBER = 20000000;
 
         int data = 0;
+        int tmp = 0;
 
         @Out Event<Integer> intEvent;
 
         @In void onResponseEvent(Integer data) {
+            // Do some complicated stuff in order to provoke race conditions.
+            tmp = data;
+            this.data += 5;
+            tmp += 5;
             this.data += data;
+            this.data -= tmp - data;
         }
 
         void execute() {
@@ -56,10 +61,8 @@ public class PortsTest {
         }
     }
 
-    @Async(multiplicity = 100, syncLevel = Async.SL_PORT)
+    @Async(multiplicity = 100, syncLevel = SyncLevel.NONE)
     class E {
-
-        Random rnd = new Random();
 
         @Out Event<Integer> responseEvent;
 
@@ -128,16 +131,16 @@ public class PortsTest {
     }
 
     @Test
-    public void asynchronousEvents() {
+    public void asynchronousSenderShouldNotCauseRaceConditionsInSynchronousReceiver() {
         D d = new D();
         E e = new E();
 
         Ports.connect(d).and(e);
 
-        d.execute();
+        new Thread(d::execute).start();
 
         try {
-            Thread.sleep(1000);
+            Thread.sleep(60000);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }

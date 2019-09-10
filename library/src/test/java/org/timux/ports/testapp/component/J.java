@@ -1,14 +1,12 @@
-package org.timux.ports.testapp;
+package org.timux.ports.testapp.component;
 
 import org.timux.ports.Async;
 import org.timux.ports.Event;
 import org.timux.ports.In;
 import org.timux.ports.Out;
+import org.timux.ports.SyncLevel;
 
-import static org.timux.ports.Async.SL_CLASS;
-import static org.timux.ports.Async.SL_PORT;
-
-@Async(multiplicity = 2, syncLevel = SL_PORT)
+@Async(multiplicity = 2, syncLevel = SyncLevel.PORT)
 public class J {
 
     @Out

@@ -17,6 +17,10 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author Tim Rohlfs
+ * @since 0.3.0
+ */
 @Component
 public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFactoryPostProcessor {
 
