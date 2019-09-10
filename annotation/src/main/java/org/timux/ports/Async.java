@@ -20,16 +20,16 @@ public @interface Async {
 
     /**
      * Defines how many concurrent signals the component shall be able to handle.
-     * This setting only has a real effect if {@link Async#syncLevel()} is set
+     * This setting has a real effect only if {@link Async#syncLevel()} is set
      * to something different than {@link SyncLevel#COMPONENT}. However, be VERY careful
      * with that setting (see also {@link SyncLevel}).
      */
     int multiplicity() default 1;
 
     /**
-     * Defines the synchronization level of the component. It is strongly recommended to
-     * always use the default setting, which is {@link SyncLevel#COMPONENT}.
-     * See {@link SyncLevel} for more information.
+     * Defines the synchronization level of the component, as defined in {@link SyncLevel}.
+     * It is strongly recommended to always use the default setting, which is
+     * {@link SyncLevel#COMPONENT}. See {@link SyncLevel} for more information.
      */
     int syncLevel() default SyncLevel.COMPONENT;
 }

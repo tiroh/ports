@@ -178,7 +178,7 @@ public final class Ports {
                             event.connect((Consumer) inPortHandlerField.get(to));
                             portsWereConnected = true;
                         } else {
-                            event.connect(inPortHandlerMethod, to, eventWrapper, asyncFrom, asyncTo);
+                            event.connect(inPortHandlerMethod, to, eventWrapper, asyncTo);
                             portsWereConnected = true;
                         }
                     }

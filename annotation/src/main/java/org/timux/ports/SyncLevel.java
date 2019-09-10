@@ -3,7 +3,8 @@ package org.timux.ports;
 /**
  * Defines constants for the synchronization level of asynchronous components. The
  * synchronization level determines how an asynchronous component handles concurrent
- * IN port signals.
+ * IN port signals. The possible values are {@link SyncLevel#NONE},
+ * {@link SyncLevel#COMPONENT} (default), and {@link SyncLevel#PORT}.
  *
  * @see Async
  *
@@ -13,7 +14,7 @@ package org.timux.ports;
 public class SyncLevel {
 
     /**
-     * Disables synchronization. Do NOT do this except you know exactly what you are doing.
+     * Disables synchronization. DO NOT do this except you know exactly what you are doing.
      * In particular, the component must not manipulate any state in its port handlers.
      */
     public final static int NONE = 0;

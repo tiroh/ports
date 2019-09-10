@@ -20,6 +20,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import java.io.FileOutputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -84,13 +85,13 @@ class Transformer implements ClassFileTransformer {
 
             final byte[] newClassBytes = cw.toByteArray();
 
-//            if (className.contains("service")) {
-//                try (FileOutputStream fos = new FileOutputStream(String.format("%s.class", className.substring(className.lastIndexOf('/') + 1)))) {
-//                    fos.write(newClassBytes);
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
+            if (className.contains("timux")) {
+                try (FileOutputStream fos = new FileOutputStream(String.format("%s.class", className.substring(className.lastIndexOf('/') + 1)))) {
+                    fos.write(newClassBytes);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
 
             return newClassBytes;
         } catch (Throwable e) {

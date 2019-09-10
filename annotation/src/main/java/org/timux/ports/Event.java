@@ -74,7 +74,6 @@ public class Event<T> {
             Method portMethod,
             Object methodOwner,
             EventWrapper eventWrapper,
-            Async asyncFrom,
             Async asyncTo)
     {
         if (portMethod == null) {
@@ -92,24 +91,10 @@ public class Event<T> {
             portMethods.put(portMethod, portOwners);
         }
 
-        final boolean isSenderSynchronous = asyncFrom == null;
         final boolean isReceiverSynchronous = asyncTo == null;
 
-        final boolean isSynchronizationRequired = ! isSenderSynchronous && isReceiverSynchronous;
-
         if (eventWrapper == null) {
-            if ( ! isSynchronizationRequired) {
-                portOwners.put(
-                        methodOwner,
-                        x -> {
-                            try {
-                                portMethod.invoke(methodOwner, x);
-                            } catch (IllegalAccessException | InvocationTargetException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-            } else {
-                System.out.println("SYNC: " + portMethod);
+            if (isReceiverSynchronous) {
                 portOwners.put(
                         methodOwner,
                         x -> {
@@ -121,14 +106,26 @@ public class Event<T> {
                                 throw new RuntimeException(e);
                             }
                         });
+            } else {
+                portOwners.put(
+                        methodOwner,
+                        x -> {
+                            try {
+                                portMethod.invoke(methodOwner, x);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
             }
         } else {
-            if ( ! isSynchronizationRequired) {
+            if (isReceiverSynchronous) {
                 portOwners.put(
                         methodOwner,
                         x -> eventWrapper.execute(() -> {
                             try {
-                                portMethod.invoke(methodOwner, x);
+                                synchronized (methodOwner) {
+                                    portMethod.invoke(methodOwner, x);
+                                }
                             } catch (IllegalAccessException | InvocationTargetException e) {
                                 throw new RuntimeException(e);
                             }
@@ -138,9 +135,7 @@ public class Event<T> {
                         methodOwner,
                         x -> eventWrapper.execute(() -> {
                             try {
-                                synchronized (methodOwner) {
-                                    portMethod.invoke(methodOwner, x);
-                                }
+                                portMethod.invoke(methodOwner, x);
                             } catch (IllegalAccessException | InvocationTargetException e) {
                                 throw new RuntimeException(e);
                             }
