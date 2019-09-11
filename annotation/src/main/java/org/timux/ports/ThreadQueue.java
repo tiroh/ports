@@ -18,11 +18,11 @@ class ThreadQueue {
 
     private static class DataQueueEntry {
 
-        Consumer port;
+        Consumer eventPort;
         Object payload;
 
-        public DataQueueEntry(Object payload, Consumer port) {
-            this.port = port;
+        DataQueueEntry(Object payload, Consumer eventPort) {
+            this.eventPort = eventPort;
             this.payload = payload;
         }
     }
@@ -52,19 +52,19 @@ class ThreadQueue {
 
                 switch (syncLevel) {
                     case SyncLevel.NONE:
-                        dataQueueEntry.port.accept(dataQueueEntry.payload);
+                        dataQueueEntry.eventPort.accept(dataQueueEntry.payload);
                         break;
 
                     case SyncLevel.COMPONENT:
                         synchronized (portOwner) {
-                            dataQueueEntry.port.accept(dataQueueEntry.payload);
+                            dataQueueEntry.eventPort.accept(dataQueueEntry.payload);
                         }
 
                         break;
 
                     case SyncLevel.PORT:
-                        synchronized (dataQueueEntry.port) {
-                            dataQueueEntry.port.accept(dataQueueEntry.payload);
+                        synchronized (dataQueueEntry.eventPort) {
+                            dataQueueEntry.eventPort.accept(dataQueueEntry.payload);
                         }
 
                         break;

@@ -207,7 +207,7 @@ public final class Ports {
                         request.connect((Function) inPortHandlerField.get(to));
                         portsWereConnected = true;
                     } else {
-                        request.connect(inPortHandlerMethod, to);
+                        request.connect(inPortHandlerMethod, to, asyncTo);
                         portsWereConnected = true;
                     }
                 }

@@ -12,7 +12,12 @@ class Threading {
 
     private static Map<Object, ThreadQueue> queues = new HashMap<>(); // maps a receiver to its event port queue
 
-    static <T> Consumer<T> execute(Object portOwner, Consumer<T> port, int multiplicity, int syncLevel) {
+    static <T> Consumer<T> enqueueEvent(Object portOwner, Consumer<T> port, int multiplicity, int syncLevel) {
+        ThreadQueue threadQueue = getQueue(portOwner, multiplicity, syncLevel);
+        return x -> threadQueue.enqueue(x, port);
+    }
+
+    private static <T> ThreadQueue getQueue(Object portOwner, int multiplicity, int syncLevel) {
         ThreadQueue threadQueue = queues.get(portOwner);
 
         if (threadQueue == null) {
@@ -20,9 +25,7 @@ class Threading {
             queues.put(portOwner, threadQueue);
         }
 
-        final ThreadQueue finalThreadQueue = threadQueue;
-
-        return x -> finalThreadQueue.enqueue(x, port);
+        return threadQueue;
     }
 
     static void shutdown() {

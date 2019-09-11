@@ -59,14 +59,18 @@ public class Request<I, O> {
         this.port = port;
     }
 
-    protected void connect(Method portMethod, Object methodOwner) {
+    protected void connect(Method portMethod, Object methodOwner, Async asyncTo) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
+        final boolean isReceiverSynchronous = asyncTo == null;
+
         Function<I, O> port = x -> {
             try {
-                return (O) portMethod.invoke(methodOwner, x);
+                synchronized (methodOwner) { // TODO this does not work if the sync level of the receiver is not COMPONENT
+                    return (O) portMethod.invoke(methodOwner, x);
+                }
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }

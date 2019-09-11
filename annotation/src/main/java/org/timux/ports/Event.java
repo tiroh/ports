@@ -146,7 +146,7 @@ public class Event<T> {
         if (isReceiverSynchronous) {
             connect(portOwners.get(methodOwner));
         } else {
-            connect(Threading.execute(
+            connect(Threading.enqueueEvent(
                     methodOwner,
                     portOwners.get(methodOwner),
                     asyncTo.multiplicity(),
