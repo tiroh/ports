@@ -336,7 +336,7 @@ public final class Ports {
         for (Field field : toFields) {
             final String fieldName = field.getName();
 
-            if (fieldName.startsWith(TransformingVisitor.HANDLER_PREFIX) && fieldName.endsWith(flimflam)) {
+            if (fieldName.startsWith(TransformingVisitor.HANDLER_PREFIX_NOT_SYNCHRONIZED) && fieldName.endsWith(flimflam)) {
                 int endOfNameIndex = fieldName.lastIndexOf('_');
 
                 if (endOfNameIndex < 0) {
@@ -358,7 +358,7 @@ public final class Ports {
                     }
                 }
 
-                handlersByName.put(fieldName.substring(TransformingVisitor.HANDLER_PREFIX.length(), endOfNameIndex), field);
+                handlersByName.put(fieldName.substring(TransformingVisitor.HANDLER_PREFIX_NOT_SYNCHRONIZED.length(), endOfNameIndex), field);
             }
         }
 

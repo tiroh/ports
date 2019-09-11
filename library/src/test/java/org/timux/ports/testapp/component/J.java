@@ -38,4 +38,10 @@ public class J {
         System.out.println(String.format("Received request with %d in instance %s, thread %d.", data, this, Thread.currentThread().getId()));
         return data + 1;
     }
+
+    public void test(Double data) {
+        synchronized (this) {
+            this.onDoubleEvent(data);
+        }
+    }
 }

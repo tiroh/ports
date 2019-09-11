@@ -31,7 +31,8 @@ import static org.timux.ports.agent.VisitorSettings.*;
 
 public class TransformingVisitor extends ClassVisitor {
 
-    public final static String HANDLER_PREFIX = "__handler_";
+    public final static String HANDLER_PREFIX_NOT_SYNCHRONIZED = "__async_handler_";
+    public final static String HANDLER_PREFIX_SYNCHRONIZED = "__sync_handler_";
 
     private final static String EVENT_TYPE = getDescriptor(Event.class);
     private final static String REQUEST_TYPE = getDescriptor(Request.class);
@@ -40,6 +41,7 @@ public class TransformingVisitor extends ClassVisitor {
     private final static String STACK_TYPE = getDescriptor(Stack.class);
 
     private final String INIT_METHOD_NAME;
+    private final String SYNC_HANDLER_FIELD_METHOD_NAME;
     private final String INITIALIZED_FLAG_NAME;
 
     private final String FLIMFLAM;
@@ -56,6 +58,12 @@ public class TransformingVisitor extends ClassVisitor {
     private Set<FieldInfo> inFieldsToInitialize = new LinkedHashSet<>();
 
     private Set<HandlerInfo> handlers = new HashSet<>();
+
+    private enum HandlerFieldType {
+
+        SYNCHRONIZED,
+        NOT_SYNCHRONIZED
+    }
 
     private class FVisitor extends FieldVisitor {
 
@@ -154,6 +162,7 @@ public class TransformingVisitor extends ClassVisitor {
         FLIMFLAM = String.format("%016x", random.nextLong());
 
         INIT_METHOD_NAME = "__init_" + FLIMFLAM;
+        SYNC_HANDLER_FIELD_METHOD_NAME = "__handle_event_sync_%s_" + FLIMFLAM;
         INITIALIZED_FLAG_NAME = "__initialized_" + FLIMFLAM;
     }
 
@@ -192,10 +201,9 @@ public class TransformingVisitor extends ClassVisitor {
 
     @Override
     public void visitEnd() {
-//        if (!outFieldsToInitialize.isEmpty() || !handlers.isEmpty()) {
-            insertHandlerFields();
-            insertInitializeMethod(INIT_METHOD_NAME);
-//        }
+        insertHandlerFields();
+        insertInitializeMethod();
+        insertSynchronizedEventHandlerMethods();
 
         super.visitEnd();
     }
@@ -206,7 +214,15 @@ public class TransformingVisitor extends ClassVisitor {
         for (HandlerInfo handlerInfo : handlers) {
             super.visitField(
                     Opcodes.ACC_PRIVATE,
-                    getHandlerField(handlerInfo.getName()),
+                    getHandlerField(handlerInfo.getName(), HandlerFieldType.NOT_SYNCHRONIZED),
+                    handlerInfo.hasNonVoidReturnType() ? "Ljava/util/function/Function;" : "Ljava/util/function/Consumer;",
+                    null,
+                    null)
+                    .visitEnd();
+
+            super.visitField(
+                    Opcodes.ACC_PRIVATE,
+                    getHandlerField(handlerInfo.getName(), HandlerFieldType.SYNCHRONIZED),
                     handlerInfo.hasNonVoidReturnType() ? "Ljava/util/function/Function;" : "Ljava/util/function/Consumer;",
                     null,
                     null)
@@ -214,8 +230,8 @@ public class TransformingVisitor extends ClassVisitor {
         }
     }
 
-    private void insertInitializeMethod(String methodName) {
-        MethodVisitor v = super.visitMethod(Opcodes.ACC_PRIVATE, methodName, "()V", null, null);
+    private void insertInitializeMethod() {
+        MethodVisitor v = super.visitMethod(Opcodes.ACC_PRIVATE, INIT_METHOD_NAME, "()V", null, null);
 
         Label endLabel = new Label();
 
@@ -230,6 +246,59 @@ public class TransformingVisitor extends ClassVisitor {
 
         v.visitMaxs(8, 8);
         v.visitEnd();
+    }
+
+    private void insertSynchronizedEventHandlerMethods() {
+        for (HandlerInfo handlerInfo : handlers) {
+            MethodVisitor v = super.visitMethod(
+                    Opcodes.ACC_PUBLIC,
+                    getSynchronizedEventHandlerMethod(handlerInfo.getName()),
+                    handlerInfo.getHandlerDescriptor(),
+                    null,
+                    null);
+
+            v.visitVarInsn(Opcodes.ALOAD, 0);
+            v.visitInsn(Opcodes.DUP);
+            v.visitVarInsn(Opcodes.ASTORE, 2);
+            v.visitInsn(Opcodes.MONITORENTER);
+
+            Label startTryLabel = new Label();
+            Label endTryLabel = new Label();
+            Label catchLabel = new Label();
+
+            v.visitTryCatchBlock(startTryLabel, catchLabel, catchLabel, "java/lang/Exception");
+
+            v.visitLabel(startTryLabel);
+
+            v.visitVarInsn(Opcodes.ALOAD, 0);
+            v.visitVarInsn(Opcodes.ALOAD, 1);
+            v.visitMethodInsn(Opcodes.INVOKESPECIAL, currentClassName, handlerInfo.getName(), handlerInfo.getHandlerDescriptor(), false);
+
+            v.visitVarInsn(Opcodes.ALOAD, 2);
+            v.visitInsn(Opcodes.MONITOREXIT);
+
+            v.visitJumpInsn(Opcodes.GOTO, endTryLabel);
+
+            v.visitLabel(catchLabel);
+
+            v.visitVarInsn(Opcodes.ASTORE, 3);
+            v.visitVarInsn(Opcodes.ALOAD, 2);
+            v.visitInsn(Opcodes.MONITOREXIT);
+
+            v.visitVarInsn(Opcodes.ALOAD, 3);
+            v.visitInsn(Opcodes.ATHROW);
+
+            v.visitLabel(endTryLabel);
+
+            if (handlerInfo.hasNonVoidReturnType()) {
+                v.visitInsn(Opcodes.ARETURN);
+            } else {
+                v.visitInsn(Opcodes.RETURN);
+            }
+
+            v.visitMaxs(8, 8);
+            v.visitEnd();
+        }
     }
 
     private void insertInitializeCheck(MethodVisitor v, Label label) {
@@ -346,19 +415,19 @@ public class TransformingVisitor extends ClassVisitor {
     }
 
     private void insertHandlerFieldInitialization(MethodVisitor v) {
+        Handle bootstrapMethod = new Handle(
+                Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/LambdaMetafactory",
+                "metafactory",
+                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;"
+                        + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
+                        + "Ljava/lang/invoke/CallSite;");
+
         for (HandlerInfo handlerInfo : handlers) {
             v.visitVarInsn(Opcodes.ALOAD, 0);
             v.visitVarInsn(Opcodes.ALOAD, 0);
 
-            Handle bootstrapMethod = new Handle(
-                    Opcodes.H_INVOKESTATIC,
-                    "java/lang/invoke/LambdaMetafactory",
-                    "metafactory",
-                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;"
-                            + "Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)"
-                            + "Ljava/lang/invoke/CallSite;");
-
-            Handle handlerMethod = new Handle(
+            Handle asyncHandlerMethod = new Handle(
                     Opcodes.H_INVOKEVIRTUAL,
                     currentClassName,
                     handlerInfo.getName(),
@@ -369,18 +438,49 @@ public class TransformingVisitor extends ClassVisitor {
                     String.format("(L%s;)L%s;", currentClassName, handlerInfo.hasNonVoidReturnType() ? "java/util/function/Function" : "java/util/function/Consumer"),
                     bootstrapMethod,
                     Type.getType("(Ljava/lang/Object;)" + (handlerInfo.hasNonVoidReturnType() ? "Ljava/lang/Object;" : "V")),
-                    handlerMethod,
+                    asyncHandlerMethod,
                     Type.getType(handlerInfo.getHandlerDescriptor()));
 
             v.visitFieldInsn(
                     Opcodes.PUTFIELD,
                     currentClassName,
-                    getHandlerField(handlerInfo.getName()),
+                    getHandlerField(handlerInfo.getName(), HandlerFieldType.NOT_SYNCHRONIZED),
+                    handlerInfo.hasNonVoidReturnType() ? "Ljava/util/function/Function;" : "Ljava/util/function/Consumer;");
+
+            v.visitVarInsn(Opcodes.ALOAD, 0);
+            v.visitVarInsn(Opcodes.ALOAD, 0);
+
+            Handle syncHandlerMethod = new Handle(
+                    Opcodes.H_INVOKEVIRTUAL,
+                    currentClassName,
+                    getSynchronizedEventHandlerMethod(handlerInfo.getName()),
+                    handlerInfo.getHandlerDescriptor());
+
+            v.visitInvokeDynamicInsn(
+                    handlerInfo.hasNonVoidReturnType() ? "apply" : "accept",
+                    String.format("(L%s;)L%s;", currentClassName, handlerInfo.hasNonVoidReturnType() ? "java/util/function/Function" : "java/util/function/Consumer"),
+                    bootstrapMethod,
+                    Type.getType("(Ljava/lang/Object;)" + (handlerInfo.hasNonVoidReturnType() ? "Ljava/lang/Object;" : "V")),
+                    syncHandlerMethod,
+                    Type.getType(handlerInfo.getHandlerDescriptor()));
+
+            v.visitFieldInsn(
+                    Opcodes.PUTFIELD,
+                    currentClassName,
+                    getHandlerField(handlerInfo.getName(), HandlerFieldType.SYNCHRONIZED),
                     handlerInfo.hasNonVoidReturnType() ? "Ljava/util/function/Function;" : "Ljava/util/function/Consumer;");
         }
     }
 
-    private String getHandlerField(String handlerName) {
-        return String.format("%s%s_%s", HANDLER_PREFIX, handlerName, FLIMFLAM);
+    private String getHandlerField(String handlerName, HandlerFieldType handlerFieldType) {
+        return String.format(
+                "%s%s_%s",
+                handlerFieldType.equals(HandlerFieldType.SYNCHRONIZED) ? HANDLER_PREFIX_SYNCHRONIZED : HANDLER_PREFIX_NOT_SYNCHRONIZED,
+                handlerName,
+                FLIMFLAM);
+    }
+
+    private String getSynchronizedEventHandlerMethod(String handlerName) {
+        return String.format(SYNC_HANDLER_FIELD_METHOD_NAME, handlerName);
     }
 }
