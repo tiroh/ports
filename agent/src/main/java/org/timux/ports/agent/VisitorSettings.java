@@ -6,7 +6,7 @@ import org.timux.ports.Out;
 
 class VisitorSettings {
 
-    public final static int OPCODE_VERSION = Opcodes.ASM5;
+    public final static int OPCODE_VERSION = Opcodes.ASM7;
 
     public final static String OUT_DESCRIPTOR = getDescriptor(Out.class);
     public final static String IN_DESCRIPTOR = getDescriptor(In.class);
