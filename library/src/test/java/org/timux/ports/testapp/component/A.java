@@ -11,10 +11,11 @@ public class A {
 
     }
 
-    @Out Event test;
-    @Out Event<Integer> output;
-    @Out Request<Short, Double> request;
-    @Out Request testRequest;
+    @Out Event<ObjectEvent> objectEvent;
+    @Out Event<IntEvent> intEvent;
+    @Out Request<ShortRequest, Double> shortRequest;
+    @Out Request<ObjectRequest, Object> objectRequest;
+    @Out Request<TestCommand, Boolean> testCommand;
 
     private int field = 47;
 
@@ -26,24 +27,24 @@ public class A {
     public A(int i) {
         System.out.println("A con " + i);
 
-        if (output != null) {
+        if (intEvent != null) {
             System.out.println("nicht null");
         }
 
         System.out.println("Ende A");
     }
 
-    @In void onTestInput(Integer payload) {
+    @In void onInt(IntEvent event) {
         field *= 2;
-        System.out.println("A received test input: " + payload + ", private field is " + field);
+        System.out.println("A received test input: " + event.getData() + ", private field is " + field);
     }
 
     public void doWork() {
-        output.trigger(37);
-        test.trigger(3700);
-        double d = request.call((short) 2);
-        Object o = testRequest.call(9);
-        Object o2 = testRequest.call();
+        intEvent.trigger(new IntEvent(37));
+        objectEvent.trigger(new ObjectEvent(3700));
+        double d = shortRequest.call(new ShortRequest((short) 2));
+        Object o = objectRequest.call(new ObjectRequest(9));
+        Object o2 = objectRequest.call(new ObjectRequest(null));
         System.out.println("A got replies: " + d + " and " + o + ", " + o2);
     }
 }

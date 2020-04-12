@@ -3,15 +3,17 @@ package org.timux.ports;
 import org.hamcrest.core.IsEqual;
 import org.junit.Assert;
 import org.junit.Test;
+import org.timux.ports.testapp.DoubleRequest;
+import org.timux.ports.testapp.component.IntEvent;
 
 public class PortsTest {
 
     class A {
 
-        @Out Event<Integer> out1;
+        @Out Event<IntEvent> intEvent;
 
-        @In Double in2(Double data) {
-            return 1.5 * data;
+        @In Double onDoubleRequest(DoubleRequest request) {
+            return 1.5 * request.getData();
         }
     }
 
@@ -19,10 +21,10 @@ public class PortsTest {
 
         double receivedData = 0;
 
-        @Out Request<Double, Double> out2;
+        @Out Request<DoubleRequest, Double> doubleRequest;
 
-        @In void in1(Integer data) {
-            receivedData = out2.call(data.doubleValue());
+        @In void onInt(IntEvent event) {
+            receivedData = doubleRequest.call(new DoubleRequest(event.getData()));
         }
     }
 
@@ -30,8 +32,8 @@ public class PortsTest {
 
         int data;
 
-        @In void in1(Integer data) {
-            this.data = data;
+        @In void onInt(IntEvent event) {
+            this.data = event.getData();
         }
     }
 
@@ -42,7 +44,7 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        a.out1.trigger(3);
+        a.intEvent.trigger(new IntEvent(3));
 
         Assert.assertThat(b.receivedData, IsEqual.equalTo(4.5));
     }
@@ -56,7 +58,7 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2);
 
-        a.out1.trigger(3);
+        a.intEvent.trigger(new IntEvent(3));
 
         Assert.assertThat(c1.data, IsEqual.equalTo(3));
         Assert.assertThat(c2.data, IsEqual.equalTo(0));
@@ -71,7 +73,7 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
 
-        a.out1.trigger(3);
+        a.intEvent.trigger(new IntEvent(3));
 
         Assert.assertThat(c1.data, IsEqual.equalTo(3));
         Assert.assertThat(c2.data, IsEqual.equalTo(c1.data));
@@ -88,7 +90,7 @@ public class PortsTest {
 
         Ports.disconnect(a).and(c1);
 
-        a.out1.trigger(3);
+        a.intEvent.trigger(new IntEvent(3));
 
         Assert.assertThat(c1.data, IsEqual.equalTo(0));
         Assert.assertThat(c2.data, IsEqual.equalTo(3));

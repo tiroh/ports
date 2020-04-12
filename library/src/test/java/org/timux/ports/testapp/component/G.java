@@ -6,16 +6,16 @@ import org.timux.ports.Stack;
 
 public class G {
 
-    @In Queue<Integer> inInt;
-    @In Stack<String> inStr;
+    @In Queue<IntEvent> inInt;
+    @In Stack<StringEvent> inStr;
 
-    @In void onDataHasBeenSent(Void nothing) {
+    @In void onDataHasBeenSent(DataHasBeenSentEvent event) {
         while (!inInt.isEmpty()) {
-            System.out.println("G has in queue: " + inInt.poll());
+            System.out.println("G has in queue: " + inInt.poll().getData());
         }
 
         while (!inStr.isEmpty()) {
-            System.out.println("G has in stack: " + inStr.pop());
+            System.out.println("G has in stack: " + inStr.pop().getString());
         }
     }
 }

@@ -70,32 +70,58 @@ public class AnnotationProcessor extends AbstractProcessor {
             String messageType = element.getParameters().get(0).asType().toString();
             String returnType = element.getReturnType().toString();
 
-            String registeredReturnType = portSignatures.get(messageType);
+            if (!messageType.endsWith("Event") && !messageType.endsWith("Request") && !messageType.endsWith("Command")) {
+                processingEnv.getMessager().printMessage(
+                        DIAGNOSTIC_MESSAGE_KIND,
+                        String.format("type '%s' is not a valid event type", messageType),
+                        element);
 
-            if (registeredReturnType == null) {
-                portSignatures.put(messageType, returnType);
-            } else {
-                if (!registeredReturnType.equals(returnType)) {
+                return null;
+            }
+
+            String correctName = toInPortName(messageType);
+
+            if (!portName.equals(correctName)) {
+                processingEnv.getMessager().printMessage(
+                        DIAGNOSTIC_MESSAGE_KIND,
+                        String.format("'%s' is not a valid IN port name (should be '%s')", portName, correctName),
+                        element);
+            }
+
+            if (messageType.endsWith("Event")) {
+                if (!returnType.equals("void")) {
                     processingEnv.getMessager().printMessage(
                             DIAGNOSTIC_MESSAGE_KIND,
-                            String.format("port signatures do not match for IN port [%s]: '%s' cannot be mapped to both '%s' and '%s'",
-                                    portName, messageType, registeredReturnType, returnType),
+                            String.format("IN port [%s] must not return a value", portName),
                             element);
                 }
             }
 
-            if (messageType.endsWith("Event") && !returnType.equals("void")) {
-                processingEnv.getMessager().printMessage(
-                        DIAGNOSTIC_MESSAGE_KIND,
-                        String.format("IN port [%s] must not return a value", portName),
-                        element);
-            }
+            if (messageType.endsWith("Request") || messageType.endsWith("Command")) {
+                String registeredReturnType = portSignatures.get(messageType);
 
-            if (messageType.endsWith("Request") && returnType.equals("void")) {
-                processingEnv.getMessager().printMessage(
-                        DIAGNOSTIC_MESSAGE_KIND,
-                        String.format("IN port [%s] must return a value", portName),
-                        element);
+                String registeredReturnTypeInfo = registeredReturnType != null
+                        ? " (" + registeredReturnType + ")"
+                        : "";
+
+                if (returnType.equals("void")) {
+                    processingEnv.getMessager().printMessage(
+                            DIAGNOSTIC_MESSAGE_KIND,
+                            String.format("IN port [%s] must return a value%s", portName, registeredReturnTypeInfo),
+                            element);
+                } else {
+                    if (registeredReturnType == null) {
+                        portSignatures.put(messageType, returnType);
+                    } else {
+                        if (!registeredReturnType.equals(returnType)) {
+                            processingEnv.getMessager().printMessage(
+                                    DIAGNOSTIC_MESSAGE_KIND,
+                                    String.format("port signatures do not match for IN port [%s]: '%s' cannot be mapped to both '%s' and '%s'",
+                                            portName, messageType, registeredReturnType, returnType),
+                                    element);
+                        }
+                    }
+                }
             }
 
             HashSet<String> names = inPortClassNames.get(element.getEnclosingElement());
@@ -129,7 +155,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private final static Diagnostic.Kind DIAGNOSTIC_MESSAGE_KIND = Diagnostic.Kind.WARNING;
+    private final static Diagnostic.Kind DIAGNOSTIC_MESSAGE_KIND = Diagnostic.Kind.ERROR;
 
     private final static String EVENT_TYPE = Event.class.getName();
     private final static String REQUEST_TYPE = Request.class.getName();
@@ -326,6 +352,16 @@ public class AnnotationProcessor extends AbstractProcessor {
     private String toOutPortName(String messageType) {
         String suffix = messageType.substring(messageType.lastIndexOf('.') + 1);
         return Character.toLowerCase(suffix.charAt(0)) + suffix.substring(1);
+    }
+
+    private String toInPortName(String messageType) {
+        String suffix = messageType.substring(messageType.lastIndexOf('.') + 1);
+
+        if (messageType.endsWith("Event")) {
+            return "on" + suffix.substring(0, suffix.length() - "Event".length());
+        } else {
+            return "on" + suffix;
+        }
     }
 
     private void writeClassFile(String className) {

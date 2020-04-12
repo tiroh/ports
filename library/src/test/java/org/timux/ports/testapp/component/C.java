@@ -5,14 +5,14 @@ import org.timux.ports.Out;
 
 public class C {
 
-    @Out Event<String> stringOut;
-    @Out Event<Integer> intOut;
+    @Out Event<StringEvent> stringEvent;
+    @Out Event<IntEvent> intEvent;
 
     public void doStringWork() {
-        stringOut.trigger("org.timux.Test message");
+        stringEvent.trigger(new StringEvent("org.timux.Test message"));
     }
 
     public void doIntWork() {
-        intOut.trigger(370);
+        intEvent.trigger(new IntEvent(370));
     }
 }

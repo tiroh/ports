@@ -7,24 +7,24 @@ import org.timux.ports.Out;
 
 public class F {
 
-    @Out Event<Integer> outInt;
-    @Out Event<String> outStr;
+    @Out Event<IntEvent> intEvent;
+    @Out Event<StringEvent> stringEvent;
 
-    @Out Event<Void> dataHasBeenSent;
+    @Out Event<DataHasBeenSentEvent> dataHasBeenSentEvent;
 
     class TestA {
 
-        @Out Event<Integer> testPort;
+        @Out Event<IntEvent> intEvent;
 
         public void doWork() {
-            testPort.trigger(100);
+            intEvent.trigger(new IntEvent(100));
         }
     }
 
     class TestB {
 
-        @In void testPort(Integer n) {
-            System.out.println("TestB received " + n);
+        @In void onInt(IntEvent event) {
+            System.out.println("TestB received " + event.getData());
         }
     }
 
@@ -37,10 +37,10 @@ public class F {
         a.doWork();
 
         for (int i = 0; i < 3; i++) {
-            outInt.trigger(i);
-            outStr.trigger("data-" + i);
+            intEvent.trigger(new IntEvent(i));
+            stringEvent.trigger(new StringEvent("data-" + i));
         }
 
-        dataHasBeenSent.trigger(null);
+        dataHasBeenSentEvent.trigger(new DataHasBeenSentEvent());
     }
 }
