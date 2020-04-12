@@ -13,23 +13,26 @@ import org.springframework.stereotype.Component;
 import org.timux.ports.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
 public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFactoryPostProcessor {
 
-    private final static String ROOT_SCOPE = "root";
-    private final static String SINGLETON_SCOPE = "singleton";
-    private final static String APPLICATION_SCOPE = "application";
-    private final static String SESSION_SCOPE = "session";
-    private final static String VAADIN_SESSION_SCOPE = "vaadin-session";
-    private final static String UI_SCOPE = "vaadin-ui";
-    private final static String VAADIN_VIEW_SCOPE = "vaadin-view";
-    private final static String PROTOTYPE_SCOPE = "prototype";
+    private static final String ROOT_SCOPE = "root";
+    private static final String SINGLETON_SCOPE = "singleton";
+    private static final String APPLICATION_SCOPE = "application";
+    private static final String SESSION_SCOPE = "session";
+    private static final String VAADIN_SESSION_SCOPE = "vaadin-session";
+    private static final String UI_SCOPE = "vaadin-ui";
+    private static final String VAADIN_VIEW_SCOPE = "vaadin-view";
+    private static final String PROTOTYPE_SCOPE = "prototype";
 
-    private final static Logger logger = LoggerFactory.getLogger(PortConnector.class);
+    private static final Logger logger = LoggerFactory.getLogger(PortConnector.class);
 
     private Map<Object, Scope> beans = new HashMap<>();
 
@@ -222,7 +225,6 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     private void disconnectBeans(Scope scope, Object bean, String beanName) {
         for (Map.Entry<Object, String> e : scope.getBeans()) {
             if (bean != e.getKey()) {
-                logger.debug("Disconnecting ports: {} <-> {}", beanName, e.getValue());
                 Ports.disconnect(bean).and(e.getKey());
             }
         }
@@ -368,5 +370,38 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
         logger.debug("Connected ports: {}:{} {} {}:{}",
                 fromName, Integer.toHexString(from.hashCode()), operator, toName, Integer.toHexString(to.hashCode()));
+    }
+
+    void verify() {
+        List<MissingPort> missingPorts = new ArrayList<>();
+
+        Method verifyMethod;
+
+        try {
+            verifyMethod = Ports.class.getDeclaredMethod("verifyInternal", boolean.class, Object[].class);
+            verifyMethod.setAccessible(true);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+
+        verifyScope(rootScope, missingPorts, verifyMethod);
+
+        if (!missingPorts.isEmpty()) {
+            throw new PortNotConnectedException(missingPorts);
+        }
+    }
+
+    void verifyScope(Scope scope, List<MissingPort> missingPorts, Method verifyMethod) {
+        scope.getBeans().forEach(e -> {
+            try {
+                List<MissingPort> newMissingPorts =
+                        (List<MissingPort>) verifyMethod.invoke(null, false, new Object[] { e.getKey() });
+                missingPorts.addAll(newMissingPorts);
+            } catch (IllegalAccessException | InvocationTargetException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
+        scope.getChildScopes().forEach(s -> verifyScope(s, missingPorts, verifyMethod));
     }
 }

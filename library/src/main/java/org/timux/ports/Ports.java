@@ -16,13 +16,13 @@
 
 package org.timux.ports;
 
-import org.timux.ports.agent.TransformingVisitor;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -36,9 +36,10 @@ import java.util.function.Function;
  */
 public final class Ports {
 
-    private static Map<Object, Field[]> fieldCache = new HashMap<>();
+    public final static String HANDLER_PREFIX = "__handler_";
 
-    private static Map<Object, Method[]> methodCache = new HashMap<>();
+    private final static Map<Object, Field[]> fieldCache = new HashMap<>();
+    private final static Map<Object, Method[]> methodCache = new HashMap<>();
 
     private static boolean isUninitializedWarningIssued = false;
 
@@ -113,24 +114,7 @@ public final class Ports {
             String outPortFieldType = e.getKey();
             Field outPortField = e.getValue();
 
-            if (outPortField.get(from) == null) {
-                /*
-                 * In this situation, it is most likely that the Java agent was not set up,
-                 * so we resort to reflection.
-                 */
-
-                warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
-
-                if (outPortField.getType() == Event.class) {
-                    Event event = new Event(outPortField.getName(), from);
-                    outPortField.set(from, event);
-                }
-
-                if (outPortField.getType() == Request.class) {
-                    Request request = new Request(outPortField.getName(), from);
-                    outPortField.set(from, request);
-                }
-            }
+            ensurePortInstantiation(outPortField, from);
 
             Method inPortHandlerMethod = inPortHandlerMethodsByType.get(outPortFieldType);
             Field inPortField = inPortFieldsByType.get(outPortFieldType);
@@ -172,7 +156,7 @@ public final class Ports {
                         Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
 
                         if (inPortHandlerField != null) {
-                            event.connect((Consumer) inPortHandlerField.get(to));
+                            event.connect((Consumer) inPortHandlerField.get(to)); // TODO: check whether the eventWrapper must be taken care of
                             portsWereConnected = true;
                         } else {
                             event.connect(inPortHandlerMethod, to, eventWrapper);
@@ -212,6 +196,30 @@ public final class Ports {
         }
 
         return portsWereConnected;
+    }
+
+    static void ensurePortInstantiation(Field outPortField, Object from) throws IllegalAccessException {
+        if (outPortField.get(from) == null) {
+            /*
+             * In this situation, it is most likely that the Java agent was not set up,
+             * so we resort to reflection.
+             */
+
+            warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
+
+            if (outPortField.getType() == Event.class) {
+                String genericTypeName = outPortField.getGenericType().getTypeName();
+                String extractedEventTypeName = extractTypeParameter(genericTypeName, genericTypeName);
+
+                Event event = new Event(extractedEventTypeName, outPortField.getName(), from);
+                outPortField.set(from, event);
+            }
+
+            if (outPortField.getType() == Request.class) {
+                Request request = new Request(outPortField.getName(), from);
+                outPortField.set(from, request);
+            }
+        }
     }
 
     static void disconnectBoth(Object a, Object b, int portsOptions) {
@@ -280,7 +288,7 @@ public final class Ports {
                 continue;
             }
 
-            String typeParameter = extractTypeParameter(field.getGenericType().getTypeName());
+            String typeParameter = extractTypeParameter(field.getGenericType().getTypeName(), "");
 
             if (typeParameter.isEmpty()) {
                 typeParameter = (field.getType() == Request.class ? "java.lang.Object, java.lang.Object" : "java.lang.Object");
@@ -333,7 +341,7 @@ public final class Ports {
         for (Field field : toFields) {
             final String fieldName = field.getName();
 
-            if (fieldName.startsWith(TransformingVisitor.HANDLER_PREFIX) && fieldName.endsWith(flimflam)) {
+            if (fieldName.startsWith(HANDLER_PREFIX) && fieldName.endsWith(flimflam)) {
                 int endOfNameIndex = fieldName.lastIndexOf('_');
 
                 if (endOfNameIndex < 0) {
@@ -355,7 +363,7 @@ public final class Ports {
                     }
                 }
 
-                handlersByName.put(fieldName.substring(TransformingVisitor.HANDLER_PREFIX.length(), endOfNameIndex), field);
+                handlersByName.put(fieldName.substring(HANDLER_PREFIX.length(), endOfNameIndex), field);
             }
         }
 
@@ -370,6 +378,35 @@ public final class Ports {
      * @param components The components to check.
      */
     public static void verify(Object... components) {
+        List<MissingPort> missingPorts = verifyInternal(true, components);
+
+        if (!missingPorts.isEmpty()) {
+            throw new PortNotConnectedException(missingPorts);
+        }
+    }
+
+    /**
+     * Checks whether all Request ports of the provided components are connected.
+     *
+     * @throws PortNotConnectedException If there is a Request port that is not connected.
+     *
+     * @param components The components to check.
+     */
+    public static void verifyRequests(Object... components) {
+        List<MissingPort> missingPorts = verifyInternal(false, components);
+
+        if (!missingPorts.isEmpty()) {
+            throw new PortNotConnectedException(missingPorts);
+        }
+    }
+
+    /*
+     * This method must not change its name or its signature, it is being called via
+     * reflection by PortConnector (vaadinspring module).
+     */
+    static List<MissingPort> verifyInternal(boolean alsoVerifyEventPorts, Object... components) {
+        List<MissingPort> missingPorts = new ArrayList<>();
+
         try {
             for (Object component : components) {
                 Field[] fields = getFields(component);
@@ -379,11 +416,11 @@ public final class Ports {
                         continue;
                     }
 
-                    if (field.getType() == Event.class) {
+                    if (field.getType() == Event.class && alsoVerifyEventPorts) {
                         Event event = (Event) field.get(component);
 
                         if (event == null || !event.isConnected()) {
-                            throw new PortNotConnectedException(field.getName(), component.getClass().getName());
+                            missingPorts.add(new MissingPort(field, component));
                         }
                     }
 
@@ -391,7 +428,7 @@ public final class Ports {
                         Request request = (Request) field.get(component);
 
                         if (request == null || !request.isConnected()) {
-                            throw new PortNotConnectedException(field.getName(), component.getClass().getName());
+                            missingPorts.add(new MissingPort(field, component));
                         }
                     }
                 }
@@ -399,6 +436,8 @@ public final class Ports {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+
+        return missingPorts;
     }
 
     private static Field[] getFields(Object o) {
@@ -433,12 +472,12 @@ public final class Ports {
         return methods;
     }
 
-    private static String extractTypeParameter(String type) {
+    private static String extractTypeParameter(String type, String _default) {
         int genericStart = type.indexOf('<');
         int genericEnd = type.lastIndexOf('>');
 
         return genericStart < 0
-                ? ""
+                ? _default
                 : type.substring(genericStart + 1, genericEnd);
     }
 

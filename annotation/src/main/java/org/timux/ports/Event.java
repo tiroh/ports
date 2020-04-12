@@ -40,15 +40,17 @@ public class Event<T> {
     private List<Consumer<T>> ports = new ArrayList<>();
     private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
     private Consumer<T> singlePort = null;
+    private String eventTypeName;
     private Object owner;
-    private String name;
+    private String memberName;
 
     public Event() {
         //
     }
 
-    protected Event(String name, Object owner) {
-        this.name = name;
+    protected Event(String eventTypeName, String memberName, Object owner) {
+        this.eventTypeName = eventTypeName;
+        this.memberName = memberName;
         this.owner = owner;
     }
 
@@ -178,7 +180,12 @@ public class Event<T> {
         int i = p.size();
 
         if (i == 0) {
-            throw new PortNotConnectedException(name, owner.getClass().getName());
+//            throw new PortNotConnectedException(name, owner.getClass().getName());
+            System.err.println(String.format(
+                    "[ports] warning: event %s was fired by component %s but there is no receiver",
+                    eventTypeName,
+                    owner.getClass().getName()));
+            return;
         }
 
         for (i--; i >= 0; i--) {

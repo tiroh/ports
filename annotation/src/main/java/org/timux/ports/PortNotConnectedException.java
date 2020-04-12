@@ -16,9 +16,34 @@
 
 package org.timux.ports;
 
-class PortNotConnectedException extends RuntimeException {
+import java.util.List;
+
+public class PortNotConnectedException extends RuntimeException {
 
     public PortNotConnectedException(String port, String component) {
-        super(String.format("Port [%s] in %s is not connected.", port, component));
+        super(makeString(port, component));
+    }
+
+    public PortNotConnectedException(List<MissingPort> missingPorts) {
+        super(makeStrings(missingPorts));
+    }
+
+    private static String makeStrings(List<MissingPort> missingPorts) {
+        if (missingPorts.size() == 1) {
+            return makeString(missingPorts.get(0).field.getName(), missingPorts.get(0).component.getClass().getName());
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        missingPorts.forEach(p -> {
+            sb.append("\n  ");
+            sb.append(makeString(p.field.getName(), p.component.getClass().getName()));
+        });
+
+        return sb.toString();
+    }
+
+    private static String makeString(String port, String component) {
+        return String.format("Port [%s] in %s is not connected.", port, component);
     }
 }

@@ -3,6 +3,7 @@ package org.timux.ports.testapp.component;
 import org.timux.ports.Event;
 import org.timux.ports.In;
 import org.timux.ports.Out;
+import org.timux.ports.Request;
 
 public class B {
 

@@ -35,14 +35,14 @@ public class Request<I, O> {
 
     private Function<I, O> port;
     private Object owner;
-    private String name;
+    private String memberName;
 
     public Request() {
         //
     }
 
-    protected Request(String name, Object owner) {
-        this.name = name;
+    protected Request(String memberName, Object owner) {
+        this.memberName = memberName;
         this.owner = owner;
     }
 
@@ -89,7 +89,7 @@ public class Request<I, O> {
      */
     public O call(I payload) {
         if (port == null) {
-            throw new PortNotConnectedException(name, owner.getClass().getName());
+            throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
         return port.apply(payload);
