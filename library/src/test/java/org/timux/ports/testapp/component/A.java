@@ -7,10 +7,6 @@ import org.timux.ports.Request;
 
 public class A {
 
-    class TestRequest {
-
-    }
-
     @Out Event<ObjectEvent> objectEvent;
     @Out Event<IntEvent> intEvent;
     @Out Request<ShortRequest, Double> shortRequest;
