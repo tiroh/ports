@@ -109,6 +109,11 @@ public class AnnotationProcessor extends AbstractProcessor {
                             DIAGNOSTIC_MESSAGE_KIND,
                             String.format("IN port [%s] must return a value%s", portName, registeredReturnTypeInfo),
                             element);
+                } else if (returnType.equals(Void.class.getName())) {
+                    processingEnv.getMessager().printMessage(
+                            DIAGNOSTIC_MESSAGE_KIND,
+                            String.format("IN port [%s] has inadmissible return type (%s)", portName, returnType),
+                            element);
                 } else {
                     if (registeredReturnType == null) {
                         portSignatures.put(messageType, returnType);
@@ -237,17 +242,24 @@ public class AnnotationProcessor extends AbstractProcessor {
                 return;
             }
 
-            String registeredReturnType = portSignatures.get(messageType);
-
-            if (registeredReturnType == null) {
-                portSignatures.put(messageType, returnType);
+            if (returnType.equals(Void.class.getName())) {
+                processingEnv.getMessager().printMessage(
+                        DIAGNOSTIC_MESSAGE_KIND,
+                        String.format("OUT port [%s] has inadmissible return type (%s)", portName, returnType),
+                        element);
             } else {
-                if (!registeredReturnType.equals(returnType)) {
-                    processingEnv.getMessager().printMessage(
-                            DIAGNOSTIC_MESSAGE_KIND,
-                            String.format("port signatures do not match for OUT port [%s]: '%s' cannot be mapped to both '%s' and '%s'",
-                                    portName, messageType, registeredReturnType, returnType),
-                            element);
+                String registeredReturnType = portSignatures.get(messageType);
+
+                if (registeredReturnType == null) {
+                    portSignatures.put(messageType, returnType);
+                } else {
+                    if (!registeredReturnType.equals(returnType)) {
+                        processingEnv.getMessager().printMessage(
+                                DIAGNOSTIC_MESSAGE_KIND,
+                                String.format("port signatures do not match for OUT port [%s]: '%s' cannot be mapped to both '%s' and '%s'",
+                                        portName, messageType, registeredReturnType, returnType),
+                                element);
+                    }
                 }
             }
 
