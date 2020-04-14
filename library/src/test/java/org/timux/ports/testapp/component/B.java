@@ -7,6 +7,7 @@ import org.timux.ports.Out;
 public class B {
 
     @Out Event<IntEvent> intEvent;
+    @Out Event<RuntimeException> runtimeExceptionEvent;
 
     public B() {
         System.out.println("B con");
@@ -14,6 +15,7 @@ public class B {
 
     @In void onInt(IntEvent event) {
         System.out.println("B received input: " + event.getData());
+        runtimeExceptionEvent.trigger(new RuntimeException("Test exception with data " + event.getData()));
     }
 
     @In void onObject(ObjectEvent event) {

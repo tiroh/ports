@@ -35,6 +35,10 @@ public class A {
         System.out.println("A received test input: " + event.getData() + ", private field is " + field);
     }
 
+    @In void onRuntimeException(RuntimeException exception) {
+        System.out.println("Received exception: " + exception.getMessage());
+    }
+
     public void doWork() {
         intEvent.trigger(new IntEvent(37));
         objectEvent.trigger(new ObjectEvent(3700));

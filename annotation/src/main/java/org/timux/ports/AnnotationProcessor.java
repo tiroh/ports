@@ -70,7 +70,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             String messageType = element.getParameters().get(0).asType().toString();
             String returnType = element.getReturnType().toString();
 
-            if (!messageType.endsWith("Event") && !messageType.endsWith("Request") && !messageType.endsWith("Command")) {
+            if (!messageType.endsWith("Event") && !messageType.endsWith("Exception") && !messageType.endsWith("Request") && !messageType.endsWith("Command")) {
                 processingEnv.getMessager().printMessage(
                         DIAGNOSTIC_MESSAGE_KIND,
                         String.format("type '%s' is not a valid event type", messageType),
@@ -88,7 +88,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                         element);
             }
 
-            if (messageType.endsWith("Event")) {
+            if (messageType.endsWith("Event") || messageType.endsWith("Exception")) {
                 if (!returnType.equals("void")) {
                     processingEnv.getMessager().printMessage(
                             DIAGNOSTIC_MESSAGE_KIND,
@@ -258,7 +258,11 @@ public class AnnotationProcessor extends AbstractProcessor {
                         element);
             }
 
-            if (!messageType.equals(Object.class.getName()) && portType.startsWith(EVENT_TYPE) && !messageType.endsWith("Event")) {
+            if (!messageType.equals(Object.class.getName())
+                    && portType.startsWith(EVENT_TYPE)
+                    && !messageType.endsWith("Event")
+                    && !messageType.endsWith("Exception"))
+            {
                 String commandNote = messageType.endsWith("Command")
                         ? " (commands should be implemented via request ports)"
                         : "";
@@ -268,7 +272,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                         String.format("'%s' is not a valid event type%s", messageType, commandNote),
                         element);
             } else {
-                if (portType.startsWith(EVENT_TYPE) && messageType.endsWith("Event")) {
+                if (portType.startsWith(EVENT_TYPE) && (messageType.endsWith("Event") || messageType.endsWith("Exception"))) {
                     String correctName = toOutPortName(messageType);
 
                     if (!portName.equals(correctName)) {
@@ -350,7 +354,9 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private String toOutPortName(String messageType) {
-        String suffix = messageType.substring(messageType.lastIndexOf('.') + 1);
+        String suffix = messageType.substring(messageType.lastIndexOf('.') + 1)
+                + (messageType.endsWith("Exception") ? "Event" : "");
+
         return Character.toLowerCase(suffix.charAt(0)) + suffix.substring(1);
     }
 
