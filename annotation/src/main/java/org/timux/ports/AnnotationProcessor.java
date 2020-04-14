@@ -4,24 +4,13 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementVisitor;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class AnnotationProcessor extends AbstractProcessor {
 
@@ -121,7 +110,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                         if (!registeredReturnType.equals(returnType)) {
                             processingEnv.getMessager().printMessage(
                                     DIAGNOSTIC_MESSAGE_KIND,
-                                    String.format("port signatures do not match for IN port [%s]: '%s' cannot be mapped to both '%s' and '%s'",
+                                    String.format("port signatures do not match for IN port [%s]: message type '%s' cannot be mapped to both '%s' and '%s'",
                                             portName, messageType, registeredReturnType, returnType),
                                     element);
                         }
@@ -181,6 +170,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 
         supportedAnnotationTypes.add(In.class.getName());
         supportedAnnotationTypes.add(Out.class.getName());
+        supportedAnnotationTypes.add(Response.class.getName());
 
         unmodifiableSupportedAnnotationTypes = Collections.unmodifiableSet(supportedAnnotationTypes);
     }
@@ -202,6 +192,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 
         checkOutPort(roundEnvironment);
         checkInPorts(roundEnvironment);
+        checkRequestTypes(roundEnvironment);
 
 //        portsClassNames.forEach(name -> writeClassFile(name));
 
@@ -256,7 +247,7 @@ public class AnnotationProcessor extends AbstractProcessor {
                     if (!registeredReturnType.equals(returnType)) {
                         processingEnv.getMessager().printMessage(
                                 DIAGNOSTIC_MESSAGE_KIND,
-                                String.format("port signatures do not match for OUT port [%s]: '%s' cannot be mapped to both '%s' and '%s'",
+                                String.format("port signatures do not match for OUT port [%s]: message type '%s' cannot be mapped to both '%s' and '%s'",
                                         portName, messageType, registeredReturnType, returnType),
                                 element);
                     }
@@ -361,6 +352,46 @@ public class AnnotationProcessor extends AbstractProcessor {
                         DIAGNOSTIC_MESSAGE_KIND,
                         String.format("type '%s' is not a valid IN port type", portType),
                         element);
+            }
+        }
+    }
+
+    private void checkRequestTypes(RoundEnvironment roundEnvironment) {
+        for (Element element : roundEnvironment.getElementsAnnotatedWith(Response.class)) {
+            Response responseAnno = element.getAnnotation(Response.class);
+
+            for (AnnotationMirror mirror : element.getAnnotationMirrors()) {
+                if (mirror.getAnnotationType().toString().equals(Response.class.getName())) {
+                    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
+                        if ("value".equals(e.getKey().getSimpleName().toString())) {
+                            String messageType = element.toString();
+                            String returnType = e.getValue().toString().substring(0, e.getValue().toString().lastIndexOf('.'));
+
+                            if (returnType.equals(Void.class.getName())) {
+                                processingEnv.getMessager().printMessage(
+                                        DIAGNOSTIC_MESSAGE_KIND,
+                                        String.format("message type '%s' has inadmissible return type (%s)", messageType, returnType),
+                                        element);
+
+                                continue;
+                            }
+
+                            String registeredReturnType = portSignatures.get(messageType);
+
+                            if (registeredReturnType == null) {
+                                portSignatures.put(messageType, returnType);
+                            } else {
+                                if (!registeredReturnType.equals(returnType)) {
+                                    processingEnv.getMessager().printMessage(
+                                            DIAGNOSTIC_MESSAGE_KIND,
+                                            String.format("message type '%s' cannot be mapped to both '%s' and '%s'",
+                                                    messageType, registeredReturnType, returnType),
+                                            element);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
