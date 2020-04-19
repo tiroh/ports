@@ -308,7 +308,7 @@ public final class Ports {
     }
 
     /**
-     * Checks whether all Request ports of the provided components are connected.
+     * Checks whether all {@link Request} ports of the provided components are connected.
      *
      * @throws PortNotConnectedException If there is a Request port that is not connected.
      *
