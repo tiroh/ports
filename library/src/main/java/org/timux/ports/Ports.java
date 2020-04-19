@@ -19,13 +19,7 @@ package org.timux.ports;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.*;
 
 /**
  * The main utility class of the Ports framework.
@@ -36,14 +30,8 @@ import java.util.function.Function;
  */
 public final class Ports {
 
-    public final static String HANDLER_PREFIX = "__handler_";
-
     private final static Map<Object, Field[]> fieldCache = new HashMap<>();
     private final static Map<Object, Method[]> methodCache = new HashMap<>();
-
-    private static boolean isUninitializedWarningIssued = false;
-
-
 
     /**
      * Begins connecting two components using the style of a fluent API.
@@ -98,7 +86,6 @@ public final class Ports {
         boolean portsWereConnected = false;
 
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
-        Map<String, Field> inPortHandlerFieldsByName = getInPortHandlerFieldsByName(to);
 
         Map<String, Field> outPortFieldsByType;
         Map<String, Field> inPortFieldsByType;
@@ -153,15 +140,8 @@ public final class Ports {
                         || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
                 {
                     if (inPortHandlerMethod != null) {
-                        Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-
-                        if (inPortHandlerField != null) {
-                            event.connect((Consumer) inPortHandlerField.get(to)); // TODO: check whether the eventWrapper must be taken care of
-                            portsWereConnected = true;
-                        } else {
-                            event.connect(inPortHandlerMethod, to, eventWrapper);
-                            portsWereConnected = true;
-                        }
+                        event.connect(inPortHandlerMethod, to, eventWrapper);
+                        portsWereConnected = true;
                     }
 
                     if (inPortField != null) {
@@ -182,15 +162,8 @@ public final class Ports {
                 Request request = (Request) outPortField.get(from);
 
                 if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
-                    Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-
-                    if (inPortHandlerField != null) {
-                        request.connect((Function) inPortHandlerField.get(to));
-                        portsWereConnected = true;
-                    } else {
-                        request.connect(inPortHandlerMethod, to);
-                        portsWereConnected = true;
-                    }
+                    request.connect(inPortHandlerMethod, to);
+                    portsWereConnected = true;
                 }
             }
         }
@@ -200,13 +173,6 @@ public final class Ports {
 
     static void ensurePortInstantiation(Field outPortField, Object from) throws IllegalAccessException {
         if (outPortField.get(from) == null) {
-            /*
-             * In this situation, it is most likely that the Java agent was not set up,
-             * so we resort to reflection.
-             */
-
-            warnAboutUninitializedPort(outPortField.getName(), from.getClass().getName());
-
             if (outPortField.getType() == Event.class) {
                 String genericTypeName = outPortField.getGenericType().getTypeName();
                 String extractedEventTypeName = extractTypeParameter(genericTypeName, genericTypeName);
@@ -229,7 +195,6 @@ public final class Ports {
 
     static void disconnectDirected(Object from, Object to, int portsOptions) {
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
-        Map<String, Field> inPortHandlerFieldsByName = getInPortHandlerFieldsByName(to);
 
         Map<String, Field> outPortFieldsByType;
         Map<String, Field> inPortFieldsByType;
@@ -253,13 +218,7 @@ public final class Ports {
                     Event event = (Event) outPortField.get(from);
 
                     if (inPortHandlerMethod != null) {
-                        Field inPortHandlerField = inPortHandlerFieldsByName.get(inPortHandlerMethod.getName());
-
-                        if (inPortHandlerField == null) {
-                            event.disconnect(inPortHandlerMethod, to);
-                        } else {
-                            event.disconnect(inPortHandlerField.get(to));
-                        }
+                        event.disconnect(inPortHandlerMethod, to);
                     }
 
                     if (inPortField != null) {
@@ -331,43 +290,6 @@ public final class Ports {
         }
 
         return methodsByType;
-    }
-
-    private static Map<String, Field> getInPortHandlerFieldsByName(Object to) {
-        Map<String, Field> handlersByName = new HashMap<>();
-        Field[] toFields = getFields(to);
-        String flimflam = "";
-
-        for (Field field : toFields) {
-            final String fieldName = field.getName();
-
-            if (fieldName.startsWith(HANDLER_PREFIX) && fieldName.endsWith(flimflam)) {
-                int endOfNameIndex = fieldName.lastIndexOf('_');
-
-                if (endOfNameIndex < 0) {
-                    continue;
-                }
-
-                if (flimflam.isEmpty()) {
-                    int startIndex = fieldName.length() - 64 / 4;
-
-                    try {
-                        if (endOfNameIndex != startIndex - 1) {
-                            continue;
-                        }
-
-                        flimflam = fieldName.substring(startIndex);
-                        Long.parseUnsignedLong(flimflam, 16);
-                    } catch (IndexOutOfBoundsException | NumberFormatException e) {
-                        continue;
-                    }
-                }
-
-                handlersByName.put(fieldName.substring(HANDLER_PREFIX.length(), endOfNameIndex), field);
-            }
-        }
-
-        return handlersByName;
     }
 
     /**
@@ -479,12 +401,5 @@ public final class Ports {
         return genericStart < 0
                 ? _default
                 : type.substring(genericStart + 1, genericEnd);
-    }
-
-    private static void warnAboutUninitializedPort(String port, String component) {
-        if (!isUninitializedWarningIssued) {
-            isUninitializedWarningIssued = true;
-            System.err.println("[ports] warning: uninitialized port detected, using fallback");
-        }
     }
 }
