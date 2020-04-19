@@ -12,7 +12,7 @@
 
     <modules>
         <module>annotation</module>
-        <module>library</module>
+        <module>core</module>
         <module>vaadinspring</module>
     </modules>
 

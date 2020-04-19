@@ -55,7 +55,7 @@
     <dependencies>
         <dependency>
             <groupId>org.timux.ports</groupId>
-            <artifactId>ports-library</artifactId>
+            <artifactId>ports-core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

@@ -10,7 +10,7 @@
         <version>0.4.1</version>
     </parent>
 
-    <artifactId>ports-library</artifactId>
+    <artifactId>ports-core</artifactId>
 
     <packaging>jar</packaging>
 
@@ -18,12 +18,6 @@
         <dependency>
             <groupId>org.timux.ports</groupId>
             <artifactId>ports-annotation</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.timux.ports</groupId>
-            <artifactId>ports-agent</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
