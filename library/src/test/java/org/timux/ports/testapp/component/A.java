@@ -1,9 +1,6 @@
 package org.timux.ports.testapp.component;
 
-import org.timux.ports.Event;
-import org.timux.ports.In;
-import org.timux.ports.Out;
-import org.timux.ports.Request;
+import org.timux.ports.*;
 
 public class A {
 
@@ -11,7 +8,7 @@ public class A {
     @Out Event<IntEvent> intEvent;
     @Out Request<ShortRequest, Double> shortRequest;
     @Out Request<ObjectRequest, Object> objectRequest;
-    @Out Request<TestCommand, Boolean> testCommand;
+    @Out Request<TestCommand, Either<Boolean, String>> testCommand;
 
     private int field = 47;
 
@@ -42,6 +39,7 @@ public class A {
     public void doWork() {
         intEvent.trigger(new IntEvent(37));
         objectEvent.trigger(new ObjectEvent(3700));
+        System.out.println(testCommand.call(new TestCommand()).toString());
         double d = shortRequest.call(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));

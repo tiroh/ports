@@ -57,7 +57,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
 
             String messageType = element.getParameters().get(0).asType().toString();
-            String returnType = element.getReturnType().toString();
+            String responseType = element.getReturnType().toString();
 
             if (!messageType.endsWith("Event") && !messageType.endsWith("Exception") && !messageType.endsWith("Request") && !messageType.endsWith("Command")) {
                 processingEnv.getMessager().printMessage(
@@ -78,7 +78,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
 
             if (messageType.endsWith("Event") || messageType.endsWith("Exception")) {
-                if (!returnType.equals("void")) {
+                if (!responseType.equals("void")) {
                     processingEnv.getMessager().printMessage(
                             DIAGNOSTIC_MESSAGE_KIND,
                             String.format("IN port [%s] must not return a value", portName),
@@ -87,31 +87,31 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
 
             if (messageType.endsWith("Request") || messageType.endsWith("Command")) {
-                String registeredReturnType = portSignatures.get(messageType);
+                String registeredResponseType = portSignatures.get(messageType);
 
-                String registeredReturnTypeInfo = registeredReturnType != null
-                        ? " (" + registeredReturnType + ")"
+                String registeredReturnTypeInfo = registeredResponseType != null
+                        ? " (" + registeredResponseType + ")"
                         : "";
 
-                if (returnType.equals("void")) {
+                if (responseType.equals("void")) {
                     processingEnv.getMessager().printMessage(
                             DIAGNOSTIC_MESSAGE_KIND,
                             String.format("IN port [%s] must return a value%s", portName, registeredReturnTypeInfo),
                             element);
-                } else if (returnType.equals(Void.class.getName())) {
+                } else if (responseType.equals(Void.class.getName())) {
                     processingEnv.getMessager().printMessage(
                             DIAGNOSTIC_MESSAGE_KIND,
-                            String.format("IN port [%s] has inadmissible return type (%s)", portName, returnType),
+                            String.format("IN port [%s] has inadmissible return type (%s)", portName, responseType),
                             element);
                 } else {
-                    if (registeredReturnType == null) {
-                        portSignatures.put(messageType, returnType);
+                    if (registeredResponseType == null) {
+                        portSignatures.put(messageType, responseType);
                     } else {
-                        if (!registeredReturnType.equals(returnType)) {
+                        if (!registeredResponseType.equals(responseType)) {
                             processingEnv.getMessager().printMessage(
                                     DIAGNOSTIC_MESSAGE_KIND,
                                     String.format("port signatures do not match for IN port [%s]: message type '%s' cannot be mapped to both '%s' and '%s'",
-                                            portName, messageType, registeredReturnType, returnType),
+                                            portName, messageType, registeredResponseType, responseType),
                                     element);
                         }
                     }
@@ -357,39 +357,108 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private void checkRequestTypes(RoundEnvironment roundEnvironment) {
-        for (Element element : roundEnvironment.getElementsAnnotatedWith(Response.class)) {
-            Response responseAnno = element.getAnnotation(Response.class);
-
+        for (Element element : roundEnvironment.getElementsAnnotatedWith(Responses.class)) {
             for (AnnotationMirror mirror : element.getAnnotationMirrors()) {
-                if (mirror.getAnnotationType().toString().equals(Response.class.getName())) {
+                if (mirror.getAnnotationType().toString().equals(Responses.class.getName())) {
                     for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
                         if ("value".equals(e.getKey().getSimpleName().toString())) {
-                            String messageType = element.toString();
-                            String returnType = e.getValue().toString().substring(0, e.getValue().toString().lastIndexOf('.'));
-
-                            if (returnType.equals(Void.class.getName())) {
-                                processingEnv.getMessager().printMessage(
-                                        DIAGNOSTIC_MESSAGE_KIND,
-                                        String.format("message type '%s' has inadmissible return type (%s)", messageType, returnType),
-                                        element);
-
-                                continue;
-                            }
-
-                            String registeredReturnType = portSignatures.get(messageType);
-
-                            if (registeredReturnType == null) {
-                                portSignatures.put(messageType, returnType);
-                            } else {
-                                if (!registeredReturnType.equals(returnType)) {
-                                    processingEnv.getMessager().printMessage(
-                                            DIAGNOSTIC_MESSAGE_KIND,
-                                            String.format("message type '%s' cannot be mapped to both '%s' and '%s'",
-                                                    messageType, registeredReturnType, returnType),
-                                            element);
-                                }
-                            }
+                            processResponsesString(e.getValue().toString(), element, mirror);
                         }
+                    }
+                }
+            }
+        }
+
+        for (Element element : roundEnvironment.getElementsAnnotatedWith(Response.class)) {
+            for (AnnotationMirror mirror : element.getAnnotationMirrors()) {
+                if (mirror.getAnnotationType().toString().equals(Response.class.getName())) {
+                    processResponseAnnotatedElement(element, mirror);
+                }
+            }
+        }
+    }
+
+    private void processResponsesString(String responsesString, Element element, AnnotationMirror mirror) {
+        String messageType = element.toString();
+        String[] parts = responsesString.split("Response\\(");
+        List<String> responseTypes = new ArrayList<>();
+
+        Arrays.stream(parts)
+                .skip(1)
+                .forEach(part -> responseTypes.add(part.substring(0, part.indexOf(".class)"))));
+
+        for (String responseType : responseTypes) {
+            if (responseType.equals(Void.class.getName())) {
+                processingEnv.getMessager().printMessage(
+                        DIAGNOSTIC_MESSAGE_KIND,
+                        String.format("message type '%s' has inadmissible return type (%s)", messageType, responseType),
+                        element,
+                        mirror);
+            }
+        }
+
+        if (responseTypes.size() > 3) {
+            processingEnv.getMessager().printMessage(
+                    DIAGNOSTIC_MESSAGE_KIND,
+                    String.format("too many response types for message type '%s' (max. 3 allowed)", messageType),
+                    element,
+                    mirror);
+
+            return;
+        }
+
+        String eitherArguments = responseTypes.stream()
+                .reduce((xs, x) -> xs + "," + x)
+                .orElseThrow(IllegalStateException::new);
+
+        String responseType = String.format("%s<%s>",
+                responseTypes.size() == 2 ? Either.class.getName() : Either3.class.getName(),
+                eitherArguments);
+
+        String registeredResponseType = portSignatures.get(messageType);
+
+        if (registeredResponseType == null) {
+            portSignatures.put(messageType, responseType);
+        } else {
+            if (!registeredResponseType.equals(responseType)) {
+                processingEnv.getMessager().printMessage(
+                        DIAGNOSTIC_MESSAGE_KIND,
+                        String.format("message type '%s' cannot be mapped to both '%s' and '%s'",
+                                messageType, registeredResponseType, responseType),
+                        element,
+                        mirror);
+            }
+        }
+    }
+
+    private void processResponseAnnotatedElement(Element element, AnnotationMirror mirror) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
+            if ("value".equals(e.getKey().getSimpleName().toString())) {
+                String messageType = element.toString();
+                String responseType = e.getValue().toString().substring(0, e.getValue().toString().lastIndexOf('.'));
+
+                if (responseType.equals(Void.class.getName())) {
+                    processingEnv.getMessager().printMessage(
+                            DIAGNOSTIC_MESSAGE_KIND,
+                            String.format("message type '%s' has inadmissible return type (%s)", messageType, responseType),
+                            element,
+                            mirror);
+
+                    continue;
+                }
+
+                String registeredResponseType = portSignatures.get(messageType);
+
+                if (registeredResponseType == null) {
+                    portSignatures.put(messageType, responseType);
+                } else {
+                    if (!registeredResponseType.equals(responseType)) {
+                        processingEnv.getMessager().printMessage(
+                                DIAGNOSTIC_MESSAGE_KIND,
+                                String.format("message type '%s' cannot be mapped to both '%s' and '%s'",
+                                        messageType, registeredResponseType, responseType),
+                                element,
+                                mirror);
                     }
                 }
             }

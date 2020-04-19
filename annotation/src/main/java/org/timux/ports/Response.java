@@ -1,9 +1,6 @@
 package org.timux.ports;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Use this annotation to declare a response type for a {@link Request} type.
@@ -15,6 +12,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(Responses.class)
 public @interface Response {
 
     Class<?> value();

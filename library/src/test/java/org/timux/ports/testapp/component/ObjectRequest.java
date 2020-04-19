@@ -1,5 +1,8 @@
 package org.timux.ports.testapp.component;
 
+import org.timux.ports.Response;
+
+@Response(Object.class)
 public class ObjectRequest {
 
     private final Object object;
