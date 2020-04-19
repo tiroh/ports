@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>org.timux.ports</groupId>
-            <artifactId>ports-annotation</artifactId>
+            <artifactId>ports-base</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

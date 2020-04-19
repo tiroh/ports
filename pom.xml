@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>annotation</module>
+        <module>base</module>
         <module>core</module>
         <module>vaadinspring</module>
     </modules>

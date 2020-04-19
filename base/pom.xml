@@ -10,7 +10,7 @@
         <version>0.4.1</version>
     </parent>
 
-    <artifactId>ports-annotation</artifactId>
+    <artifactId>ports-base</artifactId>
 
     <packaging>jar</packaging>
 
