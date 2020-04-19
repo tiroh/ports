@@ -7,13 +7,15 @@ reduced to a minimum (and thus also the need for dependency injection).
 
 ## Maven setup for plain Ports
 
+The Ports Framework requires at least Java 8.
+
 Add the following dependency to your POM(s):
 
 ```
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-library</artifactId>
-   <version>0.4.0</version>
+   <version>0.4.1</version>
 </dependency>
 ```
 
@@ -26,18 +28,8 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-vaadinspring</artifactId>
-   <version>0.4.0</version>
+   <version>0.4.1</version>
 </dependency>
-```
-
-The Ports Framework requires at least Java 8. Add the following entry to your
-Super POM to make sure the compiler is set up correctly:
-
-```
-<properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-</properties>
 ```
 
 ## License
