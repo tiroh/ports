@@ -14,7 +14,7 @@ Add the following dependency to your POM(s):
 ```
 <dependency>
    <groupId>org.timux.ports</groupId>
-   <artifactId>ports-library</artifactId>
+   <artifactId>ports-core</artifactId>
    <version>0.4.1</version>
 </dependency>
 ```
