@@ -33,7 +33,7 @@ public class B {
         return "blub(" + request.getObject() + ")";
     }
 
-    @In Either<Boolean, String> onTestCommand(TestCommand command) {
+    @In Either<Boolean, Integer> onTestCommand(TestCommand command) {
         return Either.a(true);
     }
 }

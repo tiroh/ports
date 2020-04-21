@@ -8,7 +8,7 @@ public class A {
     @Out Event<IntEvent> intEvent;
     @Out Request<ShortRequest, Double> shortRequest;
     @Out Request<ObjectRequest, Object> objectRequest;
-    @Out Request<TestCommand, Either<Boolean, String>> testCommand;
+    @Out Request<TestCommand, Either<Boolean, Integer>> testCommand;
 
     private int field = 47;
 
