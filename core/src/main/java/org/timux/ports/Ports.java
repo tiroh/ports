@@ -363,32 +363,34 @@ public final class Ports {
     }
 
     private static Field[] getFields(Object o) {
-        Field[] fields = fieldCache.get(o);
+        Class<?> clazz = o.getClass();
+        Field[] fields = fieldCache.get(clazz);
 
         if (fields == null) {
-            fields = o.getClass().getDeclaredFields();
+            fields = clazz.getDeclaredFields();
 
             for (Field field : fields) {
                 field.setAccessible(true);
             }
 
-            fieldCache.put(o, fields);
+            fieldCache.put(clazz, fields);
         }
 
         return fields;
     }
 
     private static Method[] getMethods(Object o) {
-        Method[] methods = methodCache.get(o);
+        Class<?> clazz = o.getClass();
+        Method[] methods = methodCache.get(clazz);
 
         if (methods == null) {
-            methods = o.getClass().getDeclaredMethods();
+            methods = clazz.getDeclaredMethods();
 
             for (Method method : methods) {
                 method.setAccessible(true);
             }
 
-            methodCache.put(o, methods);
+            methodCache.put(clazz, methods);
         }
 
         return methods;
