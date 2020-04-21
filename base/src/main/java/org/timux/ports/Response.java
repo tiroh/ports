@@ -12,6 +12,9 @@ import java.lang.annotation.*;
  * case, your requests must return an {@link Either} (2 annotations) or
  * an {@link Either3} (3 annotations).
  *
+ * @see Either
+ * @see Either3
+ *
  * @author Tim Rohlfs
  * @since 0.4.0
  */

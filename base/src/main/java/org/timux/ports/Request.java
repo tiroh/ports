@@ -22,11 +22,15 @@ import java.util.function.Function;
 
 /**
  * A class that represents an OUT port with request-response semantics.
+ * <p>
+ * When implementing the request type, use the {@link Response} annotation in
+ * order to indicate the response type(s).
  *
  * @param <I> The type of the request data (input).
  * @param <O> The type of the response data (output).
  *
  * @see Event
+ * @see Response
  *
  * @author Tim Rohlfs
  * @since 0.1
