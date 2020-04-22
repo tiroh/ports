@@ -6,6 +6,7 @@ import org.timux.ports.SuccessOrFailure;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.tools.Diagnostic;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,26 +69,38 @@ class VerificationModel {
     }
 
     void verifyAndRegisterSuccessResponseType(String messageType, String successResponseType, Element element, AnnotationMirror mirror) {
-        Element annotationParent = element.getEnclosingElement();
-        successResponses.put(annotationParent, successResponseType);
+        successResponses.put(element, successResponseType);
 
-        String failureResponseType = failureResponses.get(annotationParent);
+        String failureResponseType = failureResponses.remove(element);
 
         if (failureResponseType != null) {
+            successResponses.remove(element);
             String responseType = String.format("%s<%s,%s>", SuccessOrFailure.class.getName(), successResponseType, failureResponseType);
             verifyAndRegisterResponseType(messageType, responseType, element, mirror);
         }
     }
 
     void verifyAndRegisterFailureResponseType(String messageType, String failureResponseType, Element element, AnnotationMirror mirror) {
-        Element annotationParent = element.getEnclosingElement();
-        failureResponses.put(annotationParent, failureResponseType);
+        failureResponses.put(element, failureResponseType);
 
-        String successResponseType = successResponses.get(annotationParent);
+        String successResponseType = successResponses.remove(element);
 
         if (successResponseType != null) {
+            failureResponses.remove(element);
             String responseType = String.format("%s<%s,%s>", SuccessOrFailure.class.getName(), successResponseType, failureResponseType);
             verifyAndRegisterResponseType(messageType, responseType, element, mirror);
+        }
+    }
+
+    void verifyThatNoSuccessOrFailureResponseTypesStandAlone() {
+        for (Map.Entry<Element, String> e : successResponses.entrySet()) {
+            Element element = e.getKey();
+            reporter.reportIssue(element, "a failure response type must be provided");
+        }
+
+        for (Map.Entry<Element, String> e : failureResponses.entrySet()) {
+            Element element = e.getKey();
+            reporter.reportIssue(element, "a success response type must be provided");
         }
     }
 

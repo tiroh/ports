@@ -165,6 +165,8 @@ public class AnnotationProcessor extends AbstractProcessor {
         forEachAnnotatedElementDo(roundEnvironment, Response.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, SuccessResponse.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, FailureResponse.class, this::processSingleResponseAnnotatedElement);
+
+        verificationModel.verifyThatNoSuccessOrFailureResponseTypesStandAlone();
     }
 
     private void processMultipleResponsesAnnotatedElement(Element element, AnnotationMirror mirror) {
