@@ -57,9 +57,13 @@ public abstract class SuccessOrFailure<SUCCESS, FAILURE> {
     }
 
     /**
-     * Creates an instance of this union that contains a SUCCESS.
+     * Creates an instance of this union that contains a SUCCESS (non-null).
      */
     public static <SUCCESS, FAILURE> SuccessOrFailure<SUCCESS, FAILURE> success(SUCCESS success) {
+        if (success == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new SuccessOrFailure<SUCCESS, FAILURE>() {
 
             @Override
@@ -75,9 +79,13 @@ public abstract class SuccessOrFailure<SUCCESS, FAILURE> {
     }
 
     /**
-     * Creates an instance of this union that contains a FAILURE.
+     * Creates an instance of this union that contains a FAILURE (non-null).
      */
     public static <SUCCESS, FAILURE> SuccessOrFailure<SUCCESS, FAILURE> failure(FAILURE failure) {
+        if (failure == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new SuccessOrFailure<SUCCESS, FAILURE>() {
 
             @Override

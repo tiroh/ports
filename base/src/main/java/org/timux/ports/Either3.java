@@ -63,9 +63,13 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
-     * Creates an instance of this union that contains an A.
+     * Creates an instance of this union that contains an A (non-null).
      */
     public static <A, B, C> Either3<A, B, C> a(A a) {
+        if (a == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new Either3<A, B, C>() {
 
             @Override
@@ -81,9 +85,13 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
-     * Creates an instance of this union that contains a B.
+     * Creates an instance of this union that contains a B (non-null).
      */
     public static <A, B, C> Either3<A, B, C> b(B b) {
+        if (b == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new Either3<A, B, C>() {
 
             @Override
@@ -99,9 +107,13 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
-     * Creates an instance of this union that contains a C.
+     * Creates an instance of this union that contains a C (non-null).
      */
     public static <A, B, C> Either3<A, B, C> c(C c) {
+        if (c == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new Either3<A, B, C>() {
 
             @Override

@@ -57,9 +57,13 @@ public abstract class Either<A, B> {
     }
 
     /**
-     * Creates an instance of this union that contains an A.
+     * Creates an instance of this union that contains an A (non-null).
      */
     public static <A, B> Either<A, B> a(A a) {
+        if (a == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new Either<A, B>() {
 
             @Override
@@ -75,9 +79,13 @@ public abstract class Either<A, B> {
     }
 
     /**
-     * Creates an instance of this union that contains a B.
+     * Creates an instance of this union that contains a B (non-null).
      */
     public static <A, B> Either<A, B> b(B b) {
+        if (b == null) {
+            throw new IllegalArgumentException("argument must not be null");
+        }
+
         return new Either<A, B>() {
 
             @Override
