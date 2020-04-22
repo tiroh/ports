@@ -9,6 +9,7 @@ public class A {
     @Out Request<ShortRequest, Double> shortRequest;
     @Out Request<ObjectRequest, Object> objectRequest;
     @Out Request<TestCommand, Either<Boolean, Integer>> testCommand;
+    @Out Request<FragileRequest, SuccessOrFailure<Integer, String>> fragileRequest;
 
     private int field = 47;
 
@@ -40,6 +41,7 @@ public class A {
         intEvent.trigger(new IntEvent(37));
         objectEvent.trigger(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
+        System.out.println(fragileRequest.call(new FragileRequest()).toString());
         double d = shortRequest.call(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));

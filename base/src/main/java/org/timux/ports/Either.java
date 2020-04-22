@@ -5,13 +5,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A union type for two types A and B. The primary use case is as a response type for a
- * {@link Request} that returns either a valid response object or an error status.
+ * A union type for two types A and B.
  * <p>
  * Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
+ * <p>
+ * For a {@link Request} that returns either a valid response object or an error status,
+ * use the {@link SuccessOrFailure} union type.
  *
  * @see Either3
+ * @see SuccessOrFailure
  *
  * @param <A> The first type.
  * @param <B> The second type.
@@ -20,7 +23,7 @@ import java.util.function.Function;
  */
 public abstract class Either<A, B> {
 
-    private Either() {
+    protected Either() {
         //
     }
 

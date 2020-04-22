@@ -1,9 +1,6 @@
 package org.timux.ports.testapp.component;
 
-import org.timux.ports.Either;
-import org.timux.ports.Event;
-import org.timux.ports.In;
-import org.timux.ports.Out;
+import org.timux.ports.*;
 
 public class B {
 
@@ -35,5 +32,9 @@ public class B {
 
     @In Either<Boolean, Integer> onTestCommand(TestCommand command) {
         return Either.a(true);
+    }
+
+    @In SuccessOrFailure<Integer, String> onFragileRequest(FragileRequest request) {
+        return SuccessOrFailure.failure("an error message");
     }
 }

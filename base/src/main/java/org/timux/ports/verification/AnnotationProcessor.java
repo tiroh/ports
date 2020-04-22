@@ -8,7 +8,9 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.*;
+import java.lang.annotation.Annotation;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 public class AnnotationProcessor extends AbstractProcessor {
 
@@ -30,6 +32,8 @@ public class AnnotationProcessor extends AbstractProcessor {
         supportedAnnotationTypes.add(In.class.getName());
         supportedAnnotationTypes.add(Out.class.getName());
         supportedAnnotationTypes.add(Response.class.getName());
+        supportedAnnotationTypes.add(SuccessResponse.class.getName());
+        supportedAnnotationTypes.add(FailureResponse.class.getName());
 
         unmodifiableSupportedAnnotationTypes = Collections.unmodifiableSet(supportedAnnotationTypes);
     }
@@ -157,28 +161,15 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private void checkRequestTypes(RoundEnvironment roundEnvironment) {
-        for (Element element : roundEnvironment.getElementsAnnotatedWith(Responses.class)) {
-            for (AnnotationMirror mirror : element.getAnnotationMirrors()) {
-                if (mirror.getAnnotationType().toString().equals(Responses.class.getName())) {
-                    for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
-                        if ("value".equals(e.getKey().getSimpleName().toString())) {
-                            processResponsesString(e.getValue().toString(), element, mirror);
-                        }
-                    }
-                }
-            }
-        }
-
-        for (Element element : roundEnvironment.getElementsAnnotatedWith(Response.class)) {
-            for (AnnotationMirror mirror : element.getAnnotationMirrors()) {
-                if (mirror.getAnnotationType().toString().equals(Response.class.getName())) {
-                    processResponseAnnotatedElement(element, mirror);
-                }
-            }
-        }
+        forEachAnnotatedElementDo(roundEnvironment, Responses.class, this::processMultipleResponsesAnnotatedElement);
+        forEachAnnotatedElementDo(roundEnvironment, Response.class, this::processSingleResponseAnnotatedElement);
+        forEachAnnotatedElementDo(roundEnvironment, SuccessResponse.class, this::processSingleResponseAnnotatedElement);
+        forEachAnnotatedElementDo(roundEnvironment, FailureResponse.class, this::processSingleResponseAnnotatedElement);
     }
 
-    private void processResponsesString(String responsesString, Element element, AnnotationMirror mirror) {
+    private void processMultipleResponsesAnnotatedElement(Element element, AnnotationMirror mirror) {
+        String responsesString = getMirrorValue(mirror);
+
         String messageType = element.toString();
         String[] parts = responsesString.split("Response\\(");
         List<String> responseTypes = new ArrayList<>();
@@ -209,20 +200,54 @@ public class AnnotationProcessor extends AbstractProcessor {
         verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
     }
 
-    private void processResponseAnnotatedElement(Element element, AnnotationMirror mirror) {
-        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
-            if ("value".equals(e.getKey().getSimpleName().toString())) {
-                String messageType = element.toString();
-                String responseType = e.getValue().toString().substring(0, e.getValue().toString().lastIndexOf('.'));
+    private void processSingleResponseAnnotatedElement(Element element, AnnotationMirror mirror) {
+        boolean isSuccessResponse = mirror.getAnnotationType().toString().equals(SuccessResponse.class.getName());
+        boolean isFailureResponse = mirror.getAnnotationType().toString().equals(FailureResponse.class.getName());
+        boolean isRegularResponse = !isSuccessResponse && !isFailureResponse;
 
-                if (responseType.equals(Void.class.getName())) {
-                    reporter.reportIssue(element, mirror, "message type '%s' has inadmissible return type (%s)", messageType, responseType);
-                    continue;
+        String mirrorValue = getMirrorValue(mirror);
+
+        String messageType = element.toString();
+        String responseType = mirrorValue.substring(0, mirrorValue.lastIndexOf('.'));
+
+        if (responseType.equals(Void.class.getName())) {
+            reporter.reportIssue(element, mirror, "message type '%s' has inadmissible return type (%s)", messageType, responseType);
+            return;
+        }
+
+        if (isRegularResponse) {
+            verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
+        }
+
+        if (isSuccessResponse) {
+            verificationModel.verifyAndRegisterSuccessResponseType(messageType, responseType, element, mirror);
+        }
+
+        if (isFailureResponse) {
+            verificationModel.verifyAndRegisterFailureResponseType(messageType, responseType, element, mirror);
+        }
+    }
+
+    private void forEachAnnotatedElementDo(
+            RoundEnvironment roundEnvironment, Class<? extends Annotation> annotation, BiConsumer<Element, AnnotationMirror> action)
+    {
+        for (Element element : roundEnvironment.getElementsAnnotatedWith(annotation)) {
+            for (AnnotationMirror mirror : element.getAnnotationMirrors()) {
+                if (mirror.getAnnotationType().toString().equals(annotation.getName())) {
+                    action.accept(element, mirror);
                 }
-
-                verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
             }
         }
+    }
+
+    private String getMirrorValue(AnnotationMirror mirror) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
+            if ("value".equals(e.getKey().getSimpleName().toString())) {
+                return e.getValue().toString();
+            }
+        }
+
+        throw new IllegalStateException("annotation value must not be empty (" + mirror.getAnnotationType().toString() + ")");
     }
 
     private static String extractTypeParameter(String type, String _default) {

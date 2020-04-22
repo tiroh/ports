@@ -1,5 +1,9 @@
 package org.timux.ports.verification;
 
+import org.timux.ports.Either;
+import org.timux.ports.Either3;
+import org.timux.ports.SuccessOrFailure;
+
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import java.util.HashMap;
@@ -10,6 +14,8 @@ class VerificationModel {
 
     private final Map<Element, HashSet<String>> inPortNames = new HashMap<>();
     private final Map<String, String> portSignatures = new HashMap<>();
+    private final Map<Element, String> successResponses = new HashMap<>();
+    private final Map<Element, String> failureResponses = new HashMap<>();
 
     private final Reporter reporter;
 
@@ -58,6 +64,30 @@ class VerificationModel {
                     reporter.reportIssue(element, mirror, notice, messageType, registeredResponseType, responseType);
                 }
             }
+        }
+    }
+
+    void verifyAndRegisterSuccessResponseType(String messageType, String successResponseType, Element element, AnnotationMirror mirror) {
+        Element annotationParent = element.getEnclosingElement();
+        successResponses.put(annotationParent, successResponseType);
+
+        String failureResponseType = failureResponses.get(annotationParent);
+
+        if (failureResponseType != null) {
+            String responseType = String.format("%s<%s,%s>", SuccessOrFailure.class.getName(), successResponseType, failureResponseType);
+            verifyAndRegisterResponseType(messageType, responseType, element, mirror);
+        }
+    }
+
+    void verifyAndRegisterFailureResponseType(String messageType, String failureResponseType, Element element, AnnotationMirror mirror) {
+        Element annotationParent = element.getEnclosingElement();
+        failureResponses.put(annotationParent, failureResponseType);
+
+        String successResponseType = successResponses.get(annotationParent);
+
+        if (successResponseType != null) {
+            String responseType = String.format("%s<%s,%s>", SuccessOrFailure.class.getName(), successResponseType, failureResponseType);
+            verifyAndRegisterResponseType(messageType, responseType, element, mirror);
         }
     }
 
