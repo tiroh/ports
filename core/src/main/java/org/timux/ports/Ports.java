@@ -30,8 +30,12 @@ import java.util.*;
  */
 public final class Ports {
 
-    private final static Map<Object, Field[]> fieldCache = new HashMap<>();
-    private final static Map<Object, Method[]> methodCache = new HashMap<>();
+    private static final Map<Class<?>, Field[]> fieldCache = new HashMap<>();
+    private static final Map<Class<?>, Method[]> methodCache = new HashMap<>();
+
+    private Ports() {
+        // Don't you instantiate this class!!
+    }
 
     /**
      * Begins connecting two components using the style of a fluent API.
