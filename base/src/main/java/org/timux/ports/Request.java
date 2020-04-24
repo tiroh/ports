@@ -16,6 +16,8 @@
 
 package org.timux.ports;
 
+import org.timux.ports.protocol.Protocol;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Function;
@@ -92,11 +94,16 @@ public class Request<I, O> {
      * @return The response of the connected component.
      */
     public O call(I payload) {
+        Protocol.onDataSent(this, payload);
+
         if (port == null) {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        return port.apply(payload);
+        O response = port.apply(payload);
+        Protocol.onDataReceived(this, response);
+
+        return response;
     }
 
     /**

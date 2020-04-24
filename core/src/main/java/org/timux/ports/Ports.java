@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import org.timux.ports.protocol.Protocol;
+import org.timux.ports.protocol.syntax.ConditionOrAction;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -32,6 +35,8 @@ public final class Ports {
 
     private static final Map<Class<?>, Field[]> fieldCache = new HashMap<>();
     private static final Map<Class<?>, Method[]> methodCache = new HashMap<>();
+
+    private final static List<Protocol> protocols = new ArrayList<>();
 
     private Ports() {
         // Don't you instantiate this class!!
@@ -408,4 +413,33 @@ public final class Ports {
                 ? _default
                 : type.substring(genericStart + 1, genericEnd);
     }
+
+    public static ConditionOrAction protocol(Object... components) {
+        for (Object component : components) {
+            Map<String, Field> outPortFieldsByType = getPortFieldsByType(component, Out.class, true);
+
+            try {
+                for (Map.Entry<String, Field> e : outPortFieldsByType.entrySet()) {
+                    Field outPortField = e.getValue();
+                    ensurePortInstantiation(outPortField, component);
+                }
+            } catch (IllegalAccessException e) {
+                //
+            }
+        }
+
+        Protocol protocol = new Protocol();
+        protocols.add(protocol);
+
+        return new ConditionOrAction(protocol);
+    }
+
+    public static boolean areProtocolsSatisfied() {
+        for (Protocol protocol : protocols) {
+            protocol.executeActions();
+        }
+
+        return true;
+    }
+
 }

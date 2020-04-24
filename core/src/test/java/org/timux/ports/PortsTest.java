@@ -24,7 +24,7 @@ import org.timux.ports.testapp.component.IntEvent;
 
 public class PortsTest {
 
-    class A {
+    static class A {
 
         @Out Event<IntEvent> intEvent;
 
@@ -33,7 +33,7 @@ public class PortsTest {
         }
     }
 
-    class B {
+    static class B {
 
         double receivedData = 0;
 
@@ -44,7 +44,7 @@ public class PortsTest {
         }
     }
 
-    class C {
+    static class C {
 
         int data;
 
@@ -110,5 +110,41 @@ public class PortsTest {
 
         Assert.assertThat(c1.data, IsEqual.equalTo(0));
         Assert.assertThat(c2.data, IsEqual.equalTo(3));
+    }
+
+    @Test
+    public void protocol() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+
+        Ports.protocol()
+            .when(a.intEvent).sends(x -> x.getData() > 1)
+                .do_(() -> System.out.println("a.intEvent sends x > 1, first action"))
+                .do_(() -> System.out.println("a.intEvent sends x > 1, second action"))
+            .when(a.intEvent).sends(x -> x.getData() > 2)
+                .do_(() -> System.out.println("a.intEvent sends x > 2, first action"))
+                .do_(() -> System.out.println("a.intEvent sends x > 2, second action"));
+
+        Ports.protocol()
+            .when(a.intEvent).sends(x -> x.getData() > 3)
+                .do_(() -> System.out.println("a.intEvent sends x > 3"))
+                .with(b.doubleRequest).call(new DoubleRequest(5.0))
+                .with(a.intEvent).trigger(new IntEvent(2))
+            .when(b.doubleRequest).sends(x -> x.getData() >= 4.0)
+                .do_(() -> System.out.println("b.doubleRequest sends x >= 4.0"))
+            .when(b.doubleRequest).receives(x -> x > 5.0)
+                .do_(() -> System.out.println("b.doubleRequest receives x > 5.0"));
+
+        Ports.protocol()
+            .when(a.intEvent).sends(x -> x.getData() > 1)
+                .with(b.doubleRequest).call(new DoubleRequest(2.1))
+                .expect(A.class, A::onDoubleRequest).returns((i, o) -> o == i.getData() * 1.5)
+        ;
+
+        a.intEvent.trigger(new IntEvent(4));
+
+        Assert.assertTrue(Ports.areProtocolsSatisfied());
     }
 }

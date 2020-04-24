@@ -16,6 +16,8 @@
 
 package org.timux.ports;
 
+import org.timux.ports.protocol.Protocol;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -170,6 +172,8 @@ public class Event<T> {
      * @param payload The payload to be sent.
      */
     public void trigger(T payload) {
+        Protocol.onDataSent(this, payload);
+
         if (singlePort != null) {
             singlePort.accept(payload);
             return;
