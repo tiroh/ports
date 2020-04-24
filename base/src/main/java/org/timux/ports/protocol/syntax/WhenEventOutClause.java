@@ -13,7 +13,6 @@ public class WhenEventOutClause<T> {
     }
 
     public ActionClause<T> sends(Predicate<T> predicate) {
-//        protocol.sends(predicate);
         Protocol.registerConditionOnSent(predicate);
         return new ActionClause<>(protocol);
     }

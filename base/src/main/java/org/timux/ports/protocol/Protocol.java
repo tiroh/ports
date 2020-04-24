@@ -79,12 +79,12 @@ public class Protocol {
 
     public static void registerTrigger(Object payload) {
         final Object withPort = currentWithPort;
-        registerAction(() -> ((Event) withPort).trigger(payload));
+        registerAction(x -> ((Event) withPort).trigger(payload));
     }
 
     public static void registerCall(Object payload) {
         final Object withPort = currentWithPort;
-        registerAction(() -> ((Request) withPort).call(payload));
+        registerAction(x -> ((Request) withPort).call(payload));
     }
 
     public static void onDataSent(Object port, Object data) {
@@ -105,7 +105,7 @@ public class Protocol {
         for (Map.Entry<Predicate, List<Action>> e : conditionalActions.actions.entrySet()) {
             if (e.getKey().test(data)) {
                 for (Action action : e.getValue()) {
-                    action.execute();
+                    action.execute(data);
                 }
             }
         }

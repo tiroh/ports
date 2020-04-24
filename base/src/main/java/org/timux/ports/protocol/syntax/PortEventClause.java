@@ -10,9 +10,8 @@ public class PortEventClause<T> {
         this.protocol = protocol;
     }
 
-    public ConditionOrAction trigger(T payload) {
-//        protocol.send(payload);
+    public ConditionOrAction<?> trigger(T payload) {
         Protocol.registerTrigger(payload);
-        return new ConditionOrAction(protocol);
+        return new ConditionOrAction<>(protocol);
     }
 }

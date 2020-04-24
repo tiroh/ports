@@ -10,9 +10,8 @@ public class PortRequestClause<I, O> {
         this.protocol = protocol;
     }
 
-    public ConditionOrAction call(I payload) {
-//        protocol.send(payload);
+    public ConditionOrAction<?> call(I payload) {
         Protocol.registerCall(payload);
-        return new ConditionOrAction(protocol);
+        return new ConditionOrAction<>(protocol);
     }
 }

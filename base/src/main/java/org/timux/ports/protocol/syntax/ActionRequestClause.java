@@ -13,9 +13,9 @@ public class ActionRequestClause<I, O> {
         this.protocol = protocol;
     }
 
-    public void do_(Action action) {
-        action.execute();
-    }
+//    public void do_(Action action) {
+//        action.execute();
+//    }
 
     public ExpectRequestClause<I, O> expect(Function<I, O> inPort) {
         return new ExpectRequestClause<>(protocol);

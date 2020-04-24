@@ -414,7 +414,7 @@ public final class Ports {
                 : type.substring(genericStart + 1, genericEnd);
     }
 
-    public static ConditionOrAction protocol(Object... components) {
+    public static ConditionOrAction<?> protocol(Object... components) {
         for (Object component : components) {
             Map<String, Field> outPortFieldsByType = getPortFieldsByType(component, Out.class, true);
 
@@ -431,7 +431,7 @@ public final class Ports {
         Protocol protocol = new Protocol();
         protocols.add(protocol);
 
-        return new ConditionOrAction(protocol);
+        return new ConditionOrAction<>(protocol);
     }
 
     public static boolean areProtocolsSatisfied() {

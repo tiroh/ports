@@ -28,11 +28,11 @@ public class ExpectEventClause<T> {
         this.protocol = protocol;
     }
 
-    public ActionClause receives(Predicate<T> predicate) {
-        return new ActionClause(protocol);
+    public ActionClause<T> receives(Predicate<T> predicate) {
+        return new ActionClause<>(protocol);
     }
 
-    public ActionClause returns(Predicate<T> predicate) {
-        return new ActionClause(protocol);
+    public ActionClause<T> returns(Predicate<T> predicate) {
+        return new ActionClause<>(protocol);
     }
 }

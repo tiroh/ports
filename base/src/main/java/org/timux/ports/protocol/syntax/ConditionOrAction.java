@@ -26,7 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ConditionOrAction {
+public class ConditionOrAction<T> {
 
     private final Protocol protocol;
 
@@ -34,7 +34,7 @@ public class ConditionOrAction {
         this.protocol = protocol;
     }
 
-    public <T> WhenEventOutClause<T> when(Event<T> port) {
+    public <U> WhenEventOutClause<U> when(Event<U> port) {
         Protocol.registerConditionPort(port);
         return new WhenEventOutClause<>(protocol);
     }
@@ -44,7 +44,7 @@ public class ConditionOrAction {
         return new WhenRequestClause<>(protocol);
     }
 
-    public <T> WhenEventInClause<T> when(Consumer<T> port) {
+    public <U> WhenEventInClause<U> when(Consumer<U> port) {
         return new WhenEventInClause<>(protocol);
     }
 
@@ -56,12 +56,12 @@ public class ConditionOrAction {
         return new ExpectEventClause<>(protocol);
     }
 
-    public ConditionOrAction do_(Action action) {
+    public ConditionOrAction<T> do_(Action<T> action) {
         Protocol.registerAction(action);
-        return new ConditionOrAction(protocol);
+        return new ConditionOrAction<>(protocol);
     }
 
-    public <T> PortEventClause<T> with(Event<T> port) {
+    public <U> PortEventClause<U> with(Event<U> port) {
         Protocol.registerWithPort(port);
         return new PortEventClause<>(protocol);
     }

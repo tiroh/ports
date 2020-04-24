@@ -184,7 +184,6 @@ public class Event<T> {
         int i = p.size();
 
         if (i == 0) {
-//            throw new PortNotConnectedException(name, owner.getClass().getName());
             System.err.println(String.format(
                     "[ports] warning: event %s was fired by component %s but there is no receiver",
                     eventTypeName,

@@ -16,7 +16,7 @@
 
 package org.timux.ports.protocol;
 
-public interface Action {
+public interface Action<T> {
 
-    void execute();
+    void execute(T payload);
 }

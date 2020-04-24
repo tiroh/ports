@@ -12,12 +12,12 @@ public class WhenRequestClause<I, O> {
         this.protocol = protocol;
     }
 
-    public ActionClause sends(Predicate<I> predicate) {
+    public ActionClause<I> sends(Predicate<I> predicate) {
         Protocol.registerConditionOnSent(predicate);
         return new ActionClause<>(protocol);
     }
 
-    public ActionClause receives(Predicate<O> predicate) {
+    public ActionClause<O> receives(Predicate<O> predicate) {
         Protocol.registerConditionOnReceived(predicate);
         return new ActionClause<>(protocol);
     }

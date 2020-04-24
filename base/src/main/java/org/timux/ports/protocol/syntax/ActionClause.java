@@ -20,9 +20,9 @@ public class ActionClause<T> {
         return new ExpectEventClause<>(protocol);
     }
 
-    public ConditionOrAction do_(Action action) {
+    public ConditionOrAction<T> do_(Action<T> action) {
         Protocol.registerAction(action);
-        return new ConditionOrAction(protocol);
+        return new ConditionOrAction<>(protocol);
     }
 
     public <T> PortEventClause<T> with(Event<T> port) {
