@@ -139,8 +139,7 @@ public class PortsTest {
 
         Ports.protocol()
             .when(a.intEvent).sends(x -> x.getData() > 1)
-                .with(b.doubleRequest).call(new DoubleRequest(2.1))
-                .expect(A.class, A::onDoubleRequest).returns((i, o) -> o == i.getData() * 1.5)
+                .with(b.doubleRequest).call(new DoubleRequest(2.1));
         ;
 
         a.intEvent.trigger(new IntEvent(4));

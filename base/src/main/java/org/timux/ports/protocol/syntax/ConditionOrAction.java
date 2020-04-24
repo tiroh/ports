@@ -56,11 +56,6 @@ public class ConditionOrAction {
         return new ExpectEventClause<>(protocol);
     }
 
-    public <T, I, O> ExpectRequestClause<I, O> expect(Class<T> clazz, BiFunction<T, I, O> inPort) {
-        System.err.println(MethodDetector.getMethod(clazz, inPort));
-        return new ExpectRequestClause<>(protocol);
-    }
-
     public ConditionOrAction do_(Action action) {
         Protocol.registerAction(action);
         return new ConditionOrAction(protocol);
