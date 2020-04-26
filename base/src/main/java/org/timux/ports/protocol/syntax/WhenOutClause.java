@@ -4,16 +4,15 @@ import org.timux.ports.protocol.Protocol;
 
 import java.util.function.Predicate;
 
-public class WhenEventOutClause<T> {
-
-    private final Protocol protocol;
-
-    public WhenEventOutClause(Protocol protocol) {
-        this.protocol = protocol;
-    }
+public class WhenOutClause<T> {
 
     public ActionClause<T> sends(Predicate<T> predicate) {
         Protocol.registerConditionOnSent(predicate);
-        return new ActionClause<>(protocol);
+        return new ActionClause<>();
+    }
+
+    public ActionClause<T> sends() {
+        Protocol.registerConditionOnSent(x -> true);
+        return new ActionClause<>();
     }
 }

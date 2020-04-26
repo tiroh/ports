@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Tim Rohlfs
+ * Copyright 2018-2020 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import java.util.function.Function;
 public class Request<I, O> {
 
     private Function<I, O> port;
+    private String requestTypeName;
     private Object owner;
     private String memberName;
 
@@ -47,7 +48,8 @@ public class Request<I, O> {
         //
     }
 
-    protected Request(String memberName, Object owner) {
+    protected Request(String requestTypeName, String memberName, Object owner) {
+        this.requestTypeName = requestTypeName;
         this.memberName = memberName;
         this.owner = owner;
     }
@@ -57,7 +59,7 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    public void connect(Function<I, O> port) {
+    protected void connect(Function<I, O> port) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -65,6 +67,7 @@ public class Request<I, O> {
         this.port = port;
     }
 
+    @SuppressWarnings("unchecked")
     protected void connect(Method portMethod, Object methodOwner) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
@@ -93,27 +96,31 @@ public class Request<I, O> {
      *
      * @return The response of the connected component.
      */
+    @SuppressWarnings("unchecked")
     public O call(I payload) {
-        Protocol.onDataSent(this, payload);
+        if (Protocol.areProtocolsActive) {
+            Protocol.onDataSent(requestTypeName, owner, payload);
+
+            Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseIfAvailable(requestTypeName, owner);
+
+            if (responseProvider != null) {
+                O protocolResponse = responseProvider.apply(payload);
+                Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
+                return protocolResponse;
+            }
+        }
 
         if (port == null) {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
         O response = port.apply(payload);
-        Protocol.onDataReceived(this, response);
+
+        if (Protocol.areProtocolsActive) {
+            Protocol.onDataReceived(requestTypeName, owner, response);
+        }
 
         return response;
-    }
-
-    /**
-     * Sends a call without payload to the connected IN port. This is equivalent to calling {@link #call(Object)} with
-     * <code>null</code> as argument.
-     *
-     * @return The response of the connected component.
-     */
-    public O call() {
-        return call(null);
     }
 
     /**

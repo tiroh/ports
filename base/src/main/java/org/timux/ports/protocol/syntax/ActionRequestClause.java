@@ -1,31 +1,35 @@
 package org.timux.ports.protocol.syntax;
 
-import org.timux.ports.protocol.Action;
+import org.timux.ports.Event;
+import org.timux.ports.Request;
 import org.timux.ports.protocol.Protocol;
 
 import java.util.function.Function;
 
 public class ActionRequestClause<I, O> {
 
-    private final Protocol protocol;
-
-    public ActionRequestClause(Protocol protocol) {
-        this.protocol = protocol;
+    public ConditionOrAction<?> do_(Action<I> action) {
+        Protocol.registerAction(action);
+        return new ConditionOrAction<>();
     }
 
-//    public void do_(Action action) {
-//        action.execute();
-//    }
-
-    public ExpectRequestClause<I, O> expect(Function<I, O> inPort) {
-        return new ExpectRequestClause<>(protocol);
+    public ConditionOrAction<I> respond(Function<I, O> response) {
+        Protocol.registerRespondAction(response);
+        return new ConditionOrAction<>();
     }
 
-    public void return_(O value) {
-
+    public ConditionOrAction<I> respond(O response) {
+        Protocol.registerRespondAction(x -> response);
+        return new ConditionOrAction<>();
     }
 
-    public Condition and() {
-        return new Condition(protocol);
+    public <U> PortEventClause<U> with(Class<U> messageType) {
+        Protocol.registerWithMessageType(messageType.getName());
+        return new PortEventClause<>();
+    }
+
+    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
+        Protocol.registerWithMessageType(requestType.getName());
+        return new PortRequestClause<>();
     }
 }

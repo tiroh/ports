@@ -16,58 +16,44 @@
 
 package org.timux.ports.protocol.syntax;
 
-import org.timux.ports.Event;
-import org.timux.ports.Request;
-import org.timux.ports.protocol.Action;
-import org.timux.ports.protocol.ExpectEventClause;
 import org.timux.ports.protocol.Protocol;
 
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class ConditionOrAction<T> {
 
-    private final Protocol protocol;
-
-    public ConditionOrAction(Protocol protocol) {
-        this.protocol = protocol;
+    public <U> WhenOutClause<U> when(Class<U> messageType) {
+        Protocol.registerMessageType(messageType.getName());
+        return new WhenOutClause<>();
     }
 
-    public <U> WhenEventOutClause<U> when(Event<U> port) {
-        Protocol.registerConditionPort(port);
-        return new WhenEventOutClause<>(protocol);
-    }
-
-    public <I, O> WhenRequestClause<I, O> when(Request<I, O> port) {
-        Protocol.registerConditionPort(port);
-        return new WhenRequestClause<>(protocol);
-    }
-
-    public <U> WhenEventInClause<U> when(Consumer<U> port) {
-        return new WhenEventInClause<>(protocol);
-    }
-
-    public <I, O> WhenRequestClause<I, O> when(Function<I, O> port) {
-        return new WhenRequestClause<>(protocol);
-    }
-
-    public <U> ExpectEventClause<U> expect(Consumer<U> inPort) {
-        return new ExpectEventClause<>(protocol);
+    public <I, O> WhenRequestClause<I, O> when(Class<I> requestType, Class<O> responseType) {
+        Protocol.registerMessageType(requestType.getName());
+        return new WhenRequestClause<>();
     }
 
     public ConditionOrAction<T> do_(Action<T> action) {
         Protocol.registerAction(action);
-        return new ConditionOrAction<>(protocol);
+        return new ConditionOrAction<>();
     }
 
-    public <U> PortEventClause<U> with(Event<U> port) {
-        Protocol.registerWithPort(port);
-        return new PortEventClause<>(protocol);
+    public ConditionOrAction<T> do_(Consumer<T> action) {
+        Protocol.registerAction((Action<T>) (payload, owner) -> action.accept(payload));
+        return new ConditionOrAction<>();
     }
 
-    public <I, O> PortRequestClause<I, O> with(Request<I, O> port) {
-        Protocol.registerWithPort(port);
-        return new PortRequestClause<>(protocol);
+    public ConditionOrAction<T> do_(Runnable action) {
+        Protocol.registerAction((Action<T>) (payload, owner) -> action.run());
+        return new ConditionOrAction<>();
+    }
+
+    public <U> PortEventClause<U> with(Class<U> messageType) {
+        Protocol.registerWithMessageType(messageType.getName());
+        return new PortEventClause<>();
+    }
+
+    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
+        Protocol.registerWithMessageType(requestType.getName());
+        return new PortRequestClause<>();
     }
 }

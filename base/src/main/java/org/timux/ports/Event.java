@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Tim Rohlfs
+ * Copyright 2018-2020 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,20 +39,18 @@ import java.util.function.Consumer;
  */
 public class Event<T> {
 
-    private List<Consumer<T>> ports = new ArrayList<>();
+    private final List<Consumer<T>> ports = new ArrayList<>();
     private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
     private Consumer<T> singlePort = null;
     private String eventTypeName;
     private Object owner;
-    private String memberName;
 
     public Event() {
         //
     }
 
-    protected Event(String eventTypeName, String memberName, Object owner) {
+    protected Event(String eventTypeName, Object owner) {
         this.eventTypeName = eventTypeName;
-        this.memberName = memberName;
         this.owner = owner;
     }
 
@@ -62,7 +60,7 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    public void connect(Consumer<T> port) {
+    protected void connect(Consumer<T> port) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -87,12 +85,7 @@ public class Event<T> {
             portMethods = new HashMap<>();
         }
 
-        Map<Object, Consumer<T>> portOwners = portMethods.get(portMethod);
-
-        if (portOwners == null) {
-            portOwners = new HashMap<>();
-            portMethods.put(portMethod, portOwners);
-        }
+        Map<Object, Consumer<T>> portOwners = portMethods.computeIfAbsent(portMethod, k -> new HashMap<>(4));
 
         if (eventWrapper == null) {
             portOwners.put(
@@ -172,7 +165,9 @@ public class Event<T> {
      * @param payload The payload to be sent.
      */
     public void trigger(T payload) {
-        Protocol.onDataSent(this, payload);
+        if (Protocol.areProtocolsActive) {
+            Protocol.onDataSent(eventTypeName, owner, payload);
+        }
 
         if (singlePort != null) {
             singlePort.accept(payload);

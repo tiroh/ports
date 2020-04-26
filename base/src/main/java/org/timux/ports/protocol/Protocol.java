@@ -18,31 +18,63 @@ package org.timux.ports.protocol;
 
 import org.timux.ports.Event;
 import org.timux.ports.Request;
+import org.timux.ports.protocol.syntax.Action;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class Protocol {
+@SuppressWarnings({"unchecked", "rawtypes"})
+public final class Protocol {
 
-    public static class ConditionalActions {
-
-        private Map<Predicate, List<Action>> actions = new LinkedHashMap<>();
+    private static class ConditionalActions {
+        private final Map<Predicate, List<Action>> actions = new LinkedHashMap<>();
     }
 
-    private static Map<Object, ConditionalActions> conditionsOnSent = new HashMap<>();
-    private static Map<Object, ConditionalActions> conditionsOnReceived = new HashMap<>();
+    private static class ResponseRegistry {
+        private final Map<String, Function<?, ?>> responseData = new LinkedHashMap<>();
+    }
 
-    private static Object currentConditionPort = null;
-    private static Object currentWithPort = null;
+    // keys = message type names
+    private final static Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();
+    private final static Map<String, ConditionalActions> conditionsOnReceived = new HashMap<>();
+
+    private final static Map<Object, ResponseRegistry> responseRegistries = new HashMap<>();
+
+    private final static List<Object> componentRegistry = new ArrayList<>();
+
+    private static String currentConditionMessageType = null;
+    private static String currentWithMessageType = null;
+
     private static ConditionalActions currentConditionalActions = null;
     private static List<Action> currentActions = null;
 
-    public static void registerConditionPort(Object port) {
-        currentConditionPort = port;
+    private static Event<?> eventBroadcaster;
+
+    public static boolean areProtocolsActive = false;
+
+    private Protocol() {
+        //
     }
 
-    public static void registerWithPort(Object port) {
-        currentWithPort = port;
+    public static void clear() {
+        areProtocolsActive = false;
+        conditionsOnSent.clear();
+        conditionsOnReceived.clear();
+        responseRegistries.clear();
+        componentRegistry.clear();
+    }
+
+    public static void registerComponent(Object component) {
+        componentRegistry.add(component);
+    }
+
+    public static void registerMessageType(String messageType) {
+        currentConditionMessageType = messageType;
+    }
+
+    public static void registerWithMessageType(String messageType) {
+        currentWithMessageType = messageType;
     }
 
     private static void registerConditionPort(Map<Object, ConditionalActions> conditions, Object port) {
@@ -54,17 +86,28 @@ public class Protocol {
         }
     }
 
+    private static void registerConditionMessageType(Map<String, ConditionalActions> conditions, String messageType) {
+        currentConditionalActions = conditions.get(messageType);
+
+        if (currentConditionalActions == null) {
+            currentConditionalActions = new ConditionalActions();
+            conditions.put(messageType, currentConditionalActions);
+        }
+    }
+
     public static <T> void registerConditionOnSent(Predicate<T> predicate) {
-        registerConditionPort(conditionsOnSent, currentConditionPort);
+//        registerConditionPort(conditionsOnSent, currentConditionPort);
+        registerConditionMessageType(conditionsOnSent, currentConditionMessageType);
         registerCondition(predicate);
     }
 
     public static <T> void registerConditionOnReceived(Predicate<T> predicate) {
-        registerConditionPort(conditionsOnReceived, currentConditionPort);
+//        registerConditionPort(conditionsOnReceived, currentConditionPort);
+        registerConditionMessageType(conditionsOnReceived, currentConditionMessageType);
         registerCondition(predicate);
     }
 
-    private static <T> void registerCondition( Predicate<T> predicate) {
+    private static <T> void registerCondition(Predicate<T> predicate) {
         currentActions = currentConditionalActions.actions.get(predicate);
 
         if (currentActions == null) {
@@ -77,41 +120,56 @@ public class Protocol {
         currentActions.add(action);
     }
 
-    public static void registerTrigger(Object payload) {
-        final Object withPort = currentWithPort;
-        registerAction(x -> ((Event) withPort).trigger(payload));
+    public static void registerTriggerAction(Object payload) {
+//        final String messageType = currentWithMessageType;
+//        registerAction((x, owner) -> ((Event) withPort).trigger(payload));
     }
 
-    public static void registerCall(Object payload) {
-        final Object withPort = currentWithPort;
-        registerAction(x -> ((Request) withPort).call(payload));
+    public static void registerCallAction(Object payload) {
+//        final String messageType = currentWithMessageType;
+//        registerAction((x, owner) -> ((Request) withPort).call(payload));
     }
 
-    public static void onDataSent(Object port, Object data) {
-        onDataEvent(conditionsOnSent, port, data);
+    public static void registerRespondAction(Function<?, ?> response) {
+        final String conditionMessageType = currentConditionMessageType;
+
+        registerAction((x, owner) -> {
+            ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
+            registry.responseData.put(conditionMessageType, response);
+        });
     }
 
-    public static <O> void onDataReceived(Object port, O data) {
-        onDataEvent(conditionsOnReceived, port, data);
+    public static void clearResponseRegistry(String messageType, Object owner) {
+        ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
+        registry.responseData.remove(messageType);
     }
 
-    public static void onDataEvent(Map<Object, ConditionalActions> conditionalActionsMap, Object port, Object data) {
-        ConditionalActions conditionalActions = conditionalActionsMap.get(port);
+    public static Object getResponseIfAvailable(String messageType, Object owner) {
+        ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
+        return registry.responseData.remove(messageType);
+    }
 
-        if (conditionalActions == null) {
+    public static void onDataSent(String messageType, Object owner, Object data) {
+        onDataEvent(conditionsOnSent, messageType, owner, data);
+    }
+
+    public static <O> void onDataReceived(String messageType, Object owner, O data) {
+        onDataEvent(conditionsOnReceived, messageType, owner, data);
+    }
+
+    public static void onDataEvent(Map<String, ConditionalActions> conditionalActionsMap, String messageType, Object owner, Object data) {
+        ConditionalActions conditionalActions = conditionalActionsMap.get(messageType);
+
+        if (conditionalActions == null || conditionalActions.actions.isEmpty()) {
             return;
         }
 
         for (Map.Entry<Predicate, List<Action>> e : conditionalActions.actions.entrySet()) {
             if (e.getKey().test(data)) {
                 for (Action action : e.getValue()) {
-                    action.execute(data);
+                    action.execute(data, owner);
                 }
             }
         }
-    }
-
-    public static void executeActions() {
-
     }
 }

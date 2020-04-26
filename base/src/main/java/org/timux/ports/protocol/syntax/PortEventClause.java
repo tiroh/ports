@@ -4,14 +4,8 @@ import org.timux.ports.protocol.Protocol;
 
 public class PortEventClause<T> {
 
-    private final Protocol protocol;
-
-    PortEventClause(Protocol protocol) {
-        this.protocol = protocol;
-    }
-
     public ConditionOrAction<?> trigger(T payload) {
-        Protocol.registerTrigger(payload);
-        return new ConditionOrAction<>(protocol);
+        Protocol.registerTriggerAction(payload);
+        return new ConditionOrAction<>();
     }
 }

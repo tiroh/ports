@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-package org.timux.ports.protocol;
+package org.timux.ports.protocol.syntax;
 
-import org.timux.ports.protocol.syntax.ActionClause;
+public interface Action<T> {
 
-import java.util.function.Predicate;
-
-public class ExpectEventClause<T> {
-
-    private final Protocol protocol;
-
-    public ExpectEventClause(Protocol protocol) {
-        this.protocol = protocol;
-    }
-
-    public ActionClause<T> receives(Predicate<T> predicate) {
-        return new ActionClause<>(protocol);
-    }
-
-    public ActionClause<T> returns(Predicate<T> predicate) {
-        return new ActionClause<>(protocol);
-    }
+    void execute(T payload, Object owner);
 }

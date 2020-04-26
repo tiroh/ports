@@ -22,8 +22,6 @@ import org.junit.Test;
 import org.timux.ports.testapp.DoubleRequest;
 import org.timux.ports.testapp.component.IntEvent;
 
-import javax.tools.JavaCompiler;
-
 public class PortsTest {
 
     static class A {
@@ -119,31 +117,33 @@ public class PortsTest {
         A a = new A();
         B b = new B();
 
-        
-
         Ports.connect(a).and(b);
 
-        Ports.protocol()
-            .when(a.intEvent).sends(x -> x.getData() > 1)
-                .do_(x -> System.out.println(String.format("a.intEvent sends x > 1 (%d), first action", x.getData())))
-                .do_(x -> System.out.println(String.format("a.intEvent sends x > 1 (%d), second action", x.getData())))
-            .when(a.intEvent).sends(x -> x.getData() > 2)
-                .do_(x -> System.out.println(String.format("a.intEvent sends x > 2 (%d), first action", x.getData())))
-                .do_(x -> System.out.println(String.format("a.intEvent sends x > 2 (%d), second action", x.getData())));
+        Ports.protocol(a, b);
 
         Ports.protocol()
-            .when(a.intEvent).sends(x -> x.getData() > 3)
-                .do_(x -> System.out.println(String.format("a.intEvent sends x > 3 (%d)", x.getData())))
-                .with(b.doubleRequest).call(new DoubleRequest(5.0))
-                .with(a.intEvent).trigger(new IntEvent(2))
-            .when(b.doubleRequest).sends(x -> x.getData() >= 4.0)
-                .do_(x -> System.out.println(String.format("b.doubleRequest sends x >= 4.0 (%f)", x.getData())))
-            .when(b.doubleRequest).receives(x -> x > 5.0)
-                .do_(x -> System.out.println(String.format("b.doubleRequest receives x > 5.0 (%f)", x)));
+            .when(IntEvent.class).sends(x -> x.getData() > 1)
+                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 1 (%d), first action (%s)", x.getData(), owner.getClass().getName())))
+                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 1 (%d), second action (%s)", x.getData(), owner.getClass().getName())))
+            .when(IntEvent.class).sends(x -> x.getData() > 2)
+                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 2 (%d), first action (%s)", x.getData(), owner.getClass().getName())))
+                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 2 (%d), second action (%s)", x.getData(), owner.getClass().getName())));
 
         Ports.protocol()
-            .when(a.intEvent).sends(x -> x.getData() > 1)
-                .with(b.doubleRequest).call(new DoubleRequest(2.1));
+            .when(IntEvent.class).sends(x -> x.getData() > 3)
+                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 3 (%d) (%s)", x.getData(), owner.getClass().getName())))
+                .with(DoubleRequest.class, Double.class).call(new DoubleRequest(5.0))
+                .with(IntEvent.class).trigger(new IntEvent(2))
+            .when(DoubleRequest.class).sends(x -> x.getData() >= 4.0)
+                .do_((x, owner) -> System.out.println(String.format("b.doubleRequest request: x >= 4.0 (%f) (%s)", x.getData(), owner.getClass().getName())))
+            .when(DoubleRequest.class, Double.class).requests(x -> x.getData() > 3.0)
+                .respond(17.5)
+            .when(DoubleRequest.class, Double.class).responds(x -> x > 5.0)
+                .do_((x, owner) -> System.out.println(String.format("b.doubleRequest receives x > 5.0 (%f) (%s)", x, owner.getClass().getName())));
+
+//        Ports.protocol()
+//            .when(IntEvent.class).sends(x -> x.getData() > 1)
+//                .with(b.doubleRequest).call(new DoubleRequest(2.1));
 
         a.intEvent.trigger(new IntEvent(4));
     }

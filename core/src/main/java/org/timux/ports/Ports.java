@@ -25,18 +25,17 @@ import java.lang.reflect.Type;
 import java.util.*;
 
 /**
- * The main utility class of the Ports framework.
+ * The main utility class of the Ports Framework.
  *
  * @author Tim Rohlfs
  *
  * @since 0.1
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public final class Ports {
 
     private static final Map<Class<?>, Field[]> fieldCache = new HashMap<>();
     private static final Map<Class<?>, Method[]> methodCache = new HashMap<>();
-
-    private final static List<Protocol> protocols = new ArrayList<>();
 
     private Ports() {
         // Don't you instantiate this class!!
@@ -180,19 +179,20 @@ public final class Ports {
         return portsWereConnected;
     }
 
-    static void ensurePortInstantiation(Field outPortField, Object from) throws IllegalAccessException {
-        if (outPortField.get(from) == null) {
-            if (outPortField.getType() == Event.class) {
-                String genericTypeName = outPortField.getGenericType().getTypeName();
-                String extractedEventTypeName = extractTypeParameter(genericTypeName, genericTypeName);
+    static void ensurePortInstantiation(Field outPortField, Object owner) throws IllegalAccessException {
+        if (outPortField.get(owner) == null) {
+            String genericTypeName = outPortField.getGenericType().getTypeName();
+            String extractedMessageTypeName = extractTypeParameter(genericTypeName, genericTypeName);
+            String requestTypeName = extractRequestTypeName(extractedMessageTypeName);
 
-                Event event = new Event(extractedEventTypeName, outPortField.getName(), from);
-                outPortField.set(from, event);
+            if (outPortField.getType() == Event.class) {
+                Event event = new Event(requestTypeName, owner);
+                outPortField.set(owner, event);
             }
 
             if (outPortField.getType() == Request.class) {
-                Request request = new Request(outPortField.getName(), from);
-                outPortField.set(from, request);
+                Request request = new Request(requestTypeName, outPortField.getName(), owner);
+                outPortField.set(owner, request);
             }
         }
     }
@@ -414,7 +414,35 @@ public final class Ports {
                 : type.substring(genericStart + 1, genericEnd);
     }
 
-    public static ConditionOrAction<?> protocol(Object... components) {
+    private static String extractRequestTypeName(String type) {
+        return type.split(",")[0].trim();
+    }
+
+    private static String extractResponseTypeName(String type) {
+        try {
+            return type.split(",")[1].trim();
+        } catch (IndexOutOfBoundsException e) {
+            return void.class.getName();
+        }
+    }
+
+//    private static void registerPortWithProtocols(Field outPortField, Object owner) throws IllegalAccessException {
+//        String genericTypeName = outPortField.getGenericType().getTypeName();
+//        String extractedMessageTypeName = extractTypeParameter(genericTypeName, genericTypeName);
+//        String requestTypeName = extractRequestTypeName(extractedMessageTypeName);
+//
+//        if (outPortField.getType() == Event.class) {
+//            Event<?> eventPort = (Event<?>) outPortField.get(owner);
+//            Protocol.registerPort(requestTypeName, eventPort);
+//        }
+//
+//        if (outPortField.getType() == Request.class) {
+//            Request<?, ?> requestPort = (Request<?, ?>) outPortField.get(owner);
+//            Protocol.registerPort(requestTypeName, requestPort);
+//        }
+//    }
+
+    public static void register(Object... components) {
         for (Object component : components) {
             Map<String, Field> outPortFieldsByType = getPortFieldsByType(component, Out.class, true);
 
@@ -422,24 +450,20 @@ public final class Ports {
                 for (Map.Entry<String, Field> e : outPortFieldsByType.entrySet()) {
                     Field outPortField = e.getValue();
                     ensurePortInstantiation(outPortField, component);
+                    Protocol.registerComponent(component);
                 }
             } catch (IllegalAccessException e) {
-                //
+                throw new RuntimeException(e);
             }
         }
-
-        Protocol protocol = new Protocol();
-        protocols.add(protocol);
-
-        return new ConditionOrAction<>(protocol);
     }
 
-    public static boolean areProtocolsSatisfied() {
-        for (Protocol protocol : protocols) {
-            protocol.executeActions();
-        }
-
-        return true;
+    public static ConditionOrAction<?> protocol(Object... components) {
+        Protocol.areProtocolsActive = true;
+        return new ConditionOrAction<>();
     }
 
+    public static void release() {
+        Protocol.clear();
+    }
 }

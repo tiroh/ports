@@ -6,19 +6,23 @@ import java.util.function.Predicate;
 
 public class WhenRequestClause<I, O> {
 
-    private final Protocol protocol;
-
-    public WhenRequestClause(Protocol protocol) {
-        this.protocol = protocol;
-    }
-
-    public ActionClause<I> sends(Predicate<I> predicate) {
+    public ActionRequestClause<I, O> requests(Predicate<I> predicate) {
         Protocol.registerConditionOnSent(predicate);
-        return new ActionClause<>(protocol);
+        return new ActionRequestClause<>();
     }
 
-    public ActionClause<O> receives(Predicate<O> predicate) {
+    public ActionRequestClause<I, O> requests() {
+        Protocol.registerConditionOnSent(x -> true);
+        return new ActionRequestClause<>();
+    }
+
+    public ActionClause<O> responds(Predicate<O> predicate) {
         Protocol.registerConditionOnReceived(predicate);
-        return new ActionClause<>(protocol);
+        return new ActionClause<>();
+    }
+
+    public ActionClause<O> responds() {
+        Protocol.registerConditionOnReceived(x -> true);
+        return new ActionClause<>();
     }
 }
