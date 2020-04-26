@@ -16,7 +16,6 @@
 
 package org.timux.ports;
 
-import org.timux.ports.protocol.Protocol;
 import org.timux.ports.protocol.syntax.ConditionOrAction;
 
 import java.lang.reflect.Field;
@@ -91,8 +90,6 @@ public final class Ports {
     }
 
     static boolean connectDirectedInternal(Object from, Object to, EventWrapper eventWrapper, int portsOptions) throws IllegalAccessException {
-        boolean portsWereConnected = false;
-
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
 
         Map<String, Field> outPortFieldsByType;
@@ -105,6 +102,8 @@ public final class Ports {
             throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), e.getMessage());
         }
 
+        boolean portsWereConnected = false;
+
         for (Map.Entry<String, Field> e : outPortFieldsByType.entrySet()) {
             String outPortFieldType = e.getKey();
             Field outPortField = e.getValue();
@@ -114,69 +113,124 @@ public final class Ports {
             Method inPortHandlerMethod = inPortHandlerMethodsByType.get(outPortFieldType);
             Field inPortField = inPortFieldsByType.get(outPortFieldType);
 
-            if (inPortField != null) {
-                if (inPortField.getType() == Queue.class) {
-                    if (inPortField.get(to) == null) {
-                        inPortField.set(to, new Queue());
-                    }
-                }
+            portsWereConnected |= connectSinglePort(
+                    outPortField,
+                    outPortFieldType,
+                    from,
+                    to,
+                    inPortHandlerMethod,
+                    inPortField,
+                    eventWrapper,
+                    portsOptions);
+        }
 
-                if (inPortField.getType() == Stack.class) {
-                    if (inPortField.get(to) == null) {
-                        inPortField.set(to, new Stack());
-                    }
-                }
-            }
+        return portsWereConnected;
+    }
 
-            if (inPortHandlerMethod != null && inPortField != null) {
-                throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), outPortFieldType);
-            }
-
-            if (inPortHandlerMethod == null && inPortField == null) {
-                if ((portsOptions & PortsOptions.DO_NOT_ALLOW_MISSING_PORTS) == 0) {
-                    continue;
-                }
-
-                throw new PortNotFoundException(to.getClass().getName(), outPortFieldType);
-            }
-
-            if (outPortField.getType() == Event.class) {
-                Event event = (Event) outPortField.get(from);
-
-                if (!event.isConnected()
-                        || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
-                        || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
-                {
-                    if (inPortHandlerMethod != null) {
-                        event.connect(inPortHandlerMethod, to, eventWrapper);
-                        portsWereConnected = true;
-                    }
-
-                    if (inPortField != null) {
-                        if (inPortField.getType() == Queue.class) {
-                            event.connect((Queue) inPortField.get(to));
-                            portsWereConnected = true;
-                        }
-
-                        if (inPortField.getType() == Stack.class) {
-                            event.connect((Stack) inPortField.get(to));
-                            portsWereConnected = true;
-                        }
-                    }
+    static boolean connectSinglePort(
+            Field outPortField,
+            String outPortFieldType,
+            Object from,
+            Object to,
+            Method inPortHandlerMethod,
+            Field inPortField,
+            EventWrapper eventWrapper,
+            int portsOptions) throws IllegalAccessException
+    {
+        if (inPortField != null) {
+            if (inPortField.getType() == Queue.class) {
+                if (inPortField.get(to) == null) {
+                    inPortField.set(to, new Queue());
                 }
             }
 
-            if (outPortField.getType() == Request.class) {
-                Request request = (Request) outPortField.get(from);
-
-                if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
-                    request.connect(inPortHandlerMethod, to);
-                    portsWereConnected = true;
+            if (inPortField.getType() == Stack.class) {
+                if (inPortField.get(to) == null) {
+                    inPortField.set(to, new Stack());
                 }
             }
         }
 
+        if (inPortHandlerMethod != null && inPortField != null) {
+            throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), outPortFieldType);
+        }
+
+        if (inPortHandlerMethod == null && inPortField == null) {
+            if ((portsOptions & PortsOptions.DO_NOT_ALLOW_MISSING_PORTS) == 0) {
+                return false;
+            }
+
+            throw new PortNotFoundException(outPortFieldType, to.getClass().getName());
+        }
+
+        boolean portsWereConnected = false;
+
+        if (outPortField.getType() == Event.class) {
+            Event event = (Event) outPortField.get(from);
+
+            if (!event.isConnected()
+                    || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)
+                    || ((portsOptions & PortsOptions.FORCE_CONNECT_EVENT_PORTS) != 0))
+            {
+                if (inPortHandlerMethod != null) {
+                    event.connect(inPortHandlerMethod, to, eventWrapper);
+                    portsWereConnected = true;
+                }
+
+                if (inPortField != null) {
+                    if (inPortField.getType() == Queue.class) {
+                        event.connect((Queue) inPortField.get(to));
+                        portsWereConnected = true;
+                    }
+
+                    if (inPortField.getType() == Stack.class) {
+                        event.connect((Stack) inPortField.get(to));
+                        portsWereConnected = true;
+                    }
+                }
+            }
+        }
+
+        if (outPortField.getType() == Request.class) {
+            Request request = (Request) outPortField.get(from);
+
+            if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
+                request.connect(inPortHandlerMethod, to);
+                portsWereConnected = true;
+            }
+        }
+
         return portsWereConnected;
+    }
+
+    static boolean connectSinglePort(
+            Field outPortField,
+            String outPortFieldType,
+            Object from,
+            Object to) throws IllegalAccessException
+    {
+        Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
+
+        Map<String, Field> inPortFieldsByType;
+
+        try {
+            inPortFieldsByType = getPortFieldsByType(to, In.class, false);
+        } catch (DuplicateTypesException e) {
+            throw new AmbiguousPortsException(from.getClass().getName(), to.getClass().getName(), e.getMessage());
+        }
+
+        Method inPortHandlerMethod = inPortHandlerMethodsByType.get(outPortFieldType);
+        Field inPortField = inPortFieldsByType.get(outPortFieldType);
+
+        return connectSinglePort(
+                outPortField,
+                outPortFieldType,
+                from,
+                to,
+                inPortHandlerMethod,
+                inPortField,
+                null,
+                PortsOptions.DEFAULT);
     }
 
     static void ensurePortInstantiation(Field outPortField, Object owner) throws IllegalAccessException {
@@ -426,22 +480,6 @@ public final class Ports {
         }
     }
 
-//    private static void registerPortWithProtocols(Field outPortField, Object owner) throws IllegalAccessException {
-//        String genericTypeName = outPortField.getGenericType().getTypeName();
-//        String extractedMessageTypeName = extractTypeParameter(genericTypeName, genericTypeName);
-//        String requestTypeName = extractRequestTypeName(extractedMessageTypeName);
-//
-//        if (outPortField.getType() == Event.class) {
-//            Event<?> eventPort = (Event<?>) outPortField.get(owner);
-//            Protocol.registerPort(requestTypeName, eventPort);
-//        }
-//
-//        if (outPortField.getType() == Request.class) {
-//            Request<?, ?> requestPort = (Request<?, ?>) outPortField.get(owner);
-//            Protocol.registerPort(requestTypeName, requestPort);
-//        }
-//    }
-
     public static void register(Object... components) {
         for (Object component : components) {
             Map<String, Field> outPortFieldsByType = getPortFieldsByType(component, Out.class, true);
@@ -458,8 +496,9 @@ public final class Ports {
         }
     }
 
-    public static ConditionOrAction<?> protocol(Object... components) {
+    public static ConditionOrAction<?> protocol() {
         Protocol.areProtocolsActive = true;
+        Protocol.resetParseState();
         return new ConditionOrAction<>();
     }
 

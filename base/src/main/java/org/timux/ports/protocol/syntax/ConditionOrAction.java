@@ -16,7 +16,7 @@
 
 package org.timux.ports.protocol.syntax;
 
-import org.timux.ports.protocol.Protocol;
+import org.timux.ports.Protocol;
 
 import java.util.function.Consumer;
 
@@ -47,13 +47,21 @@ public class ConditionOrAction<T> {
         return new ConditionOrAction<>();
     }
 
-    public <U> PortEventClause<U> with(Class<U> messageType) {
-        Protocol.registerWithMessageType(messageType.getName());
+    public <U> PortEventClause<U> with(Class<U> messageType, Object owner) {
+        Protocol.registerWithMessageTypeAndOwner(messageType.getName(), void.class.getName(), owner);
         return new PortEventClause<>();
     }
 
-    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
-        Protocol.registerWithMessageType(requestType.getName());
+    public <U> PortEventClause<U> with(Class<U> messageType) {
+        return with(messageType, (Object) null);
+    }
+
+    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>();
+    }
+
+    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
+        return with(requestType, responseType, null);
     }
 }

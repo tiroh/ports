@@ -16,8 +16,6 @@
 
 package org.timux.ports;
 
-import org.timux.ports.protocol.Protocol;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -35,7 +33,7 @@ import java.util.function.Consumer;
  * @see Request
  *
  * @author Tim Rohlfs
- * @since 0.1.0
+ * @since 0.1
  */
 public class Event<T> {
 

@@ -1,6 +1,6 @@
 package org.timux.ports.protocol.syntax;
 
-import org.timux.ports.protocol.Protocol;
+import org.timux.ports.Protocol;
 
 import java.util.function.Predicate;
 

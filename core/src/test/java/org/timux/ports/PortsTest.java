@@ -119,7 +119,7 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        Ports.protocol(a, b);
+        Ports.register(a, b);
 
         Ports.protocol()
             .when(IntEvent.class).sends(x -> x.getData() > 1)
@@ -132,7 +132,7 @@ public class PortsTest {
         Ports.protocol()
             .when(IntEvent.class).sends(x -> x.getData() > 3)
                 .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 3 (%d) (%s)", x.getData(), owner.getClass().getName())))
-                .with(DoubleRequest.class, Double.class).call(new DoubleRequest(5.0))
+                .with(DoubleRequest.class, Double.class).call(new DoubleRequest(50.0))
                 .with(IntEvent.class).trigger(new IntEvent(2))
             .when(DoubleRequest.class).sends(x -> x.getData() >= 4.0)
                 .do_((x, owner) -> System.out.println(String.format("b.doubleRequest request: x >= 4.0 (%f) (%s)", x.getData(), owner.getClass().getName())))
@@ -141,10 +141,13 @@ public class PortsTest {
             .when(DoubleRequest.class, Double.class).responds(x -> x > 5.0)
                 .do_((x, owner) -> System.out.println(String.format("b.doubleRequest receives x > 5.0 (%f) (%s)", x, owner.getClass().getName())));
 
-//        Ports.protocol()
-//            .when(IntEvent.class).sends(x -> x.getData() > 1)
-//                .with(b.doubleRequest).call(new DoubleRequest(2.1));
+        Ports.protocol()
+            .when(IntEvent.class).sends(x -> x.getData() > 1)
+                .with(DoubleRequest.class, Double.class, b).call(new DoubleRequest(2.1))
+            .when(DoubleRequest.class, Double.class).requests()
+                .do_(x -> System.out.println("b.doubleRequest sends " + x.getData()));
 
-        a.intEvent.trigger(new IntEvent(4));
+        Ports.protocol()
+            .with(IntEvent.class).trigger(new IntEvent(4));
     }
 }

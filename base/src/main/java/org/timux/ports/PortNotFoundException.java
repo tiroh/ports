@@ -16,9 +16,13 @@
 
 package org.timux.ports;
 
-class PortNotFoundException extends RuntimeException {
+public class PortNotFoundException extends RuntimeException {
 
-    public PortNotFoundException(String component, String type) {
-        super(String.format("Component %s does not contain an IN port for signature <%s>.", component, type));
+    public PortNotFoundException(String messageType, String owner) {
+        super(String.format("component %s does not provide a port for signature <%s>.", owner, messageType));
+    }
+
+    public PortNotFoundException(String requestType, String responseType, String owner) {
+        super(String.format("component %s does not provide a port for signature <%s, %s>.", owner, requestType, responseType));
     }
 }
