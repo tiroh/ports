@@ -481,6 +481,10 @@ public final class Ports {
         }
     }
 
+    /**
+     * Registers the given components for use in protocols. This is only necessary if the 'with' syntax without
+     * explicitly provided port owner shall be used.
+     */
     public static void register(Object... components) {
         for (Object component : components) {
             Map<String, Field> outPortFieldsByType = getPortFieldsByType(component, Out.class, true);
@@ -497,12 +501,21 @@ public final class Ports {
         }
     }
 
+    /**
+     * Begins declaration of a new protocol. When using this when writing unit tests, remember to call
+     * {@link #releaseProtocols()} before each individual test so that each test starts with a clean
+     * protocol setup.
+     */
     public static ConditionOrAction<?> protocol() {
         Protocol.areProtocolsActive = true;
         Protocol.resetParseState();
         return new ConditionOrAction<>();
     }
 
+    /**
+     * Releases all previously declared protocols. When writing unit tests with protocols, this must be called
+     * before each individual test method.
+     */
     public static void releaseProtocols() {
         Protocol.clear();
     }

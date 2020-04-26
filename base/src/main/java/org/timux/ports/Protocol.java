@@ -249,7 +249,7 @@ public final class Protocol {
         });
     }
 
-    static Object getResponseIfAvailable(String messageType, Object owner) {
+    static Function<?, ?> getResponseProviderIfAvailable(String messageType, Object owner) {
         ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
         return registry.responseData.remove(messageType);
     }

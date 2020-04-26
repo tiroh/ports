@@ -99,7 +99,7 @@ public class Request<I, O> {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
-            Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseIfAvailable(requestTypeName, owner);
+            Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
 
             if (responseProvider != null) {
                 O protocolResponse = responseProvider.apply(payload);
