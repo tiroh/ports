@@ -230,7 +230,7 @@ public final class Ports {
                 inPortHandlerMethod,
                 inPortField,
                 null,
-                PortsOptions.DEFAULT);
+                PortsOptions.FORCE_CONNECT_ALL);
     }
 
     static void ensurePortInstantiation(Field outPortField, Object owner) throws IllegalAccessException {
