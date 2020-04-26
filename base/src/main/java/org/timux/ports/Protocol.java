@@ -55,7 +55,7 @@ public final class Protocol {
     private static ConditionalActions currentConditionalActions = null;
     private static List<Action> currentActions = null;
 
-    public static boolean areProtocolsActive = false;
+    static boolean areProtocolsActive = false;
 
     private Protocol() {
         //
