@@ -207,7 +207,8 @@ public final class Ports {
             Field outPortField,
             String outPortFieldType,
             Object from,
-            Object to) throws IllegalAccessException
+            Object to,
+            int portsOptions) throws IllegalAccessException
     {
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
 
@@ -230,7 +231,7 @@ public final class Ports {
                 inPortHandlerMethod,
                 inPortField,
                 null,
-                PortsOptions.FORCE_CONNECT_ALL);
+                portsOptions);
     }
 
     static void ensurePortInstantiation(Field outPortField, Object owner) throws IllegalAccessException {

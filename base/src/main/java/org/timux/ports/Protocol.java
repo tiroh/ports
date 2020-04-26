@@ -220,7 +220,7 @@ public final class Protocol {
 
         for (Object component : componentRegistry) {
             try {
-                Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component);
+                Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component, PortsOptions.FORCE_CONNECT_ALL);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
