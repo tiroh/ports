@@ -503,7 +503,7 @@ public final class Ports {
         return new ConditionOrAction<>();
     }
 
-    public static void release() {
+    public static void releaseProtocols() {
         Protocol.clear();
     }
 }

@@ -18,6 +18,7 @@ package org.timux.ports;
 
 import org.hamcrest.core.IsEqual;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.timux.ports.testapp.DoubleRequest;
 import org.timux.ports.testapp.component.IntEvent;
@@ -51,6 +52,20 @@ public class PortsTest {
         @In void onInt(IntEvent event) {
             this.data = event.getData();
         }
+    }
+
+    static class ValueContainer<T> {
+
+        T value;
+
+        ValueContainer(T defaultValue) {
+            value = defaultValue;
+        }
+    }
+
+    @Before
+    public void setup() {
+        Ports.releaseProtocols();
     }
 
     @Test
@@ -113,7 +128,7 @@ public class PortsTest {
     }
 
     @Test
-    public void protocol() {
+    public void protocols() {
         A a = new A();
         B b = new B();
 
@@ -121,33 +136,66 @@ public class PortsTest {
 
         Ports.register(a, b);
 
+        ValueContainer<Boolean> firstActionA = new ValueContainer<>(false);
+        ValueContainer<Boolean> secondActionA = new ValueContainer<>(false);
+        ValueContainer<Boolean> firstActionB = new ValueContainer<>(false);
+        ValueContainer<Boolean> secondActionB = new ValueContainer<>(false);
+        ValueContainer<Boolean> firstActionC = new ValueContainer<>(false);
+        ValueContainer<Boolean> firstActionD = new ValueContainer<>(false);
+
+        ValueContainer<Integer> doubleRequestIndex = new ValueContainer<>(0);
+        double[] doubleRequestValues = {50.0, 2.1, 2.0, 2.1, 4.0};
+
+        ValueContainer<Boolean> doubleRequestResponse = new ValueContainer<>(false);
+
         Ports.protocol()
             .when(IntEvent.class).sends(x -> x.getData() > 1)
-                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 1 (%d), first action (%s)", x.getData(), owner.getClass().getName())))
-                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 1 (%d), second action (%s)", x.getData(), owner.getClass().getName())))
+                .do_((x, owner) ->
+                        firstActionA.value = (!firstActionA.value && x.getData() == 4 && owner == a)
+                                || (firstActionA.value && x.getData() == 2 && owner != a))
+                .do_((x, owner) ->
+                        secondActionA.value = (!secondActionA.value && x.getData() == 4 && owner == a) ||
+                                (secondActionA.value && x.getData() == 2 && owner != a))
             .when(IntEvent.class).sends(x -> x.getData() > 2)
-                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 2 (%d), first action (%s)", x.getData(), owner.getClass().getName())))
-                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 2 (%d), second action (%s)", x.getData(), owner.getClass().getName())));
+                .do_((x, owner) -> firstActionB.value = !firstActionB.value && x.getData() == 4 && owner == a)
+                .do_((x, owner) -> secondActionB.value = !secondActionB.value && x.getData() == 4 && owner == a);
 
         Ports.protocol()
             .when(IntEvent.class).sends(x -> x.getData() > 3)
-                .do_((x, owner) -> System.out.println(String.format("a.intEvent sends x > 3 (%d) (%s)", x.getData(), owner.getClass().getName())))
+                .do_((x, owner) -> firstActionC.value = !firstActionC.value && x.getData() == 4 && owner == a)
                 .with(DoubleRequest.class, Double.class).call(new DoubleRequest(50.0))
                 .with(IntEvent.class).trigger(new IntEvent(2))
             .when(DoubleRequest.class).sends(x -> x.getData() >= 4.0)
-                .do_((x, owner) -> System.out.println(String.format("b.doubleRequest request: x >= 4.0 (%f) (%s)", x.getData(), owner.getClass().getName())))
+                .do_((x, owner) ->
+                        firstActionD.value = (!firstActionD.value && x.getData() == 50.0 && owner != b)
+                                || (firstActionD.value && x.getData() == 4.0 && owner == b))
             .when(DoubleRequest.class, Double.class).requests(x -> x.getData() > 3.0)
                 .respond(17.5)
             .when(DoubleRequest.class, Double.class).responds(x -> x > 5.0)
-                .do_((x, owner) -> System.out.println(String.format("b.doubleRequest receives x > 5.0 (%f) (%s)", x, owner.getClass().getName())));
+                .do_((x, owner) ->
+                        doubleRequestResponse.value = (!doubleRequestResponse.value && x == 17.5 && owner != b)
+                                || (doubleRequestResponse.value && x == 17.5 && owner == b));
 
         Ports.protocol()
             .when(IntEvent.class).sends(x -> x.getData() > 1)
                 .with(DoubleRequest.class, Double.class, b).call(new DoubleRequest(2.1))
             .when(DoubleRequest.class, Double.class).requests()
-                .do_(x -> System.out.println("b.doubleRequest sends " + x.getData()));
+                .do_(x -> {
+                    if (x.getData() == doubleRequestValues[doubleRequestIndex.value]) {
+                        doubleRequestIndex.value++;
+                    }
+                });
 
         Ports.protocol()
-            .with(IntEvent.class).trigger(new IntEvent(4));
+            .with(IntEvent.class, a).trigger(new IntEvent(4));
+
+        Assert.assertTrue(firstActionA.value);
+        Assert.assertTrue(secondActionA.value);
+        Assert.assertTrue(firstActionB.value);
+        Assert.assertTrue(secondActionB.value);
+        Assert.assertTrue(firstActionC.value);
+        Assert.assertTrue(firstActionD.value);
+        Assert.assertEquals(5, doubleRequestIndex.value.intValue());
+        Assert.assertTrue(doubleRequestResponse.value);
     }
 }

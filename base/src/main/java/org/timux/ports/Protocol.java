@@ -61,7 +61,7 @@ public final class Protocol {
         //
     }
 
-    public static void clear() {
+    static void clear() {
         areProtocolsActive = false;
         conditionsOnSent.clear();
         conditionsOnReceived.clear();
@@ -70,14 +70,14 @@ public final class Protocol {
         resetParseState();
     }
 
-    public static void resetParseState() {
+    static void resetParseState() {
         currentConditionMessageType = null;
         currentWithRequestType = null;
         currentWithResponseType = null;
         currentWithOwner = null;
     }
 
-    public static void registerComponent(Object component) {
+    static void registerComponent(Object component) {
         componentRegistry.add(component);
     }
 
@@ -151,13 +151,6 @@ public final class Protocol {
 
     private static Action createOperateOutPortOnOwnerAction(Object payload, Class<?> outPortType) {
         Field outPortField = extractOutPortField(outPortType, currentWithRequestType, currentWithResponseType);
-
-        if (outPortField == null) {
-            throw new PortNotFoundException(
-                    currentWithRequestType,
-                    currentWithResponseType,
-                    currentWithOwner.getClass().getName());
-        }
 
         if (outPortType == Event.class) {
             try {
@@ -241,12 +234,10 @@ public final class Protocol {
             }
         }
 
-        return null;
-    }
-
-    public static void registerCallAction(Object payload) {
-//        final String messageType = currentWithMessageType;
-//        registerAction((x, owner) -> ((Request) withPort).call(payload));
+        throw new PortNotFoundException(
+                currentWithRequestType,
+                currentWithResponseType,
+                currentWithOwner.getClass().getName());
     }
 
     public static void registerRespondAction(Function<?, ?> response) {
@@ -258,25 +249,20 @@ public final class Protocol {
         });
     }
 
-    public static void clearResponseRegistry(String messageType, Object owner) {
-        ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
-        registry.responseData.remove(messageType);
-    }
-
-    public static Object getResponseIfAvailable(String messageType, Object owner) {
+    static Object getResponseIfAvailable(String messageType, Object owner) {
         ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
         return registry.responseData.remove(messageType);
     }
 
-    public static void onDataSent(String messageType, Object owner, Object data) {
+    static void onDataSent(String messageType, Object owner, Object data) {
         onDataEvent(conditionsOnSent, messageType, owner, data);
     }
 
-    public static <O> void onDataReceived(String messageType, Object owner, O data) {
+    static <O> void onDataReceived(String messageType, Object owner, O data) {
         onDataEvent(conditionsOnReceived, messageType, owner, data);
     }
 
-    public static void onDataEvent(Map<String, ConditionalActions> conditionalActionsMap, String messageType, Object owner, Object data) {
+    static void onDataEvent(Map<String, ConditionalActions> conditionalActionsMap, String messageType, Object owner, Object data) {
         ConditionalActions conditionalActions = conditionalActionsMap.get(messageType);
 
         if (conditionalActions == null || conditionalActions.actions.isEmpty()) {
