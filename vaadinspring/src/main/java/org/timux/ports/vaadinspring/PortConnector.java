@@ -407,6 +407,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         }
     }
 
+    @SuppressWarnings("unchecked")
     void verifyScope(Scope scope, List<MissingPort> missingPorts, Method verifyMethod) {
         scope.getBeans().forEach(e -> {
             try {
