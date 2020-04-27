@@ -202,6 +202,11 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
         }
 
+        if (responseTypes.size() < 2) {
+            reporter.reportIssue(element, mirror, "too few response types for message type '%s' (min. 2 required)", messageType);
+            return;
+        }
+
         if (responseTypes.size() > 3) {
             reporter.reportIssue(element, mirror, "too many response types for message type '%s' (max. 3 allowed)", messageType);
             return;

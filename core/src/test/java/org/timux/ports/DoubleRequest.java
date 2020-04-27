@@ -14,8 +14,9 @@
  * limitations under the License.
  */
  
-package org.timux.ports.testapp;
+package org.timux.ports;
 
+@Response(Double.class)
 public class DoubleRequest {
 
     private final double data;

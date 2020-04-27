@@ -20,7 +20,6 @@ import org.hamcrest.core.IsEqual;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.timux.ports.testapp.DoubleRequest;
 import org.timux.ports.testapp.component.IntEvent;
 
 public class PortsTest {

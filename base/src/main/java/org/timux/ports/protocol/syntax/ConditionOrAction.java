@@ -16,6 +16,7 @@
 
 package org.timux.ports.protocol.syntax;
 
+import org.timux.ports.Ports;
 import org.timux.ports.Protocol;
 
 import java.util.function.Consumer;
@@ -57,6 +58,7 @@ public class ConditionOrAction<T> {
     }
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+        Ports.verifyResponseType(requestType, responseType);
         Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>();
     }
