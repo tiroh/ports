@@ -130,7 +130,7 @@ class VerificationModel {
         if (responseType.equals("void")) {
             reporter.reportIssue(element, "IN port [%s] must return a value%s", portName, registeredReturnTypeInfo);
         } else if (responseType.equals(Void.class.getName())) {
-            reporter.reportIssue(element, "IN port [%s] has inadmissible return type (%s)", portName, responseType);
+            reporter.reportIssue(element, "IN port [%s] has inadmissible response type (%s)", portName, responseType);
         } else {
             verifyAndRegisterResponseType(messageType, responseType, portName, element);
         }

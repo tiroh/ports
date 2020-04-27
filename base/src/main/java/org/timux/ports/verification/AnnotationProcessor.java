@@ -113,7 +113,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
 
             if (returnType.equals(Void.class.getName())) {
-                reporter.reportIssue(element, "OUT port [%s] has inadmissible return type (%s)", portName, returnType);
+                reporter.reportIssue(element, "OUT port [%s] has inadmissible response type (%s)", portName, returnType);
             } else {
                 verificationModel.verifyAndRegisterResponseType(messageType, returnType, portName, element);
             }
@@ -198,7 +198,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 
         for (String responseType : responseTypes) {
             if (responseType.equals(Void.class.getName())) {
-                reporter.reportIssue(element, mirror, "message type '%s' has inadmissible return type (%s)", messageType, responseType);
+                reporter.reportIssue(element, mirror, "message type '%s' has inadmissible response type (%s)", messageType, responseType);
             }
         }
 
@@ -234,7 +234,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         String responseType = mirrorValue.substring(0, mirrorValue.lastIndexOf('.'));
 
         if (responseType.equals(Void.class.getName())) {
-            reporter.reportIssue(element, mirror, "message type '%s' has inadmissible return type (%s)", messageType, responseType);
+            reporter.reportIssue(element, mirror, "message type '%s' has inadmissible response type (%s)", messageType, responseType);
             return;
         }
 
