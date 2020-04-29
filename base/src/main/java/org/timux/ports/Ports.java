@@ -542,11 +542,12 @@ public final class Ports {
                 for (Map.Entry<String, Field> e : outPortFieldsByType.entrySet()) {
                     Field outPortField = e.getValue();
                     ensurePortInstantiation(outPortField, component);
-                    Protocol.registerComponent(component);
                 }
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
+
+            Protocol.registerComponent(component);
         }
     }
 
