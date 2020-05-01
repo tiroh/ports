@@ -51,6 +51,8 @@ public class B {
     }
 
     @In Either<Integer, String> onFragileRequest(FragileRequest request) {
-        return SuccessOrFailure.failure("an error message");
+        return request.isOk()
+                ? SuccessOrFailure.success(37)
+                : SuccessOrFailure.failure("an error message");
     }
 }

@@ -22,4 +22,14 @@ import org.timux.ports.SuccessResponse;
 @SuccessResponse(Integer.class)
 @FailureResponse(String.class)
 public class FragileRequest {
+
+    private final boolean ok;
+
+    public FragileRequest(boolean ok) {
+        this.ok = ok;
+    }
+
+    public boolean isOk() {
+        return ok;
+    }
 }

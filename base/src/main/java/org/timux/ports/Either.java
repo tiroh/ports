@@ -54,6 +54,16 @@ public abstract class Either<A, B> {
     public abstract void do_(Consumer<? super A> aC, Consumer<? super B> bC);
 
     /**
+     * Executes the provided action on the A constituent, if it exists, and returns this union.
+     */
+    public abstract Either<A, B> onA(Consumer<? super A> aC);
+
+    /**
+     * Executes the provided action on the B constituent, if it exists, and returns this union.
+     */
+    public abstract Either<A, B> onB(Consumer<? super B> bC);
+
+    /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
      */
     public Optional<A> getA() {
@@ -91,6 +101,17 @@ public abstract class Either<A, B> {
             public void do_(Consumer<? super A> aC, Consumer<? super B> bC) {
                 aC.accept(a);
             }
+
+            @Override
+            public Either<A, B> onA(Consumer<? super A> aC) {
+                aC.accept(a);
+                return this;
+            }
+
+            @Override
+            public Either<A, B> onB(Consumer<? super B> bC) {
+                return this;
+            }
         };
     }
 
@@ -112,6 +133,17 @@ public abstract class Either<A, B> {
             @Override
             public void do_(Consumer<? super A> aC, Consumer<? super B> bC) {
                 bC.accept(b);
+            }
+
+            @Override
+            public Either<A, B> onA(Consumer<? super A> aC) {
+                return this;
+            }
+
+            @Override
+            public Either<A, B> onB(Consumer<? super B> bC) {
+                bC.accept(b);
+                return this;
             }
         };
     }

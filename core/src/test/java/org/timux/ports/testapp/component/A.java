@@ -57,10 +57,17 @@ public class A {
         intEvent.trigger(new IntEvent(37));
         objectEvent.trigger(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
-        System.out.println(fragileRequest.call(new FragileRequest()).toString());
+        System.out.println(fragileRequest.call(new FragileRequest(false)).toString());
         double d = shortRequest.call(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));
         System.out.println("A got replies: " + d + " and " + o + ", " + o2);
+
+        fragileRequest.call(new FragileRequest(true))
+                .onA(x -> {
+                    System.out.println("onA call: " + x);;
+                    fragileRequest.call(new FragileRequest(false))
+                        .onB(y -> System.out.println("onB call: " + y));
+                });
     }
 }
