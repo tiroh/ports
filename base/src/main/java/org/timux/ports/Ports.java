@@ -481,53 +481,6 @@ public final class Ports {
         }
     }
 
-    public static void verifyResponseType(Class<?> requestType, Class<?> responseType) {
-        Response responseAnno = requestType.getDeclaredAnnotation(Response.class);
-        Responses responsesAnno = requestType.getDeclaredAnnotation(Responses.class);
-        SuccessResponse successResponseAnno = requestType.getDeclaredAnnotation(SuccessResponse.class);
-        FailureResponse failureResponseAnno = requestType.getDeclaredAnnotation(FailureResponse.class);
-
-        String declaredResponseType = null;
-
-        if (responseAnno != null) {
-            declaredResponseType = responseAnno.value().getName();
-        }
-
-        if (responsesAnno != null) {
-            if (responsesAnno.value().length < 2 || responsesAnno.value().length > 3) {
-                throw new InvalidResponseDeclarationException(requestType.getName());
-            }
-
-            String typeArguments = Arrays.stream(responsesAnno.value())
-                    .map(x -> x.value().getName())
-                    .reduce((xs, x) -> xs + ", " + x)
-                    .orElse("");
-
-            declaredResponseType = String.format("%s<%s>",
-                    responsesAnno.value().length == 2 ? Either.class.getName() : Either3.class.getName(),
-                    typeArguments);
-        }
-
-        if (successResponseAnno == null ^ failureResponseAnno == null) {
-            throw new InvalidResponseDeclarationException(responseType.getName());
-        }
-
-        if (successResponseAnno != null) {
-            declaredResponseType = SuccessOrFailure.class.getName() + "<"
-                    + successResponseAnno.value().getName() + ", " + failureResponseAnno.value().getName()
-                    + ">";
-        }
-
-        if (declaredResponseType == null) {
-            System.err.println("[ports] warning: no response type declaration provided by request type " + requestType.getName());
-            return;
-        }
-
-        if (!declaredResponseType.equals(responseType.getName())) {
-            throw new ResponseTypesDoNotMatchException(requestType.getName(), declaredResponseType, responseType.getName());
-        }
-    }
-
     /**
      * Registers the given components for use in protocols. This is only necessary if the 'with' syntax without
      * explicitly provided port owner shall be used.

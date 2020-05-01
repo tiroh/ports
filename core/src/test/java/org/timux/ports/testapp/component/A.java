@@ -25,7 +25,7 @@ public class A {
     @Out Request<ShortRequest, Double> shortRequest;
     @Out Request<ObjectRequest, Object> objectRequest;
     @Out Request<TestCommand, Either<Boolean, Integer>> testCommand;
-    @Out Request<FragileRequest, SuccessOrFailure<Integer, String>> fragileRequest;
+    @Out Request<FragileRequest, Either<Integer, String>> fragileRequest;
 
     private int field = 47;
 

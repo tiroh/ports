@@ -17,12 +17,9 @@
 package org.timux.ports.verification;
 
 import org.timux.ports.Either;
-import org.timux.ports.Either3;
-import org.timux.ports.SuccessOrFailure;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
-import javax.tools.Diagnostic;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -91,7 +88,7 @@ class VerificationModel {
 
         if (failureResponseType != null) {
             successResponses.remove(element);
-            String responseType = String.format("%s<%s,%s>", SuccessOrFailure.class.getName(), successResponseType, failureResponseType);
+            String responseType = String.format("%s<%s,%s>", Either.class.getName(), successResponseType, failureResponseType);
             verifyAndRegisterResponseType(messageType, responseType, element, mirror);
         }
     }
@@ -103,7 +100,7 @@ class VerificationModel {
 
         if (successResponseType != null) {
             failureResponses.remove(element);
-            String responseType = String.format("%s<%s,%s>", SuccessOrFailure.class.getName(), successResponseType, failureResponseType);
+            String responseType = String.format("%s<%s,%s>", Either.class.getName(), successResponseType, failureResponseType);
             verifyAndRegisterResponseType(messageType, responseType, element, mirror);
         }
     }

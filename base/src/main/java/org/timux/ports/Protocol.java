@@ -240,6 +240,86 @@ public final class Protocol {
                 currentWithOwner.getClass().getName());
     }
 
+
+    public static void verifyResponseType(Class<?> requestType, Class<?> responseType) {
+        verifyResponseType(requestType, responseType, null, null);
+    }
+
+    public static void verifyResponseType(
+            Class<?> requestType,
+            Class<?> responseType,
+            Class<?> eitherTypeA,
+            Class<?> eitherTypeB)
+    {
+        Response responseAnno = requestType.getDeclaredAnnotation(Response.class);
+        Responses responsesAnno = requestType.getDeclaredAnnotation(Responses.class);
+        SuccessResponse successResponseAnno = requestType.getDeclaredAnnotation(SuccessResponse.class);
+        FailureResponse failureResponseAnno = requestType.getDeclaredAnnotation(FailureResponse.class);
+
+        String declaredResponseType = null;
+
+        if (responseAnno != null) {
+            declaredResponseType = responseAnno.value().getName();
+        }
+
+        if (responsesAnno != null) {
+            if (responsesAnno.value().length < 2 || responsesAnno.value().length > 3) {
+                throw new InvalidResponseDeclarationException(requestType.getName());
+            }
+
+            if (eitherTypeA != null && eitherTypeB != null) {
+                if (responsesAnno.value()[0].value() != eitherTypeA) {
+                    throw new InvalidResponseTypeException(eitherTypeA.getName(), requestType.getName());
+                }
+
+                if (responsesAnno.value()[1].value() != eitherTypeB) {
+                    throw new InvalidResponseTypeException(eitherTypeB.getName(), requestType.getName());
+                }
+            } else if (responseType == Either.class) {
+                throw new RawUnionTypeException(
+                        requestType.getName(),
+                        responsesAnno.value()[0].value().getName(),
+                        responsesAnno.value()[1].value().getName());
+            }
+
+            declaredResponseType = responsesAnno.value().length == 2
+                    ? Either.class.getName()
+                    : Either3.class.getName();
+        }
+
+        if (successResponseAnno == null ^ failureResponseAnno == null) {
+            throw new InvalidResponseDeclarationException(responseType.getName());
+        }
+
+        if (successResponseAnno != null) {
+            if (eitherTypeA != null && eitherTypeB != null) {
+                if (successResponseAnno.value() != eitherTypeA) {
+                    throw new InvalidResponseTypeException(eitherTypeA.getName(), requestType.getName());
+                }
+
+                if (failureResponseAnno.value() != eitherTypeB) {
+                    throw new InvalidResponseTypeException(eitherTypeB.getName(), requestType.getName());
+                }
+            } else if (responseType == Either.class) {
+                throw new RawUnionTypeException(
+                        requestType.getName(),
+                        successResponseAnno.value().getName(),
+                        failureResponseAnno.value().getName());
+            }
+
+            declaredResponseType = Either.class.getName();
+        }
+
+        if (declaredResponseType == null) {
+            System.err.println("[ports] warning: no response type declaration provided by request type " + requestType.getName());
+            return;
+        }
+
+        if (!declaredResponseType.equals(responseType.getName())) {
+            throw new ResponseTypesDoNotMatchException(requestType.getName(), declaredResponseType, responseType.getName());
+        }
+    }
+
     public static void registerRespondAction(Function<?, ?> response) {
         final String conditionMessageType = currentConditionMessageType;
 

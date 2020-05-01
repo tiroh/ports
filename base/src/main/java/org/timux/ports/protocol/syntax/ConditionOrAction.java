@@ -16,6 +16,7 @@
 
 package org.timux.ports.protocol.syntax;
 
+import org.timux.ports.Either;
 import org.timux.ports.Ports;
 import org.timux.ports.Protocol;
 
@@ -29,6 +30,13 @@ public class ConditionOrAction<T> {
     }
 
     public <I, O> WhenRequestClause<I, O> when(Class<I> requestType, Class<O> responseType) {
+        Protocol.verifyResponseType(requestType, responseType);
+        Protocol.registerMessageType(requestType.getName());
+        return new WhenRequestClause<>();
+    }
+
+    public <I, O1, O2> WhenRequestClause<I, Either<O1, O2>> when(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
+        Protocol.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
         Protocol.registerMessageType(requestType.getName());
         return new WhenRequestClause<>();
     }
@@ -58,12 +66,26 @@ public class ConditionOrAction<T> {
     }
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
-        Ports.verifyResponseType(requestType, responseType);
+        Protocol.verifyResponseType(requestType, responseType);
         Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>();
     }
 
+    public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
+        Protocol.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
+        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), null);
+        return new PortRequestClause<>();
+    }
+
+    public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Object owner) {
+        Protocol.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
+        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), owner);
+        return new PortRequestClause<>();
+    }
+
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
-        return with(requestType, responseType, null);
+        Protocol.verifyResponseType(requestType, responseType);
+        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), null);
+        return new PortRequestClause<>();
     }
 }

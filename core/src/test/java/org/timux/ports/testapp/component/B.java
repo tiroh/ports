@@ -50,7 +50,7 @@ public class B {
         return Either.a(true);
     }
 
-    @In SuccessOrFailure<Integer, String> onFragileRequest(FragileRequest request) {
+    @In Either<Integer, String> onFragileRequest(FragileRequest request) {
         return SuccessOrFailure.failure("an error message");
     }
 }

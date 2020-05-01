@@ -27,7 +27,7 @@ import java.util.function.Function;
  * use of this union type.
  * <p>
  * For a {@link Request} that returns either a valid response object or an error status,
- * use the {@link SuccessOrFailure} union type.
+ * use the {@link SuccessOrFailure} constructors.
  *
  * @see Either3
  * @see SuccessOrFailure
