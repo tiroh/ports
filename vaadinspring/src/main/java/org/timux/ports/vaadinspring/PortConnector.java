@@ -18,6 +18,7 @@ package org.timux.ports.vaadinspring;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinSession;
+import com.vaadin.flow.shared.communication.PushMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -223,7 +224,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     private EventWrapper createEventWrapper(UI ui) {
         return
                 f -> {
-                    if (PortsPushMode.isManual) {
+                    if (ui.getPushConfiguration().getPushMode() == PushMode.MANUAL) {
                         ui.access(() -> {
                             f.execute();
                             ui.push();

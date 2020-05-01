@@ -148,23 +148,23 @@ public class PortsTest {
         ValueContainer<Boolean> doubleRequestResponse = new ValueContainer<>(false);
 
         Ports.protocol()
-            .when(IntEvent.class).sends(x -> x.getData() > 1)
+            .when(IntEvent.class).triggers(x -> x.getData() > 1)
                 .do_((x, owner) ->
                         firstActionA.value = (!firstActionA.value && x.getData() == 4 && owner == a)
                                 || (firstActionA.value && x.getData() == 2 && owner != a))
                 .do_((x, owner) ->
                         secondActionA.value = (!secondActionA.value && x.getData() == 4 && owner == a) ||
                                 (secondActionA.value && x.getData() == 2 && owner != a))
-            .when(IntEvent.class).sends(x -> x.getData() > 2)
+            .when(IntEvent.class).triggers(x -> x.getData() > 2)
                 .do_((x, owner) -> firstActionB.value = !firstActionB.value && x.getData() == 4 && owner == a)
                 .do_((x, owner) -> secondActionB.value = !secondActionB.value && x.getData() == 4 && owner == a);
 
         Ports.protocol()
-            .when(IntEvent.class).sends(x -> x.getData() > 3)
+            .when(IntEvent.class).triggers(x -> x.getData() > 3)
                 .do_((x, owner) -> firstActionC.value = !firstActionC.value && x.getData() == 4 && owner == a)
                 .with(DoubleRequest.class, Double.class).call(new DoubleRequest(50.0))
                 .with(IntEvent.class).trigger(new IntEvent(2))
-            .when(DoubleRequest.class).sends(x -> x.getData() >= 4.0)
+            .when(DoubleRequest.class).triggers(x -> x.getData() >= 4.0)
                 .do_((x, owner) ->
                         firstActionD.value = (!firstActionD.value && x.getData() == 50.0 && owner != b)
                                 || (firstActionD.value && x.getData() == 4.0 && owner == b))
@@ -176,7 +176,7 @@ public class PortsTest {
                                 || (doubleRequestResponse.value && x == 17.5 && owner == b));
 
         Ports.protocol()
-            .when(IntEvent.class).sends(x -> x.getData() > 1)
+            .when(IntEvent.class).triggers(x -> x.getData() > 1)
                 .with(DoubleRequest.class, Double.class, b).call(new DoubleRequest(2.1))
             .when(DoubleRequest.class, Double.class).requests()
                 .do_(x -> {
