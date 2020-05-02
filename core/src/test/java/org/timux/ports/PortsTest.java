@@ -131,8 +131,8 @@ public class PortsTest {
                         .call(new DoubleRequest(50.0))
                     .with(IntEvent.class)
                         .trigger(new IntEvent(2))
-            .when(DoubleRequest.class)
-                .triggers(x -> x.getData() >= 4.0)
+            .when(DoubleRequest.class, Double.class)
+                .requests(x -> x.getData() >= 4.0)
                     .do_((x, owner) ->
                             firstActionD.value = (!firstActionD.value && x.getData() == 50.0 && owner != b)
                                     || (firstActionD.value && x.getData() == 4.0 && owner == b))
@@ -189,7 +189,7 @@ public class PortsTest {
     }
 
     @Test
-    public void protocolsUnionTypeTestWithReturnTypePolymorphism() {
+    public void protocolsEitherTest() {
         D d = new D();
 
         Ports.register(d);
@@ -208,6 +208,31 @@ public class PortsTest {
             .with(EitherRequest.class, Double.class, String.class)
                 .call(new EitherRequest(1.0));
 
+        assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, Double::parseDouble), 0.0);
+    }
+
+    @Test
+    public void protocolsEither3Test() {
+        D d = new D();
+
+        Ports.register(d);
+
+        ValueContainer<Either3<Double, Integer, String>> eitherValue = new ValueContainer<>(null);
+
+        Ports.protocol()
+            .when(Either3Request.class, Double.class, Integer.class, String.class)
+                .requests()
+                    .respond(request -> Either3.b(request.getValue()))
+            .when(Either3Request.class, Double.class, Integer.class, String.class)
+                .responds()
+                    .do_(response -> eitherValue.value = response);
+
+        Ports.protocol()
+            .with(Either3Request.class, Double.class, Integer.class, String.class)
+                .call(new Either3Request(1));
+
+        assertNotNull(eitherValue.value);
+        assertEquals(1.0, eitherValue.value.map(x -> x, x -> (double) x, Double::parseDouble), 0.0);
     }
 }

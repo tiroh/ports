@@ -1,4 +1,4 @@
-package org.timux.ports.protocol.syntax;
+package org.timux.ports.protocol;
 
 import org.timux.ports.Protocol;
 

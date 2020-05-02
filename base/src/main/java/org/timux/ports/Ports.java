@@ -16,7 +16,7 @@
 
 package org.timux.ports;
 
-import org.timux.ports.protocol.syntax.ConditionOrAction;
+import org.timux.ports.protocol.ConditionOrAction;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

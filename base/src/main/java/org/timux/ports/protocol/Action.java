@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.timux.ports.protocol.syntax;
+package org.timux.ports.protocol;
 
 public interface Action<T> {
 
