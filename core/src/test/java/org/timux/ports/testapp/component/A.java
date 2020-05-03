@@ -25,7 +25,6 @@ public class A {
     @Out Request<ShortRequest, Double> shortRequest;
     @Out Request<ObjectRequest, Object> objectRequest;
     @Out Request<TestCommand, Either<Boolean, Integer>> testCommand;
-    @Out Request<FragileRequest, Either<Integer, String>> fragileRequest;
 
     private int field = 47;
 
@@ -44,12 +43,14 @@ public class A {
         System.out.println("Ende A");
     }
 
-    @In void onInt(IntEvent event) {
+    @In
+    private void onInt(IntEvent event) {
         field *= 2;
         System.out.println("A received test input: " + event.getData() + ", private field is " + field);
     }
 
-    @In void onRuntimeException(RuntimeException exception) {
+    @In
+    private void onRuntimeException(RuntimeException exception) {
         System.out.println("Received exception: " + exception.getMessage());
     }
 
@@ -57,17 +58,9 @@ public class A {
         intEvent.trigger(new IntEvent(37));
         objectEvent.trigger(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
-        System.out.println(fragileRequest.call(new FragileRequest(false)).toString());
         double d = shortRequest.call(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));
         System.out.println("A got replies: " + d + " and " + o + ", " + o2);
-
-        fragileRequest.call(new FragileRequest(true))
-                .onA(x -> {
-                    System.out.println("onA call: " + x);;
-                    fragileRequest.call(new FragileRequest(false))
-                        .onB(y -> System.out.println("onB call: " + y));
-                });
     }
 }

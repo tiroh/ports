@@ -168,7 +168,7 @@ public class Event<T> {
         }
 
         if (singlePort != null) {
-            singlePort.accept(payload);
+            MessageQueue.enqueue(singlePort, payload);
             return;
         }
 
@@ -185,7 +185,7 @@ public class Event<T> {
         }
 
         for (i--; i >= 0; i--) {
-            p.get(i).accept(payload);
+            MessageQueue.enqueue(p.get(i), payload);
         }
     }
 

@@ -16,8 +16,7 @@
  
 package org.timux.ports.testapp.component;
 
-import org.timux.ports.Event;
-import org.timux.ports.Out;
+import org.timux.ports.*;
 
 public class C {
 
@@ -30,5 +29,12 @@ public class C {
 
     public void doIntWork() {
         intEvent.trigger(new IntEvent(370));
+    }
+
+    @In
+    private Either<Integer, String> onFragileRequest(FragileRequest request) {
+        return request.isOk()
+                ? SuccessOrFailure.success(37)
+                : SuccessOrFailure.failure("an error message");
     }
 }

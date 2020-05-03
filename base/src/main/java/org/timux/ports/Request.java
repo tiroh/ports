@@ -102,7 +102,7 @@ public class Request<I, O> {
             Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
 
             if (responseProvider != null) {
-                O protocolResponse = responseProvider.apply(payload);
+                O protocolResponse = MessageQueue.enqueue(responseProvider, payload);
                 Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
                 return protocolResponse;
             }
@@ -112,7 +112,7 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        O response = port.apply(payload);
+        O response = MessageQueue.enqueue(port, payload);
 
         if (Protocol.areProtocolsActive) {
             Protocol.onDataReceived(requestTypeName, owner, response);

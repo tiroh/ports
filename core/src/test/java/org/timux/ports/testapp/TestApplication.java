@@ -31,7 +31,8 @@ public class TestApplication {
         F f = new F();
         G g = new G();
 
-        Ports.connect(a).and(b, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
+        Ports.connect(a).and(b);
+        Ports.connect(b).and(c);
         Ports.connect(c).and(d);
         Ports.connect(c).and(e, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
         Ports.connect(f).and(g, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
@@ -50,5 +51,7 @@ public class TestApplication {
 
         c.doStringWork();
         c.doIntWork();
+
+        System.out.println("--- done ---");
     }
 }

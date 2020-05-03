@@ -38,7 +38,7 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        assertEquals(b.receivedData, 4.5);
+        assertEquals(4.5, b.receivedData);
     }
 
     @Test
@@ -52,8 +52,8 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        assertEquals(c1.data, 3);
-        assertEquals(c2.data, 0);
+        assertEquals(3, c1.data);
+        assertEquals(0, c2.data);
     }
 
     @Test
@@ -67,8 +67,8 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        assertEquals(c1.data, 3);
-        assertEquals(c2.data, c1.data);
+        assertEquals(3, c1.data);
+        assertEquals(c1.data, c2.data);
     }
 
     @Test
@@ -84,8 +84,8 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        assertEquals(c1.data, 0);
-        assertEquals(c2.data, 3);
+        assertEquals(0, c1.data);
+        assertEquals(3, c2.data);
     }
 
     @Test

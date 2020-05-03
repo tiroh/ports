@@ -21,38 +21,47 @@ import org.timux.ports.*;
 public class B {
 
     @Out Event<IntEvent> intEvent;
+    @Out Request<FragileRequest, Either<Integer, String>> fragileRequest;
     @Out Event<RuntimeException> runtimeExceptionEvent;
 
     public B() {
         System.out.println("B con");
     }
 
-    @In void onInt(IntEvent event) {
+    @In
+    private void onInt(IntEvent event) {
         System.out.println("B received input: " + event.getData());
         runtimeExceptionEvent.trigger(new RuntimeException("Test exception with data " + event.getData()));
     }
 
-    @In void onObject(ObjectEvent event) {
+    @In
+    private void onObject(ObjectEvent event) {
         System.out.println("B received input 2: " + event.getObject());
     }
 
-    @In Double onShortRequest(ShortRequest request) {
+    @In
+    private Double onShortRequest(ShortRequest request) {
         System.out.println("B received request: " + request.getData());
         intEvent.trigger(new IntEvent((int) request.getData() + 1));
         return request.getData() * 1.5;
     }
 
-    @In Object onObjectRequest(ObjectRequest request) {
+    @In
+    private Object onObjectRequest(ObjectRequest request) {
         return "blub(" + request.getObject() + ")";
     }
 
-    @In Either<Boolean, Integer> onTestCommand(TestCommand command) {
-        return Either.a(true);
-    }
+    @In
+    private Either<Boolean, Integer> onTestCommand(TestCommand command) {
+        System.out.println(fragileRequest.call(new FragileRequest(false)).toString());
 
-    @In Either<Integer, String> onFragileRequest(FragileRequest request) {
-        return request.isOk()
-                ? SuccessOrFailure.success(37)
-                : SuccessOrFailure.failure("an error message");
+        fragileRequest.call(new FragileRequest(true))
+                .onA(x -> {
+                    System.out.println("onA call: " + x);;
+                    fragileRequest.call(new FragileRequest(false))
+                            .onB(y -> System.out.println("onB call: " + y));
+                });
+
+        return Either.a(true);
     }
 }
