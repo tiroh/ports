@@ -16,12 +16,19 @@
 
 package org.timux.ports;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
+ * Represents a request response that has not yet been computed.
+ *
+ * <p> Whenever you issue an asynchronous request via {@link Request#callAsync}, you will retrieve
+ * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},
+ * {@link #getNow}, or {@link #getOrElse}.
+ *
+ * <p> <em>Instances of PortsFuture are not cancellable.</em> Accordingly, both {@link #cancel} and
+ * {@link #isCancelled} will always return false.
  *
  * @param <T> The type of the expected response.
  *
@@ -35,12 +42,12 @@ public class PortsFuture<T> implements Future<T> {
     private T result;
     private boolean hasReturned;
 
-    public PortsFuture(T result) {
+    PortsFuture(T result) {
         this.result = result;
         hasReturned = true;
     }
 
-    public PortsFuture(Task task) {
+    PortsFuture(Task task) {
         this.task = task;
     }
 
@@ -70,14 +77,23 @@ public class PortsFuture<T> implements Future<T> {
         return result;
     }
 
+    /**
+     * Returns either the result or the provided defaultValue, in case the result is not yet available.
+     */
     public T getNow(T defaultValue) {
         return task.hasReturned() ? (T) task.waitForResponse() : defaultValue;
     }
 
+    /**
+     * Returns an {@link Either} representing either the result (if available) or the provided elseValue.
+     */
     public <E> Either<T, E> getOrElse(E elseValue) {
         return task.hasReturned() ? Either.a((T) task.waitForResponse()) : Either.b(elseValue);
     }
 
+    /**
+     * Instances of PortsFuture are not cancellable, so this method will always return false and do nothing.
+     */
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         return false;
@@ -85,9 +101,12 @@ public class PortsFuture<T> implements Future<T> {
 
     @Override
     public boolean isDone() {
-        return hasReturned;
+        return hasReturned ? true : task.hasReturned();
     }
 
+    /**
+     * Instances of PortsFuture are not cancellable, so this method will always return false.
+     */
     @Override
     public boolean isCancelled() {
         return false;

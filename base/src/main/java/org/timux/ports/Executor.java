@@ -20,7 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Executor {
+class Executor {
 
     class WorkerThread extends Thread {
 
