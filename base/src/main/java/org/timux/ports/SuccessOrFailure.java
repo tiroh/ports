@@ -20,8 +20,8 @@ package org.timux.ports;
  * Creates an {@link Either} instance for two types SUCCESS and FAILURE. The primary use case
  * is as a response type for a {@link Request} that returns either a valid response object or
  * an error status.
- * <p>
- * Use both the {@link SuccessResponse} and the {@link FailureResponse} annotations on a
+ *
+ * <p> Use both the {@link SuccessResponse} and the {@link FailureResponse} annotations on a
  * request type in order to indicate the use of this union type.
  *
  * @see SuccessResponse

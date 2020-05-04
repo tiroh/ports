@@ -27,8 +27,7 @@ public class Executor {
         private Runnable task;
 
         public WorkerThread(ThreadGroup threadGroup) {
-            super(threadGroup, "");
-            setName(threadGroup.getName() + "-" + nextThreadId.getAndIncrement());
+            super(threadGroup, threadGroup.getName() + "-" + nextThreadId.getAndIncrement());
             setDaemon(true);
             start();
         }

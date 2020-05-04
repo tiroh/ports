@@ -262,7 +262,9 @@ public final class Protocol {
         onDataEvent(conditionsOnReceived, messageType, owner, data);
     }
 
-    static void onDataEvent(Map<String, ConditionalActions> conditionalActionsMap, String messageType, Object owner, Object data) {
+    private synchronized static void onDataEvent(
+            Map<String, ConditionalActions> conditionalActionsMap, String messageType, Object owner, Object data)
+    {
         ConditionalActions conditionalActions = conditionalActionsMap.get(messageType);
 
         if (conditionalActions == null || conditionalActions.actions.isEmpty()) {

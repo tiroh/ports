@@ -22,8 +22,8 @@ import java.util.function.Function;
 
 /**
  * A class that represents an OUT port with request-response semantics.
- * <p>
- * When implementing the request type, use the {@link Response} annotation in
+ *
+ * <p> When implementing the request type, use the {@link Response} annotation in
  * order to indicate the response type(s).
  *
  * @param <I> The type of the request data (input).
@@ -38,6 +38,7 @@ import java.util.function.Function;
 public class Request<I, O> {
 
     private Function<I, O> port;
+    private boolean isAsyncReceiver;
     private String requestTypeName;
     private Object owner;
     private String memberName;
@@ -57,12 +58,13 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    protected void connect(Function<I, O> port) {
+    protected void connect(Function<I, O> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
         this.port = port;
+        this.isAsyncReceiver = isAsyncReceiver;
     }
 
     @SuppressWarnings("unchecked")
@@ -71,13 +73,15 @@ public class Request<I, O> {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        connect(x -> {
+        Function<I, O> portFunction = x -> {
             try {
                 return (O) portMethod.invoke(methodOwner, x);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
-        });
+        };
+
+        connect(portFunction, portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
     }
 
     /**
@@ -88,9 +92,12 @@ public class Request<I, O> {
     }
 
     /**
-     * Sends the given payload to the connected IN port.
+     * Sends the given payload to the connected IN port.  The request will be handled synchronously, regardless of
+     * whether the IN port is an {@link AsyncPort} or not.
      *
      * @param payload The payload to be sent.
+     *
+     * @see #callAsync
      *
      * @return The response of the connected component.
      */
@@ -102,7 +109,7 @@ public class Request<I, O> {
             Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
 
             if (responseProvider != null) {
-                O protocolResponse = MessageQueue.enqueue(responseProvider, payload);
+                O protocolResponse = responseProvider.apply(payload);
                 Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
                 return protocolResponse;
             }
@@ -119,6 +126,65 @@ public class Request<I, O> {
         }
 
         return response;
+    }
+
+    /**
+     * Attempts to send the given payload asynchronously to the connected IN port.  If the IN port is not an
+     * {@link AsyncPort}, the request will be handled synchronously.
+     *
+     * @param payload The payload to be sent.
+     *
+     * @see AsyncPort
+     *
+     * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
+     *   {@link PortsFuture#getNow}, or {@link PortsFuture#getOrElse} methods to access the response object.
+     *
+     * @since 0.5.0
+     */
+    @SuppressWarnings("unchecked")
+    public PortsFuture<O> callAsync(I payload) {
+        if (Protocol.areProtocolsActive) {
+            Protocol.onDataSent(requestTypeName, owner, payload);
+
+            Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
+
+            if (responseProvider != null) {
+                O protocolResponse = responseProvider.apply(payload);
+                Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
+                return new PortsFuture<>(protocolResponse);
+            }
+        }
+
+        if (port == null) {
+            throw new PortNotConnectedException(memberName, owner.getClass().getName());
+        }
+
+        if (!isAsyncReceiver) {
+            System.err.println(String.format(
+                    "[ports] warning: request %s was called asynchronously in component %s, but the receiver is not an async port",
+                    requestTypeName,
+                    owner.getClass().getName()));
+
+            O response = MessageQueue.enqueue(port, payload);
+
+            if (Protocol.areProtocolsActive) {
+                Protocol.onDataReceived(requestTypeName, owner, response);
+            }
+
+            return new PortsFuture<>(response);
+        } else {
+            Function<I, O> portFunction = x -> {
+                O response = port.apply(x);
+
+                if (Protocol.areProtocolsActive) {
+                    Protocol.onDataReceived(requestTypeName, owner, response);
+                }
+
+                return response;
+            };
+
+            return MessageQueue.enqueueAsync(portFunction, payload);
+        }
     }
 
     /**

@@ -16,6 +16,8 @@
 
 package org.timux.ports;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,18 +29,14 @@ class Task implements Runnable {
     private Object response;
     private boolean hasReturned = false;
 
-    public Task(Consumer eventPort, Function requestPort, Object payload) {
+    public Task(Consumer eventPort, Object payload) {
         this.eventPort = eventPort;
-        this.requestPort = requestPort;
         this.payload = payload;
     }
 
-    public boolean hasReturned() {
-        return hasReturned;
-    }
-
-    public Object getResponse() {
-        return response;
+    public Task(Function requestPort, Object payload) {
+        this.requestPort = requestPort;
+        this.payload = payload;
     }
 
     @Override
@@ -54,5 +52,47 @@ class Task implements Runnable {
         synchronized (this) {
             notify();
         }
+    }
+
+    public boolean hasReturned() {
+        return hasReturned;
+    }
+
+    public synchronized Object waitForResponse() {
+        while (!hasReturned) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                //
+            }
+        }
+
+        return response;
+    }
+
+    public synchronized Object waitForResponse(long timeout, TimeUnit unit) throws TimeoutException {
+        long waitMillis = unit.toMillis(timeout);
+
+        while (!hasReturned) {
+            long startMillis = System.currentTimeMillis();
+
+            try {
+                wait(waitMillis);
+            } catch (InterruptedException e) {
+                //
+            }
+
+            if (!hasReturned) {
+                long passedMillis = System.currentTimeMillis() - startMillis;
+
+                if (passedMillis >= timeout - 1) {
+                    throw new TimeoutException();
+                }
+
+                waitMillis -= passedMillis;
+            }
+        }
+
+        return response;
     }
 }

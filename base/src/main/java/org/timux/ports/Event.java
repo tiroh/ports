@@ -37,10 +37,20 @@ import java.util.function.Consumer;
  */
 public class Event<T> {
 
-    private final List<Consumer<T>> ports = new ArrayList<>();
-    private final List<Boolean> isPortAsync = new ArrayList<>();
+    private static class PortEntry<T> {
+
+        Consumer<T> port;
+        boolean isAsyncReceiver;
+
+        PortEntry(Consumer<T> port, boolean isAsyncReceiver) {
+            this.port = port;
+            this.isAsyncReceiver = isAsyncReceiver;
+        }
+    }
+
+    private final List<PortEntry<T>> ports = new ArrayList<>();
     private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
-    private Consumer<T> singlePort = null;
+    private PortEntry<T> singlePort = null;
     private String eventTypeName;
     private Object owner;
 
@@ -59,16 +69,15 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    protected void connect(Consumer<T> port, boolean isAsync) {
+    protected void connect(Consumer<T> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        ports.add(port);
-        isPortAsync.add(isAsync);
+        ports.add(new PortEntry<>(port, isAsyncReceiver));
 
         singlePort = ports.size() == 1
-                ? port
+                ? ports.get(0)
                 : null;
     }
 
@@ -136,11 +145,17 @@ public class Event<T> {
      * Disconnects this OUT port from the given IN port.
      */
     public void disconnect(Object port) {
-        int index = ports.indexOf(port);
+        int index = -1;
+
+        for (int i = ports.size() - 1; i >= 0; i--) {
+            if (ports.get(i).port == port) {
+                index = i;
+                break;
+            }
+        }
 
         if (index >= 0) {
             ports.remove(index);
-            isPortAsync.remove(index);
 
             singlePort = ports.size() == 1
                     ? ports.get(0)
@@ -178,11 +193,11 @@ public class Event<T> {
         }
 
         if (singlePort != null) {
-            MessageQueue.enqueue(singlePort, payload);
+            MessageQueue.enqueue(singlePort.port, payload);
             return;
         }
 
-        final List<Consumer<T>> p = ports;
+        final List<PortEntry<T>> p = ports;
 
         int i = p.size();
 
@@ -195,17 +210,19 @@ public class Event<T> {
         }
 
         for (i--; i >= 0; i--) {
-            MessageQueue.enqueue(p.get(i), payload);
+            MessageQueue.enqueue(p.get(i).port, payload);
         }
     }
 
     /**
-     * Sends the given payload asynchronously to the connected IN port(s). If the IN port is not an
-     * {@link AsyncPort}, the event will be executed synchronously.
+     * Attempts to send the given payload asynchronously to the connected IN port(s). If the IN port is not an
+     * {@link AsyncPort}, the event will be handled synchronously.
      *
      * @param payload The payload to be sent.
      *
      * @see AsyncPort
+     *
+     * @since 0.5.0
      */
     public void triggerAsync(T payload) {
         if (Protocol.areProtocolsActive) {
@@ -213,18 +230,19 @@ public class Event<T> {
         }
 
         if (singlePort != null) {
-            if (isPortAsync.get(0)) {
-                MessageQueue.enqueueAsync(singlePort, payload);
+            if (singlePort.isAsyncReceiver) {
+                MessageQueue.enqueueAsync(singlePort.port, payload);
             } else {
                 System.err.println(String.format(
-                        "[ports] warning: event %s was fired asynchronously, but the receiver is not an async port",
-                        eventTypeName));
-                MessageQueue.enqueue(singlePort, payload);
+                        "[ports] warning: event %s was fired asynchronously in component %s, but the receiver is not an async port",
+                        eventTypeName,
+                        owner.getClass().getName()));
+                MessageQueue.enqueue(singlePort.port, payload);
             }
             return;
         }
 
-        final List<Consumer<T>> p = ports;
+        final List<PortEntry<T>> p = ports;
 
         int i = p.size();
 
@@ -237,13 +255,14 @@ public class Event<T> {
         }
 
         for (i--; i >= 0; i--) {
-            if (isPortAsync.get(i)) {
-                MessageQueue.enqueueAsync(p.get(i), payload);
+            if (p.get(i).isAsyncReceiver) {
+                MessageQueue.enqueueAsync(p.get(i).port, payload);
             } else {
                 System.err.println(String.format(
-                        "[ports] warning: event %s was fired asynchronously, but the receiver is not an async port",
-                        eventTypeName));
-                MessageQueue.enqueue(p.get(i), payload);
+                        "[ports] warning: event %s was fired asynchronously in component %s, but the receiver is not an async port",
+                        eventTypeName,
+                        owner.getClass().getName()));
+                MessageQueue.enqueue(p.get(i).port, payload);
             }
         }
     }

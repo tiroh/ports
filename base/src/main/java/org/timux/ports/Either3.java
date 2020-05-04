@@ -23,8 +23,8 @@ import java.util.function.Function;
 /**
  * A union type for three types A, B, and C. The primary use case is as a response type for a
  * {@link Request} that may return different kinds of data, depending on the situation.
- * <p>
- * Use multiple {@link Response} annotations on a request type in order to indicate the
+ *
+ * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
  *
  * @see Either

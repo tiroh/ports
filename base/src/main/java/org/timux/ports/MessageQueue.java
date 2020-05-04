@@ -54,9 +54,10 @@ class MessageQueue {
         }
     }
 
+    private static final Deque<Task> messageQueue = new ArrayDeque<>();
     private static final DispatchThread dispatchThread = new DispatchThread();
     private static final Executor workerExecutor = new Executor("ports-worker");
-    private static final Deque<Task> messageQueue = new ArrayDeque<>();
+    private static final Executor asyncExecutor = new Executor("ports-async");
 
     static void enqueue(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
@@ -67,19 +68,20 @@ class MessageQueue {
             System.out.println("---- new entry: " + payload);
         }
 
-        Task task = new Task(eventPort, null, payload);
+        Task task = new Task(eventPort, payload);
 
         synchronized (messageQueue) {
             messageQueue.add(task);
             messageQueue.notify();
         }
 
-        waitForResponse(task);
+        task.waitForResponse();
     }
 
     static void enqueueAsync(Consumer eventPort, Object payload) {
-        Task task = new Task(eventPort, null, payload);
-        workerExecutor.submit(task);
+        System.out.println("---- async event: " + payload);
+        Task task = new Task(eventPort, payload);
+        asyncExecutor.submit(task);
     }
 
     static <I, O> O enqueue(Function<I, O> requestPort, I payload) {
@@ -90,27 +92,20 @@ class MessageQueue {
             System.out.println("---- new entry: " + payload);
         }
 
-        Task task = new Task(null, requestPort, payload);
+        Task task = new Task(requestPort, payload);
 
         synchronized (messageQueue) {
             messageQueue.add(task);
             messageQueue.notify();
         }
 
-        return (O) waitForResponse(task);
+        return (O) task.waitForResponse();
     }
 
-    private static Object waitForResponse(Task task) {
-        synchronized (task) {
-            while (!task.hasReturned()) {
-                try {
-                    task.wait();
-                } catch (InterruptedException e) {
-                    //
-                }
-            }
-
-            return task.getResponse();
-        }
+    static <I, O> PortsFuture<O> enqueueAsync(Function<I, O> requestPort, I payload) {
+        System.out.println("---- async request: " + payload);
+        Task task = new Task(requestPort, payload);
+        asyncExecutor.submit(task);
+        return new PortsFuture<>(task);
     }
 }

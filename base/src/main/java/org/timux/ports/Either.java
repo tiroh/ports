@@ -22,11 +22,11 @@ import java.util.function.Function;
 
 /**
  * A union type for two types A and B.
- * <p>
- * Use multiple {@link Response} annotations on a request type in order to indicate the
+ *
+ * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
- * <p>
- * For a {@link Request} that returns either a valid response object or an error status,
+ *
+ * <p> For a {@link Request} that returns either a valid response object or an error status,
  * use the {@link SuccessOrFailure} constructors.
  *
  * @see Either3

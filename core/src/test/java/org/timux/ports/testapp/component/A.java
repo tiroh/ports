@@ -18,6 +18,8 @@ package org.timux.ports.testapp.component;
 
 import org.timux.ports.*;
 
+import java.util.concurrent.TimeUnit;
+
 public class A {
 
     @Out Event<ObjectEvent> objectEvent;
@@ -44,6 +46,7 @@ public class A {
     }
 
     @In
+    @AsyncPort
     private void onInt(IntEvent event) {
         field *= 2;
         System.out.println("A received test input: " + event.getData() + ", private field is " + field);
@@ -72,7 +75,7 @@ public class A {
 
         objectEvent.triggerAsync(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
-        double d = shortRequest.call(new ShortRequest((short) 2));
+        double d = shortRequest.callAsync(new ShortRequest((short) 2)).get();
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));
         System.out.println("A got replies: " + d + " and " + o + ", " + o2);
