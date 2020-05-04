@@ -8,7 +8,9 @@ class A {
     public Event<IntEvent> intEvent;
 
     @In
+    @AsyncPort
     private Double onDoubleRequest(DoubleRequest request) {
+        System.out.println("A doublerequest");
         return 1.5 * request.getData();
     }
 }

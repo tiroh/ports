@@ -40,7 +40,7 @@ class Executor {
         public void run() {
             while (true) {
                 synchronized (this) {
-                    while (task == null) {
+                    while (!isShutdown && task == null) {
                         try {
                             wait();
                         } catch (InterruptedException e) {
@@ -49,35 +49,49 @@ class Executor {
                     }
                 }
 
+                if (isShutdown) {
+                    return;
+                }
+
                 System.out.println("---- worker " + getName());
 
                 task.run();
                 task = null;
 
-                synchronized (threadStack) {
-                    threadStack.push(this);
+                synchronized (availableThreads) {
+                    availableThreads.push(this);
                 }
             }
         }
     }
 
-    private final Deque<WorkerThread> threadStack = new ArrayDeque<>();
+    private final Deque<WorkerThread> availableThreads = new ArrayDeque<>();
+    private final Deque<WorkerThread> allThreads = new ArrayDeque<>();
     private final ThreadGroup threadGroup;
     private final AtomicInteger nextThreadId = new AtomicInteger();
+    private boolean isShutdown;
 
     public Executor(String threadGroupName) {
         threadGroup = new ThreadGroup(threadGroupName);
     }
 
     public void submit(Task task) {
+        if (isShutdown) {
+            return;
+        }
+
+        System.out.println("submit " + threadGroup.getName());
+
         WorkerThread workerThread;
 
-        synchronized (threadStack) {
-            if (threadStack.isEmpty()) {
-                threadStack.push(new WorkerThread(threadGroup));
+        synchronized (availableThreads) {
+            if (availableThreads.isEmpty()) {
+                WorkerThread newThread = new WorkerThread(threadGroup);
+                allThreads.push(newThread);
+                availableThreads.push(newThread);
             }
 
-            workerThread = threadStack.pollFirst();
+            workerThread = availableThreads.pollFirst();
         }
 
         workerThread.setTask(task);
@@ -89,5 +103,43 @@ class Executor {
 
     public boolean isOwnThread(Thread thread) {
         return threadGroup == thread.getThreadGroup();
+    }
+
+    public void awaitQuiescence() {
+        for (;;) {
+            synchronized (availableThreads) {
+                if (availableThreads.size() == allThreads.size()) {
+                    return;
+                }
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                //
+            }
+        }
+    }
+
+    public void joinAndShutdown() {
+        isShutdown = true;
+
+        synchronized (availableThreads) {
+            for (WorkerThread thread : allThreads) {
+                synchronized (thread) {
+                    thread.notify();
+                }
+            }
+        }
+
+        synchronized (availableThreads) {
+            for (WorkerThread thread : allThreads) {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    //
+                }
+            }
+        }
     }
 }

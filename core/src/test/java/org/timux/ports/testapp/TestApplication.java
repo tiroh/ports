@@ -20,8 +20,6 @@ import org.timux.ports.Ports;
 import org.timux.ports.PortsOptions;
 import org.timux.ports.testapp.component.*;
 
-import java.util.concurrent.TimeUnit;
-
 public class TestApplication {
 
     public static void main(String[] args) {

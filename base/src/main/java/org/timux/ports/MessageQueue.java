@@ -38,12 +38,16 @@ class MessageQueue {
                 Task task;
 
                 synchronized (messageQueue) {
-                    while (messageQueue.isEmpty()) {
+                    while (!isShutdown && messageQueue.isEmpty()) {
                         try {
                             messageQueue.wait();
                         } catch (InterruptedException e) {
                             //
                         }
+                    }
+
+                    if (isShutdown) {
+                        return;
                     }
 
                     task = messageQueue.poll();
@@ -58,6 +62,7 @@ class MessageQueue {
     private static final DispatchThread dispatchThread = new DispatchThread();
     private static final Executor workerExecutor = new Executor("ports-worker");
     private static final Executor asyncExecutor = new Executor("ports-async");
+    private static boolean isShutdown;
 
     static void enqueue(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
@@ -107,5 +112,10 @@ class MessageQueue {
         Task task = new Task(requestPort, payload);
         asyncExecutor.submit(task);
         return new PortsFuture<>(task);
+    }
+
+    static void awaitQuiescence() {
+        workerExecutor.awaitQuiescence();
+        asyncExecutor.awaitQuiescence();
     }
 }

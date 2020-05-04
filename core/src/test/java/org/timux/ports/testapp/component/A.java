@@ -19,6 +19,7 @@ package org.timux.ports.testapp.component;
 import org.timux.ports.*;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class A {
 
@@ -75,9 +76,16 @@ public class A {
 
         objectEvent.triggerAsync(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
-        double d = shortRequest.callAsync(new ShortRequest((short) 2)).get();
+        PortsFuture<Double> d = shortRequest.callAsync(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));
+
+        try {
+            d.get(2, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        }
+
         System.out.println("A got replies: " + d + " and " + o + ", " + o2);
     }
 }

@@ -526,4 +526,16 @@ public final class Ports {
     public static void releaseProtocols() {
         Protocol.clear();
     }
+
+    /**
+     * Waits until all messaging threads are quiescent. This method is normally used in testing
+     * when messages are sent asynchronously. In this case, it can happen that at that point in time when
+     * test assertions are made not all threads have finished working. So, before any assertions can be
+     * made, this method has to be called in order to ensure that no threads are active anymore.
+     *
+     * @since 0.5.0
+     */
+    public static void awaitQuiescence() {
+        MessageQueue.awaitQuiescence();
+    }
 }

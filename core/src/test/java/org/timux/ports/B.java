@@ -10,7 +10,8 @@ class B {
     public Request<DoubleRequest, Double> doubleRequest;
 
     @In
+    @AsyncPort
     private void onInt(IntEvent event) {
-        receivedData = doubleRequest.call(new DoubleRequest(event.getData()));
+        receivedData = doubleRequest.callAsync(new DoubleRequest(event.getData())).get();
     }
 }

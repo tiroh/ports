@@ -7,6 +7,7 @@ class C {
     public int data;
 
     @In
+    @AsyncPort
     private void onInt(IntEvent event) {
         this.data = event.getData();
     }

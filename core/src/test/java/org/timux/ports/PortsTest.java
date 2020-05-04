@@ -36,7 +36,9 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        a.intEvent.trigger(new IntEvent(3));
+        a.intEvent.triggerAsync(new IntEvent(3));
+
+        Ports.awaitQuiescence();
 
         assertEquals(4.5, b.receivedData);
     }
@@ -50,7 +52,9 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2);
 
-        a.intEvent.trigger(new IntEvent(3));
+        a.intEvent.triggerAsync(new IntEvent(3));
+
+        Ports.awaitQuiescence();
 
         assertEquals(3, c1.data);
         assertEquals(0, c2.data);
@@ -65,7 +69,9 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
 
-        a.intEvent.trigger(new IntEvent(3));
+        a.intEvent.triggerAsync(new IntEvent(3));
+
+        Ports.awaitQuiescence();
 
         assertEquals(3, c1.data);
         assertEquals(c1.data, c2.data);
@@ -82,7 +88,9 @@ public class PortsTest {
 
         Ports.disconnect(a).and(c1);
 
-        a.intEvent.trigger(new IntEvent(3));
+        a.intEvent.triggerAsync(new IntEvent(3));
+
+        Ports.awaitQuiescence();
 
         assertEquals(0, c1.data);
         assertEquals(3, c2.data);
@@ -162,6 +170,8 @@ public class PortsTest {
             .with(IntEvent.class, a)
                 .trigger(new IntEvent(4));
 
+        Ports.awaitQuiescence();
+
         assertTrue(firstActionA.value);
         assertTrue(secondActionA.value);
         assertTrue(firstActionB.value);
@@ -208,6 +218,8 @@ public class PortsTest {
             .with(EitherRequest.class, Double.class, String.class)
                 .call(new EitherRequest(1.0));
 
+        Ports.awaitQuiescence();
+
         assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, Double::parseDouble), 0.0);
     }
@@ -231,6 +243,8 @@ public class PortsTest {
         Ports.protocol()
             .with(Either3Request.class, Double.class, Integer.class, String.class)
                 .call(new Either3Request(1));
+
+        Ports.awaitQuiescence();
 
         assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, x -> (double) x, Double::parseDouble), 0.0);

@@ -20,13 +20,13 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * <p>A class that represents an IN port with stack semantics. That is, incoming data does not trigger an event, but
+ * A class that represents an IN port with stack semantics. That is, incoming data does not trigger an event, but
  * is stored and can be retrieved in LIFO order.</p>
  *
- * <p>Any field of this type that is supposed to serve as an IN port must be annotated with the {@link In}
+ * <p> Any field of this type that is supposed to serve as an IN port must be annotated with the {@link In}
  * annotation.</p>
  *
- * <p>(If you want incoming data to trigger an event, create a handler method and annotate it with the
+ * <p> (If you want incoming data to trigger an event, create a handler method and annotate it with the
  * {@link In} annotation).)</p>
  *
  * @param <T> The type of data items stored in this stack.

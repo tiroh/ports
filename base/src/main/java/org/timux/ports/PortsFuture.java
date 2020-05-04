@@ -81,14 +81,36 @@ public class PortsFuture<T> implements Future<T> {
      * Returns either the result or the provided defaultValue, in case the result is not yet available.
      */
     public T getNow(T defaultValue) {
-        return task.hasReturned() ? (T) task.waitForResponse() : defaultValue;
+        if (hasReturned) {
+            return result;
+        }
+
+        if (task.hasReturned()) {
+            result = (T) task.waitForResponse();
+            hasReturned = true;
+            task = null;
+            return result;
+        }
+
+        return defaultValue;
     }
 
     /**
      * Returns an {@link Either} representing either the result (if available) or the provided elseValue.
      */
     public <E> Either<T, E> getOrElse(E elseValue) {
-        return task.hasReturned() ? Either.a((T) task.waitForResponse()) : Either.b(elseValue);
+        if (hasReturned) {
+            return Either.a(result);
+        }
+
+        if (task.hasReturned()) {
+            result = (T) task.waitForResponse();
+            hasReturned = true;
+            task = null;
+            return Either.a(result);
+        }
+
+        return Either.b(elseValue);
     }
 
     /**
@@ -101,6 +123,13 @@ public class PortsFuture<T> implements Future<T> {
 
     @Override
     public boolean isDone() {
+        return isResultAvailable();
+    }
+
+    /**
+     * Returns true if and only if the result of this future has been computed.
+     */
+    public boolean isResultAvailable() {
         return hasReturned ? true : task.hasReturned();
     }
 
@@ -110,5 +139,10 @@ public class PortsFuture<T> implements Future<T> {
     @Override
     public boolean isCancelled() {
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "PortsFuture{" + (isResultAvailable() ? "result='" + result + "'}:" : "no result available}:") + hashCode();
     }
 }
