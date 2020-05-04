@@ -40,23 +40,23 @@ public class Stack<T> {
 
     private Deque<T> deque = new ArrayDeque<>();
 
-    public T peek() {
+    public synchronized T peek() {
         return deque.peekLast();
     }
 
-    public T pop() {
+    public synchronized T pop() {
         return deque.removeLast();
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return deque.isEmpty();
     }
 
-    public int size() {
+    public synchronized int size() {
         return deque.size();
     }
 
-    void push(T item) {
+    synchronized void push(T item) {
         deque.addLast(item);
     }
 }

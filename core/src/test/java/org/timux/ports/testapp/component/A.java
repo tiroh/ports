@@ -50,13 +50,27 @@ public class A {
     }
 
     @In
+    @AsyncPort
     private void onRuntimeException(RuntimeException exception) {
         System.out.println("Received exception: " + exception.getMessage());
     }
 
     public void doWork() {
-        intEvent.trigger(new IntEvent(37));
-        objectEvent.trigger(new ObjectEvent(3700));
+        System.out.println("--- sending int events --- ");
+
+        for (int i = 0; i < 10; i++) {
+            intEvent.triggerAsync(new IntEvent(37 + i));
+
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("--- done sending int events --- ");
+
+        objectEvent.triggerAsync(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
         double d = shortRequest.call(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));

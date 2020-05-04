@@ -29,9 +29,16 @@ public class B {
     }
 
     @In
+    @AsyncPort
     private void onInt(IntEvent event) {
         System.out.println("B received input: " + event.getData());
-        runtimeExceptionEvent.trigger(new RuntimeException("Test exception with data " + event.getData()));
+        runtimeExceptionEvent.triggerAsync(new RuntimeException("Test exception with data " + event.getData()));
+
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @In

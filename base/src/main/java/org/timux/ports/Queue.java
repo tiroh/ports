@@ -40,23 +40,23 @@ public class Queue<T> {
 
     private Deque<T> deque = new ArrayDeque<>();
 
-    public T peek() {
+    public synchronized T peek() {
         return deque.peekFirst();
     }
 
-    public T poll() {
+    public synchronized T poll() {
         return deque.removeFirst();
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return deque.isEmpty();
     }
 
-    public int size() {
+    public synchronized int size() {
         return deque.size();
     }
 
-    void add(T item) {
+    synchronized void add(T item) {
         deque.addLast(item);
     }
 }

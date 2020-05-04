@@ -18,77 +18,11 @@ package org.timux.ports;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 class MessageQueue {
-
-    private static class Task implements Runnable {
-
-        Consumer eventPort;
-        Function requestPort;
-        Object payload;
-        Object response;
-        boolean hasReturned = false;
-
-        Task(Consumer eventPort, Function requestPort, Object payload) {
-            this.eventPort = eventPort;
-            this.requestPort = requestPort;
-            this.payload = payload;
-        }
-
-        @Override
-        public void run() {
-            if (eventPort != null) {
-                eventPort.accept(payload);
-            } else {
-                response = requestPort.apply(payload);
-            }
-
-            hasReturned = true;
-
-            synchronized (this) {
-                notify();
-            }
-        }
-    }
-
-    private static class WorkerThread extends Thread {
-
-        Runnable task;
-
-        public WorkerThread() {
-            super(workerThreadGroup, "ports-worker-" + workerThreadId.getAndIncrement());
-            setDaemon(true);
-            start();
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                synchronized (this) {
-                    while (task == null) {
-                        try {
-                            wait();
-                        } catch (InterruptedException e) {
-                            //
-                        }
-                    }
-                }
-
-                System.out.println("---- worker " + getName());
-
-                task.run();
-                task = null;
-
-                synchronized (threadStack) {
-                    threadStack.push(this);
-                }
-            }
-        }
-    }
 
     private static class DispatchThread extends Thread {
 
@@ -102,7 +36,6 @@ class MessageQueue {
         public void run() {
             while (true) {
                 Task task;
-                WorkerThread workerThread;
 
                 synchronized (messageQueue) {
                     while (messageQueue.isEmpty()) {
@@ -116,38 +49,22 @@ class MessageQueue {
                     task = messageQueue.poll();
                 }
 
-                synchronized (threadStack) {
-                    if (threadStack.isEmpty()) {
-                        threadStack.push(new WorkerThread());
-                    }
-
-                    workerThread = threadStack.pollFirst();
-                }
-
-                workerThread.task = task;
-
-                synchronized (workerThread) {
-                    workerThread.notify();
-                }
+                workerExecutor.submit(task);
             }
         }
     }
 
     private static final DispatchThread dispatchThread = new DispatchThread();
+    private static final Executor workerExecutor = new Executor("ports-worker");
     private static final Deque<Task> messageQueue = new ArrayDeque<>();
-    private static final Deque<WorkerThread> threadStack = new ArrayDeque<>();
-    private static final ThreadGroup workerThreadGroup = new ThreadGroup("ports-worker");
-    private static final AtomicInteger workerThreadId = new AtomicInteger();
 
     static void enqueue(Consumer eventPort, Object payload) {
-        Thread currentThread = Thread.currentThread();
-
-        if (currentThread instanceof WorkerThread) {
-            System.out.println("--------- easy: " + payload);
+        if (workerExecutor.isOwnThread(Thread.currentThread())) {
+            System.out.println("---- easy: " + payload);
             eventPort.accept(payload);
             return;
         } else {
-            System.out.println("--------------- new entry: " + payload);
+            System.out.println("---- new entry: " + payload);
         }
 
         Task task = new Task(eventPort, null, payload);
@@ -160,14 +77,17 @@ class MessageQueue {
         waitForResponse(task);
     }
 
-    static <I, O> O enqueue(Function<I, O> requestPort, I payload) {
-        Thread currentThread = Thread.currentThread();
+    static void enqueueAsync(Consumer eventPort, Object payload) {
+        Task task = new Task(eventPort, null, payload);
+        workerExecutor.submit(task);
+    }
 
-        if (currentThread instanceof WorkerThread) {
-            System.out.println("--------- easy: " + payload);
+    static <I, O> O enqueue(Function<I, O> requestPort, I payload) {
+        if (workerExecutor.isOwnThread(Thread.currentThread())) {
+            System.out.println("---- easy: " + payload);
             return requestPort.apply(payload);
         } else {
-            System.out.println("--------------- new entry: " + payload);
+            System.out.println("---- new entry: " + payload);
         }
 
         Task task = new Task(null, requestPort, payload);
@@ -182,7 +102,7 @@ class MessageQueue {
 
     private static Object waitForResponse(Task task) {
         synchronized (task) {
-            while (!task.hasReturned) {
+            while (!task.hasReturned()) {
                 try {
                     task.wait();
                 } catch (InterruptedException e) {
@@ -190,7 +110,7 @@ class MessageQueue {
                 }
             }
 
-            return task.response;
+            return task.getResponse();
         }
     }
 }
