@@ -1,23 +1,32 @@
-package org.timux.ports.protocol;
-
-import org.timux.ports.Protocol;
+package org.timux.ports;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class ActionClause<T> {
+class ActionRequestClause<I, O> {
 
-    public ConditionOrAction<T> do_(Action<T> action) {
+    public ConditionOrAction<?> do_(Action<I> action) {
         Protocol.registerAction(action);
         return new ConditionOrAction<>();
     }
 
-    public ConditionOrAction<T> do_(Consumer<T> action) {
-        Protocol.registerAction((Action<T>) (payload, owner) -> action.accept(payload));
+    public ConditionOrAction<I> do_(Consumer<I> action) {
+        Protocol.registerAction((Action<I>) (payload, owner) -> action.accept(payload));
         return new ConditionOrAction<>();
     }
 
-    public ConditionOrAction<T> do_(Runnable action) {
-        Protocol.registerAction((Action<T>) (payload, owner) -> action.run());
+    public ConditionOrAction<I> do_(Runnable action) {
+        Protocol.registerAction((Action<I>) (payload, owner) -> action.run());
+        return new ConditionOrAction<>();
+    }
+
+    public ConditionOrAction<I> respond(Function<I, O> response) {
+        Protocol.registerRespondAction(response);
+        return new ConditionOrAction<>();
+    }
+
+    public ConditionOrAction<I> respond(O response) {
+        Protocol.registerRespondAction(x -> response);
         return new ConditionOrAction<>();
     }
 

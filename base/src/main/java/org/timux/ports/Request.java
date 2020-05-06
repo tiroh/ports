@@ -92,12 +92,12 @@ public class Request<I, O> {
     }
 
     /**
-     * Sends the given payload to the connected IN port.  The request will be handled synchronously, regardless of
-     * whether the IN port is an {@link AsyncPort} or not.
+     * Sends the given payload to the connected IN port. The request will be handled synchronously and within the
+     * thread of the caller, regardless of whether the IN port is an {@link AsyncPort} or not.
      *
      * @param payload The payload to be sent.
      *
-     * @see #callAsync
+     * @see #submit
      *
      * @return The response of the connected component.
      */
@@ -119,7 +119,7 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        O response = MessageQueue.enqueue(port, payload);
+        O response = port.apply(payload);
 
         if (Protocol.areProtocolsActive) {
             Protocol.onDataReceived(requestTypeName, owner, response);
@@ -129,11 +129,13 @@ public class Request<I, O> {
     }
 
     /**
-     * Attempts to send the given payload asynchronously to the connected IN port.  If the IN port is not an
-     * {@link AsyncPort}, the request will be handled synchronously.
+     * Sends the given payload to the connected IN port. The request will be handled asynchronously if the IN port is
+     * an {@link AsyncPort}; if not, the request will be handled synchronously, but not necessarily within the thread
+     * of the caller.
      *
      * @param payload The payload to be sent.
      *
+     * @see #call
      * @see AsyncPort
      *
      * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
@@ -142,7 +144,7 @@ public class Request<I, O> {
      * @since 0.5.0
      */
     @SuppressWarnings("unchecked")
-    public PortsFuture<O> callAsync(I payload) {
+    public PortsFuture<O> submit(I payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -160,8 +162,8 @@ public class Request<I, O> {
         }
 
         if (!isAsyncReceiver) {
-            System.err.println(String.format(
-                    "[ports] warning: request %s was called asynchronously in component %s, but the receiver is not an async port",
+            Ports.printWarning(String.format(
+                    "request %s was called asynchronously in component %s, but the receiver is not an async port",
                     requestTypeName,
                     owner.getClass().getName()));
 

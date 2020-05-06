@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package org.timux.ports.protocol;
-
-import org.timux.ports.*;
+package org.timux.ports;
 
 class TypeUtils {
 
@@ -116,7 +114,7 @@ class TypeUtils {
         }
 
         if (declaredResponseType == null) {
-            System.err.println("[ports] warning: no response type declaration provided by request type " + messageType.getName());
+            Ports.printWarning("no response type declaration provided by request type " + messageType.getName());
             return;
         }
 

@@ -12,6 +12,6 @@ class B {
     @In
     @AsyncPort
     private void onInt(IntEvent event) {
-        receivedData = doubleRequest.callAsync(new DoubleRequest(event.getData())).get();
+        receivedData = doubleRequest.submit(new DoubleRequest(event.getData())).get();
     }
 }

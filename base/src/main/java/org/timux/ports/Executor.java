@@ -40,17 +40,18 @@ class Executor {
         public void run() {
             while (true) {
                 synchronized (this) {
-                    while (!isShutdown && task == null) {
+                    while (task == null) {
                         try {
                             wait();
                         } catch (InterruptedException e) {
-                            //
+                            synchronized (availableThreads) {
+                                availableThreads.remove(this);
+                                numberOfThreads--;
+                            }
+
+                            return;
                         }
                     }
-                }
-
-                if (isShutdown) {
-                    return;
                 }
 
                 System.out.println("---- worker " + getName());
@@ -66,20 +67,15 @@ class Executor {
     }
 
     private final Deque<WorkerThread> availableThreads = new ArrayDeque<>();
-    private final Deque<WorkerThread> allThreads = new ArrayDeque<>();
     private final ThreadGroup threadGroup;
     private final AtomicInteger nextThreadId = new AtomicInteger();
-    private boolean isShutdown;
+    private int numberOfThreads = 0;
 
     public Executor(String threadGroupName) {
         threadGroup = new ThreadGroup(threadGroupName);
     }
 
     public void submit(Task task) {
-        if (isShutdown) {
-            return;
-        }
-
         System.out.println("submit " + threadGroup.getName());
 
         WorkerThread workerThread;
@@ -87,7 +83,7 @@ class Executor {
         synchronized (availableThreads) {
             if (availableThreads.isEmpty()) {
                 WorkerThread newThread = new WorkerThread(threadGroup);
-                allThreads.push(newThread);
+                numberOfThreads++;
                 availableThreads.push(newThread);
             }
 
@@ -108,7 +104,7 @@ class Executor {
     public void awaitQuiescence() {
         for (;;) {
             synchronized (availableThreads) {
-                if (availableThreads.size() == allThreads.size()) {
+                if (availableThreads.size() == numberOfThreads) {
                     return;
                 }
             }
@@ -117,28 +113,6 @@ class Executor {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 //
-            }
-        }
-    }
-
-    public void joinAndShutdown() {
-        isShutdown = true;
-
-        synchronized (availableThreads) {
-            for (WorkerThread thread : allThreads) {
-                synchronized (thread) {
-                    thread.notify();
-                }
-            }
-        }
-
-        synchronized (availableThreads) {
-            for (WorkerThread thread : allThreads) {
-                try {
-                    thread.join();
-                } catch (InterruptedException e) {
-                    //
-                }
             }
         }
     }

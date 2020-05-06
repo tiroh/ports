@@ -16,15 +16,13 @@
 
 package org.timux.ports;
 
-import org.timux.ports.protocol.Action;
-
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public final class Protocol {
+final class Protocol {
 
     private static class ConditionalActions {
         private final Map<Predicate, List<Action>> actions = new LinkedHashMap<>();

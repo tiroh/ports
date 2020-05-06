@@ -16,8 +16,6 @@
 
 package org.timux.ports;
 
-import org.timux.ports.protocol.ConditionOrAction;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -60,6 +58,17 @@ public final class Ports {
      */
     public static AndClause disconnect(Object a) {
         return new AndClause((b, portsOptions) -> disconnectBoth(a, b, portsOptions));
+    }
+
+    /**
+     * Disconnects all of the specified components from each other.
+     */
+    public static void disconnect(Object... components) {
+        for (int i = 0; i < components.length; i++) {
+            for (int j = i  + 1; j < components.length; j++) {
+                disconnect(components[i]).and(components[j]);
+            }
+        }
     }
 
     static boolean connectBoth(Object a, Object b, int portsOptions) {
@@ -537,5 +546,9 @@ public final class Ports {
      */
     public static void awaitQuiescence() {
         MessageQueue.awaitQuiescence();
+    }
+
+    static void printWarning(String message) {
+        System.err.print("[ports] warning: " + message);
     }
 }

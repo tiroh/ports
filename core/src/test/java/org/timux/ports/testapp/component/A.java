@@ -63,7 +63,7 @@ public class A {
         System.out.println("--- sending int events --- ");
 
         for (int i = 0; i < 10; i++) {
-            intEvent.triggerAsync(new IntEvent(37 + i));
+            intEvent.submit(new IntEvent(37 + i));
 
             try {
                 Thread.sleep(200);
@@ -74,9 +74,9 @@ public class A {
 
         System.out.println("--- done sending int events --- ");
 
-        objectEvent.triggerAsync(new ObjectEvent(3700));
+        objectEvent.submit(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
-        PortsFuture<Double> d = shortRequest.callAsync(new ShortRequest((short) 2));
+        PortsFuture<Double> d = shortRequest.submit(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));
 

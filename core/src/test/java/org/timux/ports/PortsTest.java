@@ -36,7 +36,7 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        a.intEvent.triggerAsync(new IntEvent(3));
+        a.intEvent.submit(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -52,7 +52,7 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2);
 
-        a.intEvent.triggerAsync(new IntEvent(3));
+        a.intEvent.submit(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -69,7 +69,7 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
 
-        a.intEvent.triggerAsync(new IntEvent(3));
+        a.intEvent.submit(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -88,7 +88,26 @@ public class PortsTest {
 
         Ports.disconnect(a).and(c1);
 
-        a.intEvent.triggerAsync(new IntEvent(3));
+        a.intEvent.submit(new IntEvent(3));
+
+        Ports.awaitQuiescence();
+
+        assertEquals(0, c1.data);
+        assertEquals(3, c2.data);
+    }
+
+    @Test
+    public void disconnectAll() {
+        A a = new A();
+        C c1 = new C();
+        C c2 = new C();
+
+        Ports.connect(a).and(c1);
+        Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+
+        Ports.disconnect(a, c1);
+
+        a.intEvent.submit(new IntEvent(3));
 
         Ports.awaitQuiescence();
 

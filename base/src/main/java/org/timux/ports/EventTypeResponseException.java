@@ -1,6 +1,6 @@
-package org.timux.ports.protocol;
+package org.timux.ports;
 
-public class EventTypeResponseException extends RuntimeException {
+class EventTypeResponseException extends RuntimeException {
 
     public EventTypeResponseException(String eventType) {
         super("message type '" + eventType + "' is an event, but a response type was provided");

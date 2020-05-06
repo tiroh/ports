@@ -1,10 +1,8 @@
-package org.timux.ports.protocol;
-
-import org.timux.ports.Protocol;
+package org.timux.ports;
 
 import java.util.function.Predicate;
 
-public class WhenOutClause<T> {
+class WhenOutClause<T> {
 
     public ActionClause<T> triggers(Predicate<T> predicate) {
         Protocol.registerConditionOnSent(predicate);

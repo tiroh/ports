@@ -1,8 +1,6 @@
-package org.timux.ports.protocol;
+package org.timux.ports;
 
-import org.timux.ports.Protocol;
-
-public class PortRequestClause<I, O> {
+class PortRequestClause<I, O> {
 
     public ConditionOrAction<?> call(I payload) {
         Protocol.registerOrExecuteTriggerOrCallActionDependingOnParseState(payload);

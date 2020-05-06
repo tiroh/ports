@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.timux.ports.protocol;
+package org.timux.ports;
 
-public interface Action<T> {
+interface Action<T> {
 
     void execute(T payload, Object owner);
 }

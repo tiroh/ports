@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * Represents a request response that has not yet been computed.
  *
- * <p> Whenever you issue an asynchronous request via {@link Request#callAsync}, you will retrieve
+ * <p> Whenever you issue an asynchronous request via {@link Request#submit}, you will retrieve
  * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},
  * {@link #getNow}, or {@link #getOrElse}.
  *

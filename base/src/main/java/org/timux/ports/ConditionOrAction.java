@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package org.timux.ports.protocol;
-
-import org.timux.ports.Either;
-import org.timux.ports.Either3;
-import org.timux.ports.Protocol;
+package org.timux.ports;
 
 import java.util.function.Consumer;
 
-public class ConditionOrAction<T> {
+class ConditionOrAction<T> {
 
     public <U> WhenOutClause<U> when(Class<U> eventType) {
         TypeUtils.verifyResponseType(eventType, void.class);

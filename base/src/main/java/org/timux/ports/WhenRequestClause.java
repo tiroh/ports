@@ -1,10 +1,8 @@
-package org.timux.ports.protocol;
-
-import org.timux.ports.Protocol;
+package org.timux.ports;
 
 import java.util.function.Predicate;
 
-public class WhenRequestClause<I, O> {
+class WhenRequestClause<I, O> {
 
     public ActionRequestClause<I, O> requests(Predicate<I> predicate) {
         Protocol.registerConditionOnSent(predicate);

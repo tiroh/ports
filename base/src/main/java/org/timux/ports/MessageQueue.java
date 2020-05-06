@@ -38,16 +38,13 @@ class MessageQueue {
                 Task task;
 
                 synchronized (messageQueue) {
-                    while (!isShutdown && messageQueue.isEmpty()) {
+                    while (messageQueue.isEmpty()) {
                         try {
                             messageQueue.wait();
                         } catch (InterruptedException e) {
-                            //
+                            Ports.printWarning("dispatcher has been interrupted");
+                            return;
                         }
-                    }
-
-                    if (isShutdown) {
-                        return;
                     }
 
                     task = messageQueue.poll();
@@ -62,7 +59,6 @@ class MessageQueue {
     private static final DispatchThread dispatchThread = new DispatchThread();
     private static final Executor workerExecutor = new Executor("ports-worker");
     private static final Executor asyncExecutor = new Executor("ports-async");
-    private static boolean isShutdown;
 
     static void enqueue(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
