@@ -102,7 +102,7 @@ class Executor {
     }
 
     public void awaitQuiescence() {
-        for (;;) {
+        for (int numberOfRuns = 0; ; numberOfRuns = (numberOfRuns + 1) & 0xffffff) {
             synchronized (availableThreads) {
                 if (availableThreads.size() == numberOfThreads) {
                     return;
@@ -110,10 +110,16 @@ class Executor {
             }
 
             try {
-                Thread.sleep(100);
+                Thread.sleep(numberOfRuns < 10 ? 10 : (numberOfRuns < 50 ? 100 : 333));
             } catch (InterruptedException e) {
                 //
             }
+        }
+    }
+
+    public boolean isQuiescent() {
+        synchronized (availableThreads) {
+            return availableThreads.size() == numberOfThreads;
         }
     }
 }

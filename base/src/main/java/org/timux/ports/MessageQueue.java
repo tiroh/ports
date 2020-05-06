@@ -111,7 +111,9 @@ class MessageQueue {
     }
 
     static void awaitQuiescence() {
-        workerExecutor.awaitQuiescence();
-        asyncExecutor.awaitQuiescence();
+        do {
+            workerExecutor.awaitQuiescence();
+            asyncExecutor.awaitQuiescence();
+        } while (!workerExecutor.isQuiescent() || !asyncExecutor.isQuiescent());
     }
 }
