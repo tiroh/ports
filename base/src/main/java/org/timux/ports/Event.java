@@ -193,7 +193,7 @@ public class Event<T> {
         }
 
         if (singlePort != null) {
-            MessageQueue.enqueue(singlePort.port, payload);
+            singlePort.port.accept(payload);
             return;
         }
 
@@ -210,7 +210,7 @@ public class Event<T> {
         }
 
         for (i--; i >= 0; i--) {
-            MessageQueue.enqueue(p.get(i).port, payload);
+            p.get(i).port.accept(payload);
         }
     }
 
@@ -239,8 +239,10 @@ public class Event<T> {
                         "event %s was fired asynchronously in component %s, but the receiver is not an async port",
                         eventTypeName,
                         owner.getClass().getName()));
+
                 MessageQueue.enqueue(singlePort.port, payload);
             }
+
             return;
         }
 
@@ -264,6 +266,7 @@ public class Event<T> {
                         "event %s was fired asynchronously in component %s, but the receiver is not an async port",
                         eventTypeName,
                         owner.getClass().getName()));
+
                 MessageQueue.enqueue(p.get(i).port, payload);
             }
         }
