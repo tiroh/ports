@@ -62,11 +62,8 @@ class MessageQueue {
 
     static void enqueue(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
-            System.out.println("---- easy: " + payload);
             eventPort.accept(payload);
             return;
-        } else {
-            System.out.println("---- new entry: " + payload);
         }
 
         Task task = new Task(eventPort, payload);
@@ -80,17 +77,13 @@ class MessageQueue {
     }
 
     static void enqueueAsync(Consumer eventPort, Object payload) {
-        System.out.println("---- async event: " + payload);
         Task task = new Task(eventPort, payload);
         asyncExecutor.submit(task);
     }
 
     static <I, O> O enqueue(Function<I, O> requestPort, I payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
-            System.out.println("---- easy: " + payload);
             return requestPort.apply(payload);
-        } else {
-            System.out.println("---- new entry: " + payload);
         }
 
         Task task = new Task(requestPort, payload);
@@ -104,7 +97,6 @@ class MessageQueue {
     }
 
     static <I, O> PortsFuture<O> enqueueAsync(Function<I, O> requestPort, I payload) {
-        System.out.println("---- async request: " + payload);
         Task task = new Task(requestPort, payload);
         asyncExecutor.submit(task);
         return new PortsFuture<>(task);

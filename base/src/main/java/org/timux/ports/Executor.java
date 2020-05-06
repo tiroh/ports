@@ -54,8 +54,6 @@ class Executor {
                     }
                 }
 
-                System.out.println("---- worker " + getName());
-
                 task.run();
                 task = null;
 
@@ -76,8 +74,6 @@ class Executor {
     }
 
     public void submit(Task task) {
-        System.out.println("submit " + threadGroup.getName());
-
         WorkerThread workerThread;
 
         synchronized (availableThreads) {

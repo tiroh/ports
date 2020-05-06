@@ -10,7 +10,6 @@ class A {
     @In
     @AsyncPort
     private Double onDoubleRequest(DoubleRequest request) {
-        System.out.println("A doublerequest");
         return 1.5 * request.getData();
     }
 }
