@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * The main utility class of the Ports Framework.
@@ -548,7 +549,16 @@ public final class Ports {
         MessageQueue.awaitQuiescence();
     }
 
+    /**
+     * Specifies how Ports should handle asynchronicity.
+     *
+     * @since 0.5.0
+     */
+    public static void setAsyncPolicy(AsyncPolicy asyncPolicy) {
+        MessageQueue.setAsyncPolicy(asyncPolicy);
+    }
+
     static void printWarning(String message) {
-        System.err.print("[ports] warning: " + message);
+        System.err.println("[ports] warning: " + message);
     }
 }

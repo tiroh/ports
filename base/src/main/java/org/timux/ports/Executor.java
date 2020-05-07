@@ -22,17 +22,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class Executor {
 
-    class WorkerThread extends Thread {
+    class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
-        private Runnable task;
+        private Task task;
 
         public WorkerThread(ThreadGroup threadGroup) {
             super(threadGroup, threadGroup.getName() + "-" + nextThreadId.getAndIncrement());
             setDaemon(true);
+            setDefaultUncaughtExceptionHandler(this);
             start();
         }
 
-        public void setTask(Runnable task) {
+        public void setTask(Task task) {
             this.task = task;
         }
 
@@ -54,6 +55,7 @@ class Executor {
                     }
                 }
 
+                // Exception handling is done within the task, so not required here.
                 task.run();
                 task = null;
 
@@ -62,6 +64,18 @@ class Executor {
                 }
             }
         }
+
+        @Override
+        public void uncaughtException(Thread thread, Throwable t) {
+            // This should never happen because we catch all exceptions.
+
+            synchronized (availableThreads) {
+                numberOfThreads--;
+            }
+
+            System.err.println("Thread [" + thread.getName() + "] died because of uncaught exception:");
+            t.printStackTrace();
+        }
     }
 
     private final Deque<WorkerThread> availableThreads = new ArrayDeque<>();
@@ -69,11 +83,11 @@ class Executor {
     private final AtomicInteger nextThreadId = new AtomicInteger();
     private int numberOfThreads = 0;
 
-    public Executor(String threadGroupName) {
+    Executor(String threadGroupName) {
         threadGroup = new ThreadGroup(threadGroupName);
     }
 
-    public void submit(Task task) {
+    void submit(Task task) {
         WorkerThread workerThread;
 
         synchronized (availableThreads) {
@@ -93,11 +107,11 @@ class Executor {
         }
     }
 
-    public boolean isOwnThread(Thread thread) {
+    boolean isOwnThread(Thread thread) {
         return threadGroup == thread.getThreadGroup();
     }
 
-    public void awaitQuiescence() {
+    void awaitQuiescence() {
         for (int numberOfRuns = 0; ; numberOfRuns = (numberOfRuns + 1) & 0xffffff) {
             synchronized (availableThreads) {
                 if (availableThreads.size() == numberOfThreads) {
@@ -113,7 +127,7 @@ class Executor {
         }
     }
 
-    public boolean isQuiescent() {
+    boolean isQuiescent() {
         synchronized (availableThreads) {
             return availableThreads.size() == numberOfThreads;
         }

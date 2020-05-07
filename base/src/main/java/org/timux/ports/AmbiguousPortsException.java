@@ -18,7 +18,7 @@ package org.timux.ports;
 
 class AmbiguousPortsException extends RuntimeException {
 
-    public AmbiguousPortsException(String componentFrom, String componentTo, String type) {
+    AmbiguousPortsException(String componentFrom, String componentTo, String type) {
         super(String.format(
                 "Cannot auto-connect %s to %s due to multiple port candidates for signature <%s>.",
                 componentFrom,

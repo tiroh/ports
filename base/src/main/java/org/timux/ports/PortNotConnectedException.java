@@ -20,7 +20,7 @@ import java.util.List;
 
 public class PortNotConnectedException extends RuntimeException {
 
-    public PortNotConnectedException(String port, String component) {
+    PortNotConnectedException(String port, String component) {
         super(makeString(port, component));
     }
 

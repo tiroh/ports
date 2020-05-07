@@ -91,18 +91,7 @@ public class Request<I, O> {
         port = null;
     }
 
-    /**
-     * Sends the given payload to the connected IN port. The request will be handled synchronously and within the
-     * thread of the caller, regardless of whether the IN port is an {@link AsyncPort} or not.
-     *
-     * @param payload The payload to be sent.
-     *
-     * @see #submit
-     *
-     * @return The response of the connected component.
-     */
-    @SuppressWarnings("unchecked")
-    public O call(I payload) {
+    O callWithinSameThread(I payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -129,14 +118,33 @@ public class Request<I, O> {
     }
 
     /**
+     * Sends the given payload to the connected IN port. The request will be handled synchronously, regardless of
+     * whether the IN port is an {@link AsyncPort} or not.
+     *
+     * @param payload The payload to be sent.
+     *
+     * @see #submit
+     * @see Ports#setAsyncPolicy
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
+     *
+     * @return The response of the connected component.
+     */
+    @SuppressWarnings("unchecked")
+    public O call(I payload) {
+        return submit(payload).get();
+    }
+
+    /**
      * Sends the given payload to the connected IN port. The request will be handled asynchronously if the IN port is
-     * an {@link AsyncPort}; if not, the request will be handled synchronously, but not necessarily within the thread
-     * of the caller.
+     * an {@link AsyncPort} and if the {@link AsyncPolicy} allows it; if not, the request will be handled
+     * synchronously.
      *
      * @param payload The payload to be sent.
      *
      * @see #call
      * @see AsyncPort
+     * @see AsyncPolicy
      *
      * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
      *   {@link PortsFuture#getNow}, or {@link PortsFuture#getOrElse} methods to access the response object.
@@ -145,6 +153,10 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public PortsFuture<O> submit(I payload) {
+        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
+            return new PortsFuture<>(callWithinSameThread(payload));
+        }
+
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -162,11 +174,6 @@ public class Request<I, O> {
         }
 
         if (!isAsyncReceiver) {
-            Ports.printWarning(String.format(
-                    "request %s was called asynchronously in component %s, but the receiver is not an async port",
-                    requestTypeName,
-                    owner.getClass().getName()));
-
             O response = MessageQueue.enqueue(port, payload);
 
             if (Protocol.areProtocolsActive) {

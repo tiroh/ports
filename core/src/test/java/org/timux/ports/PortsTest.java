@@ -16,6 +16,7 @@
  
 package org.timux.ports;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
@@ -24,8 +25,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class PortsTest {
 
+    @BeforeAll
+    public static void setupAll() {
+        Ports.setAsyncPolicy(AsyncPolicy.ASYNCHRONOUS);
+    }
+
     @BeforeEach
-    public void setup() {
+    public void setupEach() {
         Ports.releaseProtocols();
     }
 
@@ -36,7 +42,7 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        a.intEvent.submit(new IntEvent(3));
+        a.intEvent.trigger(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -52,7 +58,7 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2);
 
-        a.intEvent.submit(new IntEvent(3));
+        a.intEvent.trigger(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -69,7 +75,7 @@ public class PortsTest {
         Ports.connect(a).and(c1);
         Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
 
-        a.intEvent.submit(new IntEvent(3));
+        a.intEvent.trigger(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -88,7 +94,7 @@ public class PortsTest {
 
         Ports.disconnect(a).and(c1);
 
-        a.intEvent.submit(new IntEvent(3));
+        a.intEvent.trigger(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -107,7 +113,7 @@ public class PortsTest {
 
         Ports.disconnect(a, c1);
 
-        a.intEvent.submit(new IntEvent(3));
+        a.intEvent.trigger(new IntEvent(3));
 
         Ports.awaitQuiescence();
 
@@ -132,7 +138,7 @@ public class PortsTest {
         ValueContainer<Boolean> firstActionD = new ValueContainer<>(false);
 
         ValueContainer<Integer> doubleRequestIndex = new ValueContainer<>(0);
-        double[] doubleRequestValues = {50.0, 2.1, 2.0, 2.1, 4.0};
+        double[] doubleRequestValues = {50.0, 2.5, 2.0, 2.5, 4.0};
 
         ValueContainer<Boolean> doubleRequestResponse = new ValueContainer<>(false);
 
@@ -176,12 +182,17 @@ public class PortsTest {
             .when(IntEvent.class)
                 .triggers(x -> x.getData() > 1)
                 .with(DoubleRequest.class, Double.class, b)
-                    .call(new DoubleRequest(2.1))
+                    .call(new DoubleRequest(2.5))
             .when(DoubleRequest.class, Double.class)
                 .requests()
                     .do_(x -> {
                         if (x.getData() == doubleRequestValues[doubleRequestIndex.value]) {
                             doubleRequestIndex.value++;
+                        } else {
+                            System.out.println(x.getData() );
+                            System.out.println(doubleRequestValues[doubleRequestIndex.value]);
+                            System.out.println(x.getData() - doubleRequestValues[doubleRequestIndex.value]);
+                            System.out.println();
                         }
                     });
 

@@ -16,10 +16,21 @@
 
 package org.timux.ports;
 
-public class InsufficientResponseTypesException extends RuntimeException {
+/**
+ * An enum class providing options for the way asynchronicity is handled.
+ *
+ * @since 0.5.0
+ */
+public enum AsyncPolicy {
 
-    InsufficientResponseTypesException(String requestType, int requiredParameters, int givenParameters) {
-        super("request '" + requestType + "' responds with " + requiredParameters + " types, but only "
-            + givenParameters + " were provided");
-    }
+    /**
+     * Specifies that all messages have to be processed within the thread of the sender.
+     * This implies synchronous message processing. This is the default setting.
+     */
+    NO_CONTEXT_SWITCHES,
+
+    /**
+     * Specifies that messages may be processed asynchronously if possible.
+     */
+    ASYNCHRONOUS
 }

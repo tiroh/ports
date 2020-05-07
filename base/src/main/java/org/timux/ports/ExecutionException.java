@@ -16,10 +16,9 @@
 
 package org.timux.ports;
 
-public class InsufficientResponseTypesException extends RuntimeException {
+public class ExecutionException extends RuntimeException {
 
-    InsufficientResponseTypesException(String requestType, int requiredParameters, int givenParameters) {
-        super("request '" + requestType + "' responds with " + requiredParameters + " types, but only "
-            + givenParameters + " were provided");
+    ExecutionException(Throwable t) {
+        super(t);
     }
 }

@@ -19,16 +19,17 @@ package org.timux.ports;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 /**
- * Represents a request response that has not yet been computed.
+ * Represents the response of a potentially asynchronous request.
  *
  * <p> Whenever you issue an asynchronous request via {@link Request#submit}, you will retrieve
  * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},
  * {@link #getNow}, or {@link #getOrElse}.
  *
  * <p> <em>Instances of PortsFuture are not cancellable.</em> Accordingly, both {@link #cancel} and
- * {@link #isCancelled} will always return false.
+ * {@link #isCancelled} always return false.
  *
  * @param <T> The type of the expected response.
  *
@@ -59,11 +60,13 @@ public class PortsFuture<T> implements Future<T> {
 
         result = (T) task.waitForResponse();
         hasReturned = true;
-        task = null;
 
         return result;
     }
 
+    /**
+     * @throws ExecutionException if the receiver terminated unexpectedly
+     */
     @Override
     public T get(long timeout, TimeUnit unit) throws TimeoutException {
         if (hasReturned) {
@@ -72,13 +75,14 @@ public class PortsFuture<T> implements Future<T> {
 
         result = (T) task.waitForResponse(timeout, unit);
         hasReturned = true;
-        task = null;
 
         return result;
     }
 
     /**
      * Returns either the result or the provided defaultValue, in case the result is not yet available.
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
      */
     public T getNow(T defaultValue) {
         if (hasReturned) {
@@ -88,7 +92,6 @@ public class PortsFuture<T> implements Future<T> {
         if (task.hasReturned()) {
             result = (T) task.waitForResponse();
             hasReturned = true;
-            task = null;
             return result;
         }
 
@@ -97,6 +100,8 @@ public class PortsFuture<T> implements Future<T> {
 
     /**
      * Returns an {@link Either} representing either the result (if available) or the provided elseValue.
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
      */
     public <E> Either<T, E> getOrElse(E elseValue) {
         if (hasReturned) {
@@ -106,11 +111,29 @@ public class PortsFuture<T> implements Future<T> {
         if (task.hasReturned()) {
             result = (T) task.waitForResponse();
             hasReturned = true;
-            task = null;
             return Either.a(result);
         }
 
         return Either.b(elseValue);
+    }
+
+    /**
+     * Returns the provided mapping function to the result, if it is available; if not,
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
+     */
+    public <R> R mapOrElse(Function<T, R> mapper, R elseValue) {
+        if (hasReturned) {
+            return mapper.apply(result);
+        }
+
+        if (task.hasReturned()) {
+            result = (T) task.waitForResponse();
+            hasReturned = true;
+            return mapper.apply(result);
+        }
+
+        return elseValue;
     }
 
     /**
@@ -123,14 +146,7 @@ public class PortsFuture<T> implements Future<T> {
 
     @Override
     public boolean isDone() {
-        return isResultAvailable();
-    }
-
-    /**
-     * Returns true if and only if the result of this future has been computed.
-     */
-    public boolean isResultAvailable() {
-        return hasReturned ? true : task.hasReturned();
+        return hasReturned || task.hasReturned();
     }
 
     /**
@@ -143,6 +159,9 @@ public class PortsFuture<T> implements Future<T> {
 
     @Override
     public String toString() {
-        return "PortsFuture{" + (isResultAvailable() ? "result='" + result + "'}:" : "no result available}:") + hashCode();
+        return "PortsFuture{"
+                + (isDone()
+                ? "result='" + (task != null && task.getThrowable() != null ? task.getThrowable().getMessage() : result) + "'}:"
+                : "no result available}:");
     }
 }

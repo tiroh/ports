@@ -16,6 +16,7 @@
  
 package org.timux.ports.testapp;
 
+import org.timux.ports.AsyncPolicy;
 import org.timux.ports.Ports;
 import org.timux.ports.PortsOptions;
 import org.timux.ports.testapp.component.*;
@@ -38,6 +39,8 @@ public class TestApplication {
         Ports.connect(f).and(g, PortsOptions.DO_NOT_ALLOW_MISSING_PORTS);
 
         Ports.verify(a, b, c, d, e, f, g);
+
+        Ports.setAsyncPolicy(AsyncPolicy.ASYNCHRONOUS);
 
         a.doWork();
         c.doStringWork();

@@ -28,23 +28,28 @@ class Task implements Runnable {
     private Object payload;
     private Object response;
     private boolean hasReturned = false;
+    private Throwable throwable;
 
-    public Task(Consumer eventPort, Object payload) {
+    Task(Consumer eventPort, Object payload) {
         this.eventPort = eventPort;
         this.payload = payload;
     }
 
-    public Task(Function requestPort, Object payload) {
+    Task(Function requestPort, Object payload) {
         this.requestPort = requestPort;
         this.payload = payload;
     }
 
     @Override
     public void run() {
-        if (eventPort != null) {
-            eventPort.accept(payload);
-        } else {
-            response = requestPort.apply(payload);
+        try {
+            if (eventPort != null) {
+                eventPort.accept(payload);
+            } else {
+                response = requestPort.apply(payload);
+            }
+        } catch (Throwable t) {
+            throwable = t;
         }
 
         hasReturned = true;
@@ -54,11 +59,15 @@ class Task implements Runnable {
         }
     }
 
-    public boolean hasReturned() {
+    boolean hasReturned() {
         return hasReturned;
     }
 
-    public synchronized Object waitForResponse() {
+    Throwable getThrowable() {
+        return throwable;
+    }
+
+    synchronized Object waitForResponse() {
         while (!hasReturned) {
             try {
                 wait();
@@ -67,10 +76,14 @@ class Task implements Runnable {
             }
         }
 
+        if (throwable != null) {
+            throw new ExecutionException(throwable);
+        }
+
         return response;
     }
 
-    public synchronized Object waitForResponse(long timeout, TimeUnit unit) throws TimeoutException {
+    synchronized Object waitForResponse(long timeout, TimeUnit unit) throws TimeoutException {
         long waitMillis = unit.toMillis(timeout);
 
         while (!hasReturned) {
@@ -91,6 +104,10 @@ class Task implements Runnable {
 
                 waitMillis -= passedMillis;
             }
+        }
+
+        if (throwable != null) {
+            throw new ExecutionException(throwable);
         }
 
         return response;

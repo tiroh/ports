@@ -48,7 +48,7 @@ public class Event<T> {
         }
     }
 
-    private final List<PortEntry<T>> ports = new ArrayList<>();
+    private final List<PortEntry<T>> ports = new ArrayList<>(4);
     private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
     private PortEntry<T> singlePort = null;
     private String eventTypeName;
@@ -179,15 +179,7 @@ public class Event<T> {
         }
     }
 
-    /**
-     * Sends the given payload to the connected IN port(s). The event will be handled synchronously and within
-     * the thread of the caller, regardless of whether the IN ports are {@link AsyncPort}s or not.
-     *
-     * @param payload The payload to be sent.
-     *                
-     * @see #submit
-     */
-    public void trigger(T payload) {
+    void triggerWithinSameThread(T payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
@@ -216,17 +208,23 @@ public class Event<T> {
 
     /**
      * Sends the given payload to the connected IN port(s). For each IN port, the event will be handled asynchronously
-     * if the IN port is an {@link AsyncPort}; if not, the event will be handled synchronously, but not necessarily
-     * within the thread of the caller.
+     * if the IN port is an {@link AsyncPort} and if the {@link AsyncPolicy} allows it; if not, the event will be
+     * handled synchronously, but not necessarily within the thread of the caller.
      *
      * @param payload The payload to be sent.
      *
      * @see #trigger
      * @see AsyncPort
+     * @see AsyncPolicy
      *
      * @since 0.5.0
      */
-    public void submit(T payload) {
+    public void trigger(T payload) {
+        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
+            triggerWithinSameThread(payload);
+            return;
+        }
+
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
@@ -235,11 +233,6 @@ public class Event<T> {
             if (singlePort.isAsyncReceiver) {
                 MessageQueue.enqueueAsync(singlePort.port, payload);
             } else {
-                Ports.printWarning(String.format(
-                        "event %s was fired asynchronously in component %s, but the receiver is not an async port",
-                        eventTypeName,
-                        owner.getClass().getName()));
-
                 MessageQueue.enqueue(singlePort.port, payload);
             }
 
@@ -262,11 +255,6 @@ public class Event<T> {
             if (p.get(i).isAsyncReceiver) {
                 MessageQueue.enqueueAsync(p.get(i).port, payload);
             } else {
-                Ports.printWarning(String.format(
-                        "event %s was fired asynchronously in component %s, but the receiver is not an async port",
-                        eventTypeName,
-                        owner.getClass().getName()));
-
                 MessageQueue.enqueue(p.get(i).port, payload);
             }
         }

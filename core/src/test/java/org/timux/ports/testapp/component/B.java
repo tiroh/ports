@@ -32,7 +32,7 @@ public class B {
     @AsyncPort
     private void onInt(IntEvent event) {
         System.out.println("B received IntEvent: " + event.getData());
-        runtimeExceptionEvent.submit(new RuntimeException("Test exception with data " + event.getData()));
+        runtimeExceptionEvent.trigger(new RuntimeException("Test exception with data " + event.getData()));
 
         try {
             Thread.sleep(500);
@@ -51,7 +51,7 @@ public class B {
     @AsyncPort
     private Double onShortRequest(ShortRequest request) {
         System.out.println("B received request: " + request.getData());
-        intEvent.submit(new IntEvent((int) request.getData() + 1));
+        intEvent.trigger(new IntEvent((int) request.getData() + 1));
 
         try {
             Thread.sleep(5000);

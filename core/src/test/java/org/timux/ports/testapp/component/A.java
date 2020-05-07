@@ -63,7 +63,7 @@ public class A {
         System.out.println("--- sending int events --- ");
 
         for (int i = 0; i < 10; i++) {
-            intEvent.submit(new IntEvent(37 + i));
+            intEvent.trigger(new IntEvent(37 + i));
 
             try {
                 Thread.sleep(200);
@@ -74,7 +74,7 @@ public class A {
 
         System.out.println("--- done sending int events --- ");
 
-        objectEvent.submit(new ObjectEvent(3700));
+        objectEvent.trigger(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
         PortsFuture<Double> d = shortRequest.submit(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));

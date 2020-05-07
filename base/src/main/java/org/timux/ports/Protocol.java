@@ -153,7 +153,7 @@ final class Protocol {
         if (outPortType == Event.class) {
             try {
                 Event eventPort = (Event) outPortField.get(currentWithOwner);
-                return (x, owner) -> eventPort.trigger(payload);
+                return (x, owner) -> eventPort.triggerWithinSameThread(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -162,7 +162,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             try {
                 Request requestPort = (Request) outPortField.get(currentWithOwner);
-                return (x, owner) -> requestPort.call(payload);
+                return (x, owner) -> requestPort.callWithinSameThread(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -182,7 +182,7 @@ final class Protocol {
         if (outPortType == Event.class) {
             protocolComponent.eventPort = new Event<>(currentWithRequestType, protocolComponent);
 
-            action = (x, owner) -> protocolComponent.eventPort.trigger(payload);
+            action = (x, owner) -> protocolComponent.eventPort.triggerWithinSameThread(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("eventPort");
@@ -194,7 +194,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             protocolComponent.requestPort = new Request<>(currentWithRequestType, "requestPort", protocolComponent);
 
-            action = (x, owner) -> protocolComponent.requestPort.call(payload);
+            action = (x, owner) -> protocolComponent.requestPort.callWithinSameThread(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("requestPort");
