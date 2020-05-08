@@ -38,8 +38,6 @@ import java.util.function.Consumer;
  */
 public class Event<T> {
 
-    // FIXME make this thread-safe
-
     private static class PortEntry<T> {
 
         Consumer<T> port;
@@ -72,7 +70,7 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    void connect(Consumer<T> port, boolean isAsyncReceiver) {
+    private synchronized void connect(Consumer<T> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -84,11 +82,7 @@ public class Event<T> {
                 : null;
     }
 
-    void connect(Method portMethod, Object methodOwner) {
-        connect(portMethod, methodOwner, null);
-    }
-
-    void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
+    synchronized void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -159,7 +153,7 @@ public class Event<T> {
     /**
      * Disconnects this OUT port from the given IN port.
      */
-    void disconnect(Consumer<T> port) {
+    synchronized void disconnect(Consumer<T> port) {
         int index = -1;
 
         for (int i = ports.size() - 1; i >= 0; i--) {
@@ -178,7 +172,7 @@ public class Event<T> {
         }
     }
 
-    void disconnect(Method portMethod, Object methodOwner) {
+    synchronized void disconnect(Method portMethod, Object methodOwner) {
         Map<WeakReference<?>, Consumer<T>> portOwners = portMethods.get(portMethod);
 
         if (portOwners == null) {
@@ -238,7 +232,7 @@ public class Event<T> {
         }
     }
 
-    void triggerWithinSameThread(T payload) {
+    synchronized void triggerWithinSameThread(T payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
@@ -278,7 +272,7 @@ public class Event<T> {
      *
      * @since 0.5.0
      */
-    public void trigger(T payload) {
+    public synchronized void trigger(T payload) {
         if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
             triggerWithinSameThread(payload);
             return;
@@ -322,7 +316,7 @@ public class Event<T> {
     /**
      * Returns true if this OUT port is connected to an IN port, false otherwise.
      */
-    public boolean isConnected() {
+    public synchronized boolean isConnected() {
         cleanUpGarbageCollectedConnections();
         return !ports.isEmpty();
     }

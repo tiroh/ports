@@ -37,8 +37,6 @@ import java.util.function.Function;
  */
 public class Request<I, O> {
 
-    // FIXME make this thread-safe
-
     private Function<I, O> port;
     private boolean isAsyncReceiver;
     private String requestTypeName;
@@ -60,7 +58,7 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    void connect(Function<I, O> port, boolean isAsyncReceiver) {
+    private void connect(Function<I, O> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -70,7 +68,7 @@ public class Request<I, O> {
     }
 
     @SuppressWarnings("unchecked")
-    void connect(Method portMethod, Object methodOwner) {
+    synchronized void connect(Method portMethod, Object methodOwner) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -93,7 +91,7 @@ public class Request<I, O> {
         port = null;
     }
 
-    O callWithinSameThread(I payload) {
+    synchronized O callWithinSameThread(I payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -158,7 +156,7 @@ public class Request<I, O> {
      * @since 0.5.0
      */
     @SuppressWarnings("unchecked")
-    public PortsFuture<O> submit(I payload) {
+    public synchronized PortsFuture<O> submit(I payload) {
         if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
             return new PortsFuture<>(callWithinSameThread(payload));
         }

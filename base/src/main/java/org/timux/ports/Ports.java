@@ -32,8 +32,6 @@ import java.util.function.Consumer;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class Ports {
 
-    // FIXME make this thread-safe
-
     private static final Map<Class<?>, Field[]> fieldCache = new HashMap<>();
     private static final Map<Class<?>, Method[]> methodCache = new HashMap<>();
 
@@ -438,7 +436,7 @@ public final class Ports {
         return missingPorts;
     }
 
-    private static Field[] getFields(Object o) {
+    private synchronized static Field[] getFields(Object o) {
         Class<?> clazz = o.getClass();
         Field[] fields = fieldCache.get(clazz);
 
@@ -455,7 +453,7 @@ public final class Ports {
         return fields;
     }
 
-    private static Method[] getMethods(Object o) {
+    private synchronized static Method[] getMethods(Object o) {
         Class<?> clazz = o.getClass();
         Method[] methods = methodCache.get(clazz);
 
