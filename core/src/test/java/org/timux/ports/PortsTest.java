@@ -279,4 +279,31 @@ public class PortsTest {
         assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, x -> (double) x, Double::parseDouble), 0.0);
     }
+
+    @Test
+    public void gcWithEvents() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+        a.intEvent.trigger(new IntEvent(3));
+        Ports.awaitQuiescence();
+        assertEquals(4.5, b.receivedData);
+
+        b = null;
+
+        System.gc();
+
+        a.intEvent.trigger(new IntEvent(8));
+        Ports.awaitQuiescence();
+        assertEquals(3.0, a.receivedData);
+
+        b = new B();
+
+        Ports.connect(a).and(b);
+        a.intEvent.trigger(new IntEvent(10));
+        Ports.awaitQuiescence();
+        assertEquals(10.0, a.receivedData);
+        assertEquals(15.0, b.receivedData);
+    }
 }

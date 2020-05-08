@@ -37,6 +37,8 @@ import java.util.function.Function;
  */
 public class Request<I, O> {
 
+    // FIXME make this thread-safe
+
     private Function<I, O> port;
     private boolean isAsyncReceiver;
     private String requestTypeName;
@@ -47,7 +49,7 @@ public class Request<I, O> {
         //
     }
 
-    protected Request(String requestTypeName, String memberName, Object owner) {
+    Request(String requestTypeName, String memberName, Object owner) {
         this.requestTypeName = requestTypeName;
         this.memberName = memberName;
         this.owner = owner;
@@ -58,7 +60,7 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    protected void connect(Function<I, O> port, boolean isAsyncReceiver) {
+    void connect(Function<I, O> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -68,7 +70,7 @@ public class Request<I, O> {
     }
 
     @SuppressWarnings("unchecked")
-    protected void connect(Method portMethod, Object methodOwner) {
+    void connect(Method portMethod, Object methodOwner) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -127,6 +129,7 @@ public class Request<I, O> {
      * @see Ports#setAsyncPolicy
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortNotConnectedException If this port is not connected.
      *
      * @return The response of the connected component.
      */
@@ -148,6 +151,9 @@ public class Request<I, O> {
      *
      * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
      *   {@link PortsFuture#getNow}, or {@link PortsFuture#getOrElse} methods to access the response object.
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortNotConnectedException If this port is not connected.
      *
      * @since 0.5.0
      */

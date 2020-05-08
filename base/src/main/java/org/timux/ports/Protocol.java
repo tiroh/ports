@@ -24,6 +24,8 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 final class Protocol {
 
+    // FIXME make this thread-safe
+
     private static class ConditionalActions {
         private final Map<Predicate, List<Action>> actions = new LinkedHashMap<>();
     }

@@ -16,6 +16,7 @@
 
 package org.timux.ports;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -37,6 +38,8 @@ import java.util.function.Consumer;
  */
 public class Event<T> {
 
+    // FIXME make this thread-safe
+
     private static class PortEntry<T> {
 
         Consumer<T> port;
@@ -49,7 +52,7 @@ public class Event<T> {
     }
 
     private final List<PortEntry<T>> ports = new ArrayList<>(4);
-    private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
+    private Map<Method, Map<WeakReference<?>, Consumer<T>>> portMethods = null;
     private PortEntry<T> singlePort = null;
     private String eventTypeName;
     private Object owner;
@@ -58,7 +61,7 @@ public class Event<T> {
         //
     }
 
-    protected Event(String eventTypeName, Object owner) {
+    Event(String eventTypeName, Object owner) {
         this.eventTypeName = eventTypeName;
         this.owner = owner;
     }
@@ -69,7 +72,7 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    protected void connect(Consumer<T> port, boolean isAsyncReceiver) {
+    void connect(Consumer<T> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -81,44 +84,56 @@ public class Event<T> {
                 : null;
     }
 
-    protected void connect(Method portMethod, Object methodOwner) {
+    void connect(Method portMethod, Object methodOwner) {
         connect(portMethod, methodOwner, null);
     }
 
-    protected void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
+    void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
         if (portMethod == null) {
             throw new IllegalArgumentException("port must not be null");
         }
+
+        cleanUpGarbageCollectedConnections();
 
         if (portMethods == null) {
             portMethods = new HashMap<>();
         }
 
-        Map<Object, Consumer<T>> portOwners = portMethods.computeIfAbsent(portMethod, k -> new HashMap<>(4));
+        Map<WeakReference<?>, Consumer<T>> portOwners = portMethods.computeIfAbsent(portMethod, k -> new HashMap<>(4));
+
+        WeakReference<?> key = new WeakReference<>(methodOwner);
 
         if (eventWrapper == null) {
             portOwners.put(
-                    methodOwner,
+                    key,
                     x -> {
                         try {
-                            portMethod.invoke(methodOwner, x);
+                            Object owner = key.get();
+
+                            if (owner != null) {
+                                portMethod.invoke(owner, x);
+                            }
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             throw new RuntimeException(e);
                         }
                     });
         } else {
             portOwners.put(
-                    methodOwner,
+                    key,
                     x -> eventWrapper.execute(() -> {
-                        try {
-                            portMethod.invoke(methodOwner, x);
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            throw new RuntimeException(e);
+                        Object owner = key.get();
+
+                        if (owner != null) {
+                            try {
+                                portMethod.invoke(owner, x);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }));
         }
 
-        connect(portOwners.get(methodOwner), portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
+        connect(portOwners.get(key), portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
     }
 
     /**
@@ -127,7 +142,7 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to.
      */
-    public void connect(Queue<T> port) {
+    void connect(Queue<T> port) {
         connect(port::add, false);
     }
 
@@ -137,14 +152,14 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to.
      */
-    public void connect(Stack<T> port) {
+    void connect(Stack<T> port) {
         connect(port::push, false);
     }
 
     /**
      * Disconnects this OUT port from the given IN port.
      */
-    public void disconnect(Object port) {
+    void disconnect(Consumer<T> port) {
         int index = -1;
 
         for (int i = ports.size() - 1; i >= 0; i--) {
@@ -163,19 +178,63 @@ public class Event<T> {
         }
     }
 
-    protected void disconnect(Method portMethod, Object methodOwner) {
-        Map<Object, Consumer<T>> portOwners = portMethods.get(portMethod);
+    void disconnect(Method portMethod, Object methodOwner) {
+        Map<WeakReference<?>, Consumer<T>> portOwners = portMethods.get(portMethod);
 
         if (portOwners == null) {
             return;
         }
 
-        disconnect(portOwners.get(methodOwner));
+        WeakReference<?> key = getPortOwnersKeyOf(methodOwner, portOwners);
 
-        portOwners.remove(methodOwner);
+        if (key != null) {
+            disconnect(portOwners.get(key));
+        }
+
+        portOwners.remove(key);
 
         if (portOwners.isEmpty()) {
             portMethods.remove(portMethod);
+        }
+    }
+
+    private WeakReference<?> getPortOwnersKeyOf(Object portOwner, Map<WeakReference<?>, Consumer<T>> portOwners) {
+        for (Map.Entry<WeakReference<?>, Consumer<T>> e : portOwners.entrySet()) {
+            if (e.getKey().get() == portOwner) {
+                return e.getKey();
+            }
+        }
+
+        // owner has been garbage-collected.
+        return null;
+    }
+
+    private void cleanUpGarbageCollectedConnections() {
+        if (portMethods == null || portMethods.isEmpty()) {
+            return;
+        }
+
+        Map<WeakReference<?>, Method> collectedReferences = new HashMap<>();
+
+        for (Map.Entry<Method, Map<WeakReference<?>, Consumer<T>>> e : portMethods.entrySet()) {
+            for (Map.Entry<WeakReference<?>, Consumer<T>> ee : e.getValue().entrySet()) {
+                if (ee.getKey().get() == null) {
+                    collectedReferences.put(ee.getKey(), e.getKey());
+                }
+            }
+        }
+
+        for (Map.Entry<WeakReference<?>, Method> e : collectedReferences.entrySet()) {
+            WeakReference<?> reference = e.getKey();
+            Method method = e.getValue();
+
+            disconnect(portMethods.get(method).get(reference));
+
+            portMethods.get(method).remove(reference);
+
+            if (portMethods.get(method).isEmpty()) {
+                portMethods.remove(method);
+            }
         }
     }
 
@@ -264,6 +323,7 @@ public class Event<T> {
      * Returns true if this OUT port is connected to an IN port, false otherwise.
      */
     public boolean isConnected() {
+        cleanUpGarbageCollectedConnections();
         return !ports.isEmpty();
     }
 }

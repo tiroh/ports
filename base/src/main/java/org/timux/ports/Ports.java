@@ -32,6 +32,8 @@ import java.util.function.Consumer;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class Ports {
 
+    // FIXME make this thread-safe
+
     private static final Map<Class<?>, Field[]> fieldCache = new HashMap<>();
     private static final Map<Class<?>, Method[]> methodCache = new HashMap<>();
 
@@ -296,7 +298,7 @@ public final class Ports {
                     }
 
                     if (inPortField != null) {
-                        event.disconnect(inPortField.get(to));
+                        event.disconnect((Consumer) inPortField.get(to));
                     }
                 }
 
