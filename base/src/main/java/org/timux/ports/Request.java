@@ -91,7 +91,7 @@ public class Request<I, O> {
         port = null;
     }
 
-    synchronized O callWithinSameThread(I payload) {
+    synchronized O callWST(I payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -108,7 +108,13 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        O response = port.apply(payload);
+        O response;
+
+        try {
+            response = port.apply(payload);
+        } catch (Throwable t) {
+            throw new ExecutionException(t);
+        }
 
         if (Protocol.areProtocolsActive) {
             Protocol.onDataReceived(requestTypeName, owner, response);
@@ -133,7 +139,11 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
-        return submit(payload).get();
+        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
+            return callWST(payload);
+        } else {
+            return submit(payload).get();
+        }
     }
 
     /**
@@ -158,7 +168,7 @@ public class Request<I, O> {
     @SuppressWarnings("unchecked")
     public synchronized PortsFuture<O> submit(I payload) {
         if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
-            return new PortsFuture<>(callWithinSameThread(payload));
+            return new PortsFuture<>(callWST(payload));
         }
 
         if (Protocol.areProtocolsActive) {
@@ -178,7 +188,7 @@ public class Request<I, O> {
         }
 
         if (!isAsyncReceiver) {
-            O response = MessageQueue.enqueue(port, payload);
+            O response = MessageQueue.enqueueSync(port, payload);
 
             if (Protocol.areProtocolsActive) {
                 Protocol.onDataReceived(requestTypeName, owner, response);

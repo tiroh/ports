@@ -61,7 +61,7 @@ class MessageQueue {
     private static final Executor asyncExecutor = new Executor("ports-async");
     private static AsyncPolicy asyncPolicy = AsyncPolicy.NO_CONTEXT_SWITCHES;
 
-    static void enqueue(Consumer eventPort, Object payload) {
+    static void enqueueSync(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
             eventPort.accept(payload);
             return;
@@ -82,9 +82,13 @@ class MessageQueue {
         asyncExecutor.submit(task);
     }
 
-    static <I, O> O enqueue(Function<I, O> requestPort, I payload) {
+    static <I, O> O enqueueSync(Function<I, O> requestPort, I payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
-            return requestPort.apply(payload);
+            try {
+                return requestPort.apply(payload);
+            } catch (Throwable t) {
+                throw new ExecutionException(t);
+            }
         }
 
         Task task = new Task(requestPort, payload);

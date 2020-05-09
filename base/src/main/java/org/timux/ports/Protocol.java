@@ -17,19 +17,33 @@
 package org.timux.ports;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 final class Protocol {
 
+    static class ConditionalActionsPair {
+
+        final Predicate predicate;
+        final List<Action> actions;
+
+        ConditionalActionsPair(Predicate predicate, List<Action> actions) {
+            this.predicate = predicate;
+            this.actions = actions;
+        }
+    }
+
     static class ConditionalActions {
-        final Map<Predicate, List<Action>> actions = new LinkedHashMap<>();
+        final List<ConditionalActionsPair> actions = new ArrayList<>();
     }
 
     static class ResponseRegistry {
-        final Map<String, Function<?, ?>> responseData = new LinkedHashMap<>();
+        final Map<String, Function<?, ?>> responseData = new HashMap<>(4);
     }
 
     private static class ProtocolComponent {
@@ -123,7 +137,7 @@ final class Protocol {
         if (outPortType == Event.class) {
             try {
                 Event eventPort = (Event) outPortField.get(state.currentWithOwner);
-                return (x, owner) -> eventPort.triggerWithinSameThread(payload);
+                return (x, owner) -> eventPort.triggerWST(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -132,7 +146,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             try {
                 Request requestPort = (Request) outPortField.get(state.currentWithOwner);
-                return (x, owner) -> requestPort.callWithinSameThread(payload);
+                return (x, owner) -> requestPort.callWST(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -152,7 +166,7 @@ final class Protocol {
         if (outPortType == Event.class) {
             protocolComponent.eventPort = new Event<>(state.currentWithRequestType, protocolComponent);
 
-            action = (x, owner) -> protocolComponent.eventPort.triggerWithinSameThread(payload);
+            action = (x, owner) -> protocolComponent.eventPort.triggerWST(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("eventPort");
@@ -164,7 +178,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             protocolComponent.requestPort = new Request<>(state.currentWithRequestType, "requestPort", protocolComponent);
 
-            action = (x, owner) -> protocolComponent.requestPort.callWithinSameThread(payload);
+            action = (x, owner) -> protocolComponent.requestPort.callWST(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("requestPort");
@@ -214,9 +228,9 @@ final class Protocol {
             return;
         }
 
-        for (Map.Entry<Predicate, List<Action>> e : conditionalActions.actions.entrySet()) {
-            if (e.getKey().test(data)) {
-                for (Action action : e.getValue()) {
+        for (ConditionalActionsPair pair : conditionalActions.actions) {
+            if (pair.predicate.test(data)) {
+                for (Action action : pair.actions) {
                     action.execute(data, owner);
                 }
             }

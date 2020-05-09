@@ -232,7 +232,7 @@ public class Event<T> {
         }
     }
 
-    synchronized void triggerWithinSameThread(T payload) {
+    synchronized void triggerWST(T payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
@@ -274,7 +274,7 @@ public class Event<T> {
      */
     public synchronized void trigger(T payload) {
         if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
-            triggerWithinSameThread(payload);
+            triggerWST(payload);
             return;
         }
 
@@ -286,7 +286,7 @@ public class Event<T> {
             if (singlePort.isAsyncReceiver) {
                 MessageQueue.enqueueAsync(singlePort.port, payload);
             } else {
-                MessageQueue.enqueue(singlePort.port, payload);
+                MessageQueue.enqueueSync(singlePort.port, payload);
             }
 
             return;
@@ -308,7 +308,7 @@ public class Event<T> {
             if (p.get(i).isAsyncReceiver) {
                 MessageQueue.enqueueAsync(p.get(i).port, payload);
             } else {
-                MessageQueue.enqueue(p.get(i).port, payload);
+                MessageQueue.enqueueSync(p.get(i).port, payload);
             }
         }
     }

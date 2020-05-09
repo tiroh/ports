@@ -59,7 +59,8 @@ class ProtocolParserState {
     }
 
     <T> void registerCondition(Predicate<T> predicate) {
-        currentActions = currentConditionalActions.actions.computeIfAbsent(predicate, k -> new ArrayList<>());
+        currentActions = new ArrayList<>();
+        currentConditionalActions.actions.add(new Protocol.ConditionalActionsPair(predicate, currentActions));
     }
 
     void registerAction(Action action) {

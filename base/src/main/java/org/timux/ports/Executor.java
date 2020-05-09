@@ -29,7 +29,7 @@ class Executor {
         public WorkerThread(ThreadGroup threadGroup) {
             super(threadGroup, threadGroup.getName() + "-" + nextThreadId.getAndIncrement());
             setDaemon(true);
-            setDefaultUncaughtExceptionHandler(this);
+            setUncaughtExceptionHandler(this);
             start();
         }
 

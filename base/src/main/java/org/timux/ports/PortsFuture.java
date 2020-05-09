@@ -118,7 +118,8 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
-     * Returns the provided mapping function to the result, if it is available; if not,
+     * Applies the provided mapping function to the result and returns the mapped value. If no result is available,
+     * returns the provided 'elseValue'.
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
