@@ -20,10 +20,16 @@ import java.util.function.Consumer;
 
 class ConditionOrAction<T> {
 
+    private final ProtocolParserState state;
+
+    ConditionOrAction(ProtocolParserState state) {
+        this.state = state;
+    }
+
     public <U> WhenOutClause<U> when(Class<U> eventType) {
         TypeUtils.verifyResponseType(eventType, void.class);
-        Protocol.registerMessageType(eventType.getName());
-        return new WhenOutClause<>();
+        state.registerMessageType(eventType.getName());
+        return new WhenOutClause<>(state);
     }
 
     public <I, O> WhenRequestClause<I, O> when(Class<I> requestType, Class<O> responseType) {
@@ -32,43 +38,43 @@ class ConditionOrAction<T> {
         }
 
         TypeUtils.verifyResponseType(requestType, responseType);
-        Protocol.registerMessageType(requestType.getName());
-        return new WhenRequestClause<>();
+        state.registerMessageType(requestType.getName());
+        return new WhenRequestClause<>(state);
     }
 
     public <I, O1, O2> WhenRequestClause<I, Either<O1, O2>> when(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        Protocol.registerMessageType(requestType.getName());
-        return new WhenRequestClause<>();
+        state.registerMessageType(requestType.getName());
+        return new WhenRequestClause<>(state);
     }
 
     public <I, O1, O2, O3> WhenRequestClause<I, Either3<O1, O2, O3>> when(
             Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Class<O3> responseTypeC)
     {
         TypeUtils.verifyResponseType(requestType, Either3.class, responseTypeA, responseTypeB, responseTypeC);
-        Protocol.registerMessageType(requestType.getName());
-        return new WhenRequestClause<>();
+        state.registerMessageType(requestType.getName());
+        return new WhenRequestClause<>(state);
     }
 
     public ConditionOrAction<T> do_(Action<T> action) {
-        Protocol.registerAction(action);
-        return new ConditionOrAction<>();
+        state.registerAction(action);
+        return new ConditionOrAction<>(state);
     }
 
     public ConditionOrAction<T> do_(Consumer<T> action) {
-        Protocol.registerAction((Action<T>) (payload, owner) -> action.accept(payload));
-        return new ConditionOrAction<>();
+        state.registerAction((Action<T>) (payload, owner) -> action.accept(payload));
+        return new ConditionOrAction<>(state);
     }
 
     public ConditionOrAction<T> do_(Runnable action) {
-        Protocol.registerAction((Action<T>) (payload, owner) -> action.run());
-        return new ConditionOrAction<>();
+        state.registerAction((Action<T>) (payload, owner) -> action.run());
+        return new ConditionOrAction<>(state);
     }
 
     public <U> PortEventClause<U> with(Class<U> eventType, Object owner) {
         TypeUtils.verifyResponseType(eventType, void.class);
-        Protocol.registerWithMessageTypeAndOwner(eventType.getName(), void.class.getName(), owner);
-        return new PortEventClause<>();
+        state.registerWithMessageTypeAndOwner(eventType.getName(), void.class.getName(), owner);
+        return new PortEventClause<>(state);
     }
 
     public <U> PortEventClause<U> with(Class<U> messageType) {
@@ -77,33 +83,33 @@ class ConditionOrAction<T> {
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
         TypeUtils.verifyResponseType(requestType, responseType);
-        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
-        return new PortRequestClause<>();
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
+        return new PortRequestClause<>(state);
     }
 
     public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), null);
-        return new PortRequestClause<>();
+        state.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), null);
+        return new PortRequestClause<>(state);
     }
 
     public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Object owner) {
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), owner);
-        return new PortRequestClause<>();
+        state.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), owner);
+        return new PortRequestClause<>(state);
     }
 
     public <I, O1, O2, O3> PortRequestClause<I, Either3<O1, O2, O3>> with(
             Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Class<O3> responseTypeC)
     {
         TypeUtils.verifyResponseType(requestType, Either3.class, responseTypeA, responseTypeB, responseTypeC);
-        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), Either3.class.getName(), null);
-        return new PortRequestClause<>();
+        state.registerWithMessageTypeAndOwner(requestType.getName(), Either3.class.getName(), null);
+        return new PortRequestClause<>(state);
     }
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
         TypeUtils.verifyResponseType(requestType, responseType);
-        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), null);
-        return new PortRequestClause<>();
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), null);
+        return new PortRequestClause<>(state);
     }
 }

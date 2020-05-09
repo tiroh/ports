@@ -24,14 +24,12 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 final class Protocol {
 
-    // FIXME make this thread-safe
-
-    private static class ConditionalActions {
-        private final Map<Predicate, List<Action>> actions = new LinkedHashMap<>();
+    static class ConditionalActions {
+        final Map<Predicate, List<Action>> actions = new LinkedHashMap<>();
     }
 
-    private static class ResponseRegistry {
-        private final Map<String, Function<?, ?>> responseData = new LinkedHashMap<>();
+    static class ResponseRegistry {
+        final Map<String, Function<?, ?>> responseData = new LinkedHashMap<>();
     }
 
     private static class ProtocolComponent {
@@ -47,114 +45,84 @@ final class Protocol {
 
     private final static List<Object> componentRegistry = new ArrayList<>();
 
-    private static String currentConditionMessageType = null;
-    private static String currentWithRequestType = null;
-    private static String currentWithResponseType = null;
-    private static Object currentWithOwner = null;
-
-    private static ConditionalActions currentConditionalActions = null;
-    private static List<Action> currentActions = null;
-
     static boolean areProtocolsActive = false;
 
     private Protocol() {
         //
     }
 
-    static void clear() {
-        areProtocolsActive = false;
-        conditionsOnSent.clear();
-        conditionsOnReceived.clear();
-        responseRegistries.clear();
-        componentRegistry.clear();
-        resetParseState();
-    }
-
-    static void resetParseState() {
-        currentConditionMessageType = null;
-        currentWithRequestType = null;
-        currentWithResponseType = null;
-        currentWithOwner = null;
+    synchronized static void clear() {
+        synchronized (responseRegistries) {
+            areProtocolsActive = false;
+            conditionsOnSent.clear();
+            conditionsOnReceived.clear();
+            responseRegistries.clear();
+            componentRegistry.clear();
+        }
     }
 
     static void registerComponent(Object component) {
         componentRegistry.add(component);
     }
 
-    public static void registerMessageType(String messageType) {
-        currentConditionMessageType = messageType;
+    static <T> void registerConditionOnSent(Predicate<T> predicate, ProtocolParserState state) {
+        state.registerConditionMessageType(conditionsOnSent);
+        state.registerCondition(predicate);
     }
 
-    public static void registerWithMessageTypeAndOwner(String requestType, String responseType, Object owner) {
-        currentWithRequestType = requestType;
-        currentWithResponseType = responseType;
-        currentWithOwner = owner;
+    static <T> void registerConditionOnReceived(Predicate<T> predicate, ProtocolParserState state) {
+        state.registerConditionMessageType(conditionsOnReceived);
+        state.registerCondition(predicate);
     }
 
-    private static void registerConditionMessageType(Map<String, ConditionalActions> conditions, String messageType) {
-        currentConditionalActions = conditions.get(messageType);
+    static void registerRespondAction(Function<?, ?> response, ProtocolParserState state) {
+        final String conditionMessageType = state.currentConditionMessageType;
 
-        if (currentConditionalActions == null) {
-            currentConditionalActions = new ConditionalActions();
-            conditions.put(messageType, currentConditionalActions);
-        }
+        state.registerAction((x, owner) -> {
+            synchronized (responseRegistries) {
+                ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
+                registry.responseData.put(conditionMessageType, response);
+            }
+        });
     }
 
-    public static <T> void registerConditionOnSent(Predicate<T> predicate) {
-        registerConditionMessageType(conditionsOnSent, currentConditionMessageType);
-        registerCondition(predicate);
-    }
-
-    public static <T> void registerConditionOnReceived(Predicate<T> predicate) {
-        registerConditionMessageType(conditionsOnReceived, currentConditionMessageType);
-        registerCondition(predicate);
-    }
-
-    private static <T> void registerCondition(Predicate<T> predicate) {
-        currentActions = currentConditionalActions.actions.computeIfAbsent(predicate, k -> new ArrayList<>());
-    }
-
-    public static void registerAction(Action action) {
-        currentActions.add(action);
-    }
-
-    public static void registerOrExecuteTriggerOrCallActionDependingOnParseState(Object payload) {
-        Action action = createOperateOutPortAction(payload);
+    public static void registerOrExecuteTriggerOrCallActionDependingOnParseState(Object payload, ProtocolParserState state) {
+        Action action = createOperateOutPortAction(payload, state);
 
         if (action == null) {
-            System.err.println("[ports] warning: no receivers are known for event type " + currentWithRequestType);
+            System.err.println("[ports] warning: no receivers are known for event type " + state.currentWithRequestType);
             return;
         }
 
-        if (currentConditionMessageType == null) {
+        if (state.currentConditionMessageType == null) {
             action.execute(null, null);
         } else {
-            registerAction(action);
+            state.registerAction(action);
         }
     }
 
-    private static Action createOperateOutPortAction(Object payload) {
-        Class<?> outPortType = currentWithRequestType.endsWith("Event") || currentWithRequestType.endsWith("Exception")
+    private static Action createOperateOutPortAction(Object payload, ProtocolParserState state) {
+        Class<?> outPortType = state.currentWithRequestType.endsWith("Event") || state.currentWithRequestType.endsWith("Exception")
                 ? Event.class
                 : Request.class;
 
-        if (currentWithOwner != null) {
-            return createOperateOutPortOnOwnerAction(payload, outPortType);
+        if (state.currentWithOwner != null) {
+            return createOperateOutPortOnOwnerAction(payload, outPortType, state);
         }
 
         if (!componentRegistry.isEmpty()) {
-            return createOperateOutPortOnRegisteredComponentsAction(payload, outPortType);
+            return createOperateOutPortOnRegisteredComponentsAction(payload, outPortType, state);
         }
 
         return null;
     }
 
-    private static Action createOperateOutPortOnOwnerAction(Object payload, Class<?> outPortType) {
-        Field outPortField = extractOutPortField(outPortType, currentWithRequestType, currentWithResponseType);
+    private static Action createOperateOutPortOnOwnerAction(Object payload, Class<?> outPortType, ProtocolParserState state) {
+        Field outPortField = state.extractOutPortField(outPortType);
 
         if (outPortType == Event.class) {
             try {
-                Event eventPort = (Event) outPortField.get(currentWithOwner);
+                Event eventPort = (Event) outPortField.get(state.currentWithOwner);
                 return (x, owner) -> eventPort.triggerWithinSameThread(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -163,7 +131,7 @@ final class Protocol {
 
         if (outPortType == Request.class) {
             try {
-                Request requestPort = (Request) outPortField.get(currentWithOwner);
+                Request requestPort = (Request) outPortField.get(state.currentWithOwner);
                 return (x, owner) -> requestPort.callWithinSameThread(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -173,8 +141,8 @@ final class Protocol {
         throw new IllegalStateException("unhandled OUT port type: " + outPortType.getName());
     }
 
-    private static Action createOperateOutPortOnRegisteredComponentsAction(Object payload, Class<?> outPortType) {
-        String portSignature = currentWithRequestType + ", " + currentWithResponseType;
+    private static Action createOperateOutPortOnRegisteredComponentsAction(Object payload, Class<?> outPortType, ProtocolParserState state) {
+        String portSignature = state.currentWithRequestType + ", " + state.currentWithResponseType;
 
         ProtocolComponent protocolComponent = new ProtocolComponent();
 
@@ -182,7 +150,7 @@ final class Protocol {
         Action action = null;
 
         if (outPortType == Event.class) {
-            protocolComponent.eventPort = new Event<>(currentWithRequestType, protocolComponent);
+            protocolComponent.eventPort = new Event<>(state.currentWithRequestType, protocolComponent);
 
             action = (x, owner) -> protocolComponent.eventPort.triggerWithinSameThread(payload);
 
@@ -194,7 +162,7 @@ final class Protocol {
         }
 
         if (outPortType == Request.class) {
-            protocolComponent.requestPort = new Request<>(currentWithRequestType, "requestPort", protocolComponent);
+            protocolComponent.requestPort = new Request<>(state.currentWithRequestType, "requestPort", protocolComponent);
 
             action = (x, owner) -> protocolComponent.requestPort.callWithinSameThread(payload);
 
@@ -222,36 +190,11 @@ final class Protocol {
         return action;
     }
 
-    private static Field extractOutPortField(Class<?> outPortType, String requestType, String responseType) {
-        String relevantFieldType = outPortType.getName() + "<" + requestType +
-                (void.class.getName().equals(responseType) ? "" : ", " + responseType)
-                + ">";
-
-        for (Field field : currentWithOwner.getClass().getDeclaredFields()) {
-            if (field.getGenericType().getTypeName().equals(relevantFieldType)) {
-                field.setAccessible(true);
-                return field;
-            }
-        }
-
-        throw new PortNotFoundException(
-                currentWithRequestType,
-                currentWithResponseType,
-                currentWithOwner.getClass().getName());
-    }
-
-    public static void registerRespondAction(Function<?, ?> response) {
-        final String conditionMessageType = currentConditionMessageType;
-
-        registerAction((x, owner) -> {
-            ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
-            registry.responseData.put(conditionMessageType, response);
-        });
-    }
-
     static Function<?, ?> getResponseProviderIfAvailable(String messageType, Object owner) {
-        ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
-        return registry.responseData.remove(messageType);
+        synchronized (responseRegistries) {
+            ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
+            return registry.responseData.remove(messageType);
+        }
     }
 
     static void onDataSent(String messageType, Object owner, Object data) {

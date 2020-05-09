@@ -523,8 +523,7 @@ public final class Ports {
      */
     public static ConditionOrAction<?> protocol() {
         Protocol.areProtocolsActive = true;
-        Protocol.resetParseState();
-        return new ConditionOrAction<>();
+        return new ConditionOrAction<>(new ProtocolParserState());
     }
 
     /**

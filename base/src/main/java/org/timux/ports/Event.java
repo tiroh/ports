@@ -192,7 +192,7 @@ public class Event<T> {
         }
     }
 
-    private WeakReference<?> getPortOwnersKeyOf(Object portOwner, Map<WeakReference<?>, Consumer<T>> portOwners) {
+    private synchronized WeakReference<?> getPortOwnersKeyOf(Object portOwner, Map<WeakReference<?>, Consumer<T>> portOwners) {
         for (Map.Entry<WeakReference<?>, Consumer<T>> e : portOwners.entrySet()) {
             if (e.getKey().get() == portOwner) {
                 return e.getKey();
@@ -203,7 +203,7 @@ public class Event<T> {
         return null;
     }
 
-    private void cleanUpGarbageCollectedConnections() {
+    private synchronized void cleanUpGarbageCollectedConnections() {
         if (portMethods == null || portMethods.isEmpty()) {
             return;
         }

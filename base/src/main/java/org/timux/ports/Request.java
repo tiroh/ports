@@ -58,7 +58,7 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    private void connect(Function<I, O> port, boolean isAsyncReceiver) {
+    private synchronized void connect(Function<I, O> port, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }

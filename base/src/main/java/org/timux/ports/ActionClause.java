@@ -4,24 +4,30 @@ import java.util.function.Consumer;
 
 class ActionClause<T> {
 
+    private final ProtocolParserState state;
+
+    ActionClause(ProtocolParserState state) {
+        this.state = state;
+    }
+
     public ConditionOrAction<T> do_(Action<T> action) {
-        Protocol.registerAction(action);
-        return new ConditionOrAction<>();
+        state.registerAction(action);
+        return new ConditionOrAction<>(state);
     }
 
     public ConditionOrAction<T> do_(Consumer<T> action) {
-        Protocol.registerAction((Action<T>) (payload, owner) -> action.accept(payload));
-        return new ConditionOrAction<>();
+        state.registerAction((Action<T>) (payload, owner) -> action.accept(payload));
+        return new ConditionOrAction<>(state);
     }
 
     public ConditionOrAction<T> do_(Runnable action) {
-        Protocol.registerAction((Action<T>) (payload, owner) -> action.run());
-        return new ConditionOrAction<>();
+        state.registerAction((Action<T>) (payload, owner) -> action.run());
+        return new ConditionOrAction<>(state);
     }
 
     public <U> PortEventClause<U> with(Class<U> messageType, Object owner) {
-        Protocol.registerWithMessageTypeAndOwner(messageType.getName(), void.class.getName(), owner);
-        return new PortEventClause<>();
+        state.registerWithMessageTypeAndOwner(messageType.getName(), void.class.getName(), owner);
+        return new PortEventClause<>(state);
     }
 
     public <U> PortEventClause<U> with(Class<U> messageType) {
@@ -29,8 +35,8 @@ class ActionClause<T> {
     }
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
-        Protocol.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
-        return new PortRequestClause<>();
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
+        return new PortRequestClause<>(state);
     }
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
