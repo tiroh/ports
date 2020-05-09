@@ -18,7 +18,13 @@ package org.timux.ports;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * A class that represents an OUT port with request-response semantics.
@@ -208,6 +214,26 @@ public class Request<I, O> {
 
             return MessageQueue.enqueueAsync(portFunction, payload);
         }
+    }
+
+    public Fork<O> fork(I... payloads) {
+        return fork(Arrays.asList(payloads));
+    }
+
+    public Fork<O> fork(int endIndexExclusive, IntFunction<I> payloadProvider) {
+        return fork(IntStream.range(0, endIndexExclusive)
+                .mapToObj(payloadProvider)
+                .collect(Collectors.toList()));
+    }
+
+    public Fork<O> fork(List<I> payloads) {
+        Fork<O> fork = new Fork<>();
+
+        for (I payload : payloads) {
+            fork.add(submit(payload));
+        }
+
+        return fork;
     }
 
     /**

@@ -28,6 +28,7 @@ package org.timux.ports;
  * @see FailureResponse
  * @see Either
  * @see Either3
+ * @see Nothing
  *
  * @since 0.4.1
  */

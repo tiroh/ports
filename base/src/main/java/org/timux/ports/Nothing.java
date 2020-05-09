@@ -16,15 +16,14 @@
 
 package org.timux.ports;
 
-import org.timux.ports.testapp.component.IntEvent;
-
-class C {
-
-    public int data;
-
-    @In
-    @AsyncPort
-    private void onInt(IntEvent event) {
-        this.data = event.getData();
-    }
+/**
+ * A type representing the absence of a value. When in use, <em>this class should always be instantiated</em>
+ * so that the instanceof operator can be used. Null is not an admissible value for Nothing.
+ *
+ * @see Either
+ * @see Either3
+ *
+ * @since 0.5.0
+ */
+public class Nothing {
 }

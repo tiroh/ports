@@ -16,15 +16,16 @@
 
 package org.timux.ports;
 
-import org.timux.ports.testapp.component.IntEvent;
+@Response(Double.class)
+public class SlowRequest {
 
-class C {
+    private final double data;
 
-    public int data;
+    public SlowRequest(double data) {
+        this.data = data;
+    }
 
-    @In
-    @AsyncPort
-    private void onInt(IntEvent event) {
-        this.data = event.getData();
+    public double getData() {
+        return data;
     }
 }

@@ -21,6 +21,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PortsTest {
@@ -305,5 +307,92 @@ public class PortsTest {
         Ports.awaitQuiescence();
         assertEquals(10.0, a.receivedData);
         assertEquals(15.0, b.receivedData);
+    }
+
+    @Test
+    public void forkGet() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+
+        Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
+
+        List<Either<Double, Throwable>> results = fork.get();
+
+        assertEquals(10, results.size());
+
+        for (int i = 0; i < results.size(); i++) {
+            int finalI = i;
+
+            results.get(i).do_(
+                    value -> assertEquals(finalI * 1.5, value),
+                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+            );
+        }
+    }
+
+    @Test
+    public void forkGetNow() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+
+        Fork<Double> fork = b.slowRequest.fork(10, SlowRequest::new);
+
+        List<Either3<Double, Nothing, Throwable>> results = fork.getNow();
+
+        assertEquals(10, results.size());
+
+        for (int i = 0; i < results.size(); i++) {
+            int finalI = i;
+
+            results.get(i).do_(
+                    value -> fail(finalI + ": there should be no result available"),
+                    nothing -> {},
+                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+            );
+        }
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            fail(e);
+        }
+
+        results = fork.getNow();
+
+        assertEquals(10, results.size());
+
+        for (int i = 0; i < results.size(); i++) {
+            int finalI = i;
+
+            results.get(i).do_(
+                    value -> assertTrue(finalI < 5, "index " + finalI),
+                    nothing -> assertTrue(finalI >= 5, "index " + finalI),
+                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+            );
+        }
+
+        try {
+            Thread.sleep(400);
+        } catch (InterruptedException e) {
+            fail(e);
+        }
+
+        results = fork.getNow();
+
+        assertEquals(10, results.size());
+
+        for (int i = 0; i < results.size(); i++) {
+            int finalI = i;
+
+            results.get(i).do_(
+                    value -> {},
+                    nothing -> fail(finalI + ": there should be a result available"),
+                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+            );
+        }
     }
 }

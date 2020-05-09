@@ -26,11 +26,8 @@ import java.util.function.Function;
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
  *
- * <p> For a {@link Request} that returns either a valid response object or an error status,
- * use the {@link SuccessOrFailure} constructors.
- *
  * @see Either3
- * @see SuccessOrFailure
+ * @see Nothing
  *
  * @param <A> The first type.
  * @param <B> The second type.

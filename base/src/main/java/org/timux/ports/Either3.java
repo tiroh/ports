@@ -28,7 +28,7 @@ import java.util.function.Function;
  * use of this union type.
  *
  * @see Either
- * @see SuccessOrFailure
+ * @see Nothing
  *
  * @param <A> The first type.
  * @param <B> The second type.
