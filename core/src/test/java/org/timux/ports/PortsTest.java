@@ -430,7 +430,6 @@ public class PortsTest {
                 break;
             } else if (waitTime > 1000) {
                 assertEquals(5, numberOfAsyncThreads);
-                break;
             } else {
                 assertEquals(10, numberOfAsyncThreads);
             }
