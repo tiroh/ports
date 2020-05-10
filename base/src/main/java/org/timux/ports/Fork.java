@@ -103,7 +103,7 @@ public class Fork<T> {
                     results.add(Either3.c(throwable));
                 }
             } else {
-                results.add(Either3.b(new Nothing()));
+                results.add(Either3.b(Nothing.INSTANCE));
             }
         }
 

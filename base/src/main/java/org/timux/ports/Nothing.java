@@ -25,5 +25,11 @@ package org.timux.ports;
  *
  * @since 0.5.0
  */
-public class Nothing {
+public final class Nothing {
+
+    public static final Nothing INSTANCE = new Nothing();
+
+    private Nothing() {
+        //
+    }
 }

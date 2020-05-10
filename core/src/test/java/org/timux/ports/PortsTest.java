@@ -24,7 +24,6 @@ import org.timux.ports.testapp.component.IntEvent;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.Thread.getAllStackTraces;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PortsTest {
