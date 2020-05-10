@@ -16,6 +16,22 @@
 
 package org.timux.ports;
 
+import java.util.List;
+
+/**
+ * An exception that is thrown when the receiver of a request terminates
+ * with an exception instead of delivering a response.
+ *
+ * <p> This exception differs from Java's {@link java.util.concurrent.ExecutionException}
+ * in that it inherits from {@link RuntimeException} instead of
+ * {@link Exception}.
+ *
+ * @see Request#call
+ * @see Request#submit
+ * @see Request#fork(List)
+ *
+ * @since 0.5.0
+ */
 public class ExecutionException extends RuntimeException {
 
     ExecutionException(Throwable t) {

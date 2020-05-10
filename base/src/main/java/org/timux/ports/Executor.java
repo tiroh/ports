@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class Executor {
 
+    private static final long IDLE_LIFETIME_MS = 1300;
+
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
         private Task task;
@@ -41,16 +43,39 @@ class Executor {
         public void run() {
             while (true) {
                 synchronized (this) {
+                    long remainingWaitTime = IDLE_LIFETIME_MS;
+
                     while (task == null) {
+                        long startTime = System.currentTimeMillis();
+
                         try {
-                            wait();
+                            wait(remainingWaitTime);
                         } catch (InterruptedException e) {
                             synchronized (availableThreads) {
                                 availableThreads.remove(this);
                                 numberOfThreads--;
+                                return;
                             }
+                        }
 
-                            return;
+                        if (task != null) {
+                            break;
+                        }
+
+                        remainingWaitTime -= System.currentTimeMillis() - startTime;
+
+                        if (remainingWaitTime <= 0) {
+                            synchronized (availableThreads) {
+                                // It could be that right before we entered this sync block,
+                                // this thread got popped from the stack,
+                                // so we have to check this race condition.
+
+                                if (task == null) {
+                                    availableThreads.remove(this);
+                                    numberOfThreads--;
+                                    return;
+                                }
+                            }
                         }
                     }
                 }
@@ -98,9 +123,8 @@ class Executor {
             }
 
             workerThread = availableThreads.pollFirst();
+            workerThread.setTask(task);
         }
-
-        workerThread.setTask(task);
 
         synchronized (workerThread) {
             workerThread.notify();
@@ -131,5 +155,9 @@ class Executor {
         synchronized (availableThreads) {
             return availableThreads.size() == numberOfThreads;
         }
+    }
+
+    int getNumberOfThreads() {
+        return numberOfThreads;
     }
 }

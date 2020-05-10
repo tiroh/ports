@@ -216,16 +216,40 @@ public class Request<I, O> {
         }
     }
 
+    /**
+     * Submits multiple requests at once that may be executed in parallel.
+     *
+     * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
+     *     received in the future.
+     *
+     * @since 0.5.0
+     */
     public Fork<O> fork(I... payloads) {
         return fork(Arrays.asList(payloads));
     }
 
+    /**
+     * Submits multiple requests at once that may be executed in parallel.
+     *
+     * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
+     *     received in the future.
+     *
+     * @since 0.5.0
+     */
     public Fork<O> fork(int endIndexExclusive, IntFunction<I> payloadProvider) {
         return fork(IntStream.range(0, endIndexExclusive)
                 .mapToObj(payloadProvider)
                 .collect(Collectors.toList()));
     }
 
+    /**
+     * Submits multiple requests at once that may be executed in parallel.
+     *
+     * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
+     *     received in the future.
+     *
+     * @since 0.5.0
+     */
     public Fork<O> fork(List<I> payloads) {
         Fork<O> fork = new Fork<>();
 

@@ -22,7 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
 
 import java.util.List;
+import java.util.Map;
 
+import static java.lang.Thread.getAllStackTraces;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PortsTest {
@@ -393,6 +395,45 @@ public class PortsTest {
                     nothing -> fail(finalI + ": there should be a result available"),
                     throwable -> fail("request should not fail (" + finalI + "): " + throwable)
             );
+        }
+    }
+
+    @Test
+    public void threadIdleLifetime() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+
+        Fork<Double> fork = b.slowRequest.fork(10, SlowRequest::new);
+        fork.get();
+
+        long startTime = System.currentTimeMillis();
+
+        for (;;) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                fail(e);
+            }
+
+            Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
+
+            long numberOfAsyncThreads = threads.keySet().stream()
+                    .filter(thread -> thread.getName().startsWith("ports-async-"))
+                    .count();
+
+            long waitTime = System.currentTimeMillis() - startTime;
+
+            if (waitTime > 1500) {
+                assertEquals(0, numberOfAsyncThreads);
+                break;
+            } else if (waitTime > 1000) {
+                assertEquals(5, numberOfAsyncThreads);
+                break;
+            } else {
+                assertEquals(10, numberOfAsyncThreads);
+            }
         }
     }
 }
