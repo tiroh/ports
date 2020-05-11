@@ -51,13 +51,15 @@ final class Protocol {
         Request requestPort = null;
     }
 
+    private static final Domain PROTOCOL_DOMAIN = new Domain("protocol", AsyncPolicy.ASYNCHRONOUS);
+
     // keys = message type names
-    private final static Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();
-    private final static Map<String, ConditionalActions> conditionsOnReceived = new HashMap<>();
+    private static final Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();
+    private static final Map<String, ConditionalActions> conditionsOnReceived = new HashMap<>();
 
-    private final static Map<Object, ResponseRegistry> responseRegistries = new HashMap<>();
+    private static final Map<Object, ResponseRegistry> responseRegistries = new HashMap<>();
 
-    private final static List<Object> componentRegistry = new ArrayList<>();
+    private static final List<Object> componentRegistry = new ArrayList<>();
 
     static boolean areProtocolsActive = false;
 
@@ -146,7 +148,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             try {
                 Request requestPort = (Request) outPortField.get(state.currentWithOwner);
-                return (x, owner) -> requestPort.callWST(payload);
+                return (x, owner) -> requestPort.callWST(payload, PROTOCOL_DOMAIN);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -178,7 +180,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             protocolComponent.requestPort = new Request<>(state.currentWithRequestType, "requestPort", protocolComponent);
 
-            action = (x, owner) -> protocolComponent.requestPort.callWST(payload);
+            action = (x, owner) -> protocolComponent.requestPort.callWST(payload, PROTOCOL_DOMAIN);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("requestPort");

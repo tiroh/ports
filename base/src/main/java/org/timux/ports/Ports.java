@@ -557,6 +557,13 @@ public final class Ports {
         MessageQueue.setAsyncPolicy(asyncPolicy);
     }
 
+    /**
+     * @since 0.5.0
+     */
+    public static Domain domain(String name, AsyncPolicy asyncPolicy) {
+        return new Domain(name, asyncPolicy);
+    }
+
     static void printWarning(String message) {
         System.err.println("[ports] warning: " + message);
     }

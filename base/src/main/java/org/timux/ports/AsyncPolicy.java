@@ -24,13 +24,52 @@ package org.timux.ports;
 public enum AsyncPolicy {
 
     /**
-     * Specifies that all messages have to be processed within the thread of the sender.
-     * This implies synchronous message processing. This is the default setting.
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to the
+     * complete domain.
      */
-    NO_CONTEXT_SWITCHES,
+    DOMAIN_SYNC,
 
     /**
-     * Specifies that messages may be processed asynchronously if possible.
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to
+     * individual components.
+     */
+    COMPONENT_SYNC,
+
+    /**
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to
+     * individual IN ports.
+     */
+    PORT_SYNC,
+
+    /**
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to
+     * individual components. In addition, all messages have to be processed within
+     * the thread of the sender.
+     *
+     * <p> This is the default setting.
+     */
+    COMPONENT_SYNC_SAME_THREAD,
+
+    /**
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to the
+     * complete domain. In addition, all messages have to be processed within
+     * the thread of the sender.
+     */
+    DOMAIN_SYNC_SAME_THREAD,
+
+    /**
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to
+     * individual IN ports. In addition, all messages have to be processed within
+     * the thread of the sender.
+     */
+    PORT_SYNC_SAME_THREAD,
+
+    /**
+     * Specifies that messages may be processed asynchronously without any synchronization.
+     *
+     * <p> <strong>This is a dangerous setting.</strong> Take care that all components in the domain are
+     * thread-safe. Note that it is not enough to ensure that each individual IN port is thread-safe
+     * because the interplay of multiple thread-safe IN ports can still lead to race conditions.
      */
     ASYNCHRONOUS
 }

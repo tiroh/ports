@@ -273,7 +273,7 @@ public class Event<T> {
      * @since 0.5.0
      */
     public synchronized void trigger(T payload) {
-        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
+        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.COMPONENT_SYNC_SAME_THREAD) {
             triggerWST(payload);
             return;
         }

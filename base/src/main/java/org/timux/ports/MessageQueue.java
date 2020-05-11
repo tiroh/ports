@@ -59,7 +59,7 @@ class MessageQueue {
     private static final DispatchThread dispatchThread = new DispatchThread();
     private static final Executor workerExecutor = new Executor("ports-worker");
     private static final Executor asyncExecutor = new Executor("ports-async");
-    private static AsyncPolicy asyncPolicy = AsyncPolicy.NO_CONTEXT_SWITCHES;
+    private static AsyncPolicy asyncPolicy = AsyncPolicy.COMPONENT_SYNC_SAME_THREAD;
 
     static void enqueueSync(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {

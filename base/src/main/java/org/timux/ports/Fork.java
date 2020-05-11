@@ -18,16 +18,16 @@ package org.timux.ports;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
- * A class representing a collection of asynchronous requests whose responses will be
- * received in the future.
+ * Represents the future responses of a collection of potentially asynchronous requests.
  *
  * @since 0.5.0
  */
-public class Fork<T> {
+public class Fork<T> implements Future<List<T>> {
 
     private List<PortsFuture<T>> futures = new ArrayList<>();
 
@@ -40,6 +40,42 @@ public class Fork<T> {
     }
 
     /**
+     * @throws ExecutionException if the receiver terminated unexpectedly
+     */
+    @Override
+    public List<T> get() {
+        List<T> results = new ArrayList<>();
+
+        for (PortsFuture<T> future : futures) {
+            results.add(future.get());
+        }
+
+        return results;
+    }
+
+    /**
+     * @throws ExecutionException If the receiver terminated unexpectedly.
+     */
+    @Override
+    public List<T> get(long timeout, TimeUnit unit) throws TimeoutException {
+        List<T> results = new ArrayList<>();
+
+        long remainingWaitTime = unit.toMillis(timeout);
+
+        for (PortsFuture<T> future : futures) {
+            long startTime = System.currentTimeMillis();
+            results.add(future.get(remainingWaitTime, TimeUnit.MILLISECONDS));
+            remainingWaitTime -= System.currentTimeMillis() - startTime;
+
+            if (remainingWaitTime <= 0L) {
+                throw new TimeoutException();
+            }
+        }
+
+        return results;
+    }
+
+    /**
      * Returns a list of {@link Either} instances providing for each request either the result or
      * a throwable in case the respective receiver terminated with an exception.
      *
@@ -48,7 +84,7 @@ public class Fork<T> {
      *
      * <p> <em>This call is blocking.</em>
      */
-    public List<Either<T, Throwable>> get(long timeout, TimeUnit timeUnit) {
+    public List<Either<T, Throwable>> getEither(long timeout, TimeUnit timeUnit) {
         List<Either<T, Throwable>> results = new ArrayList<>();
 
         for (PortsFuture<T> future : futures) {
@@ -69,7 +105,7 @@ public class Fork<T> {
      *
      * <p> <em>This call is blocking.</em>
      */
-    public List<Either<T, Throwable>> get() {
+    public List<Either<T, Throwable>> getEither() {
         List<Either<T, Throwable>> results = new ArrayList<>();
 
         for (PortsFuture<T> future : futures) {
@@ -91,7 +127,7 @@ public class Fork<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      */
-    public List<Either3<T, Nothing, Throwable>> getNow() {
+    public List<Either3<T, Nothing, Throwable>> getNowEither() {
         List<Either3<T, Nothing, Throwable>> results = new ArrayList<>();
 
         for (PortsFuture<T> future : futures) {
@@ -108,5 +144,32 @@ public class Fork<T> {
         }
 
         return results;
+    }
+
+    /**
+     * Instances of Fork are not cancellable, so this method will always return false and do nothing.
+     */
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+        return false;
+    }
+
+    @Override
+    public boolean isDone() {
+        for (PortsFuture<T> future : futures) {
+            if (!future.isDone()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Instances of Fork are not cancellable, so this method will always return false.
+     */
+    @Override
+    public boolean isCancelled() {
+        return false;
     }
 }

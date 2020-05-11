@@ -22,7 +22,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 /**
- * Represents the response of a potentially asynchronous request.
+ * Represents the future response of a potentially asynchronous request.
  *
  * <p> Whenever you issue an asynchronous request via {@link Request#submit}, you will retrieve
  * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},

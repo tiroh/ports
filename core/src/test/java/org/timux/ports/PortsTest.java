@@ -16,7 +16,6 @@
  
 package org.timux.ports;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
@@ -27,11 +26,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PortsTest {
-
-    @BeforeAll
-    public static void setupAll() {
-        Ports.setAsyncPolicy(AsyncPolicy.ASYNCHRONOUS);
-    }
 
     @BeforeEach
     public void setupEach() {
@@ -319,7 +313,7 @@ public class PortsTest {
 
         Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
 
-        List<Either<Double, Throwable>> results = fork.get();
+        List<Either<Double, Throwable>> results = fork.getEither();
 
         assertEquals(10, results.size());
 
@@ -328,7 +322,7 @@ public class PortsTest {
 
             results.get(i).do_(
                     value -> assertEquals(finalI * 1.5, value),
-                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+                    throwable -> fail("index " + finalI + ": request should not fail: " + throwable)
             );
         }
     }
@@ -338,11 +332,17 @@ public class PortsTest {
         A a = new A();
         B b = new B();
 
+        Ports.domain("test-a", AsyncPolicy.ASYNCHRONOUS)
+                .add(a);
+
+        Ports.domain("test-b", AsyncPolicy.ASYNCHRONOUS)
+                .add(b);
+
         Ports.connect(a).and(b);
 
         Fork<Double> fork = b.slowRequest.fork(10, SlowRequest::new);
 
-        List<Either3<Double, Nothing, Throwable>> results = fork.getNow();
+        List<Either3<Double, Nothing, Throwable>> results = fork.getNowEither();
 
         assertEquals(10, results.size());
 
@@ -350,9 +350,9 @@ public class PortsTest {
             int finalI = i;
 
             results.get(i).do_(
-                    value -> fail(finalI + ": there should be no result available"),
+                    value -> fail("index " + finalI + ": there should be no result available (" + value + ")"),
                     nothing -> {},
-                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+                    throwable -> fail("index " + finalI + ": request should not fail: " + throwable)
             );
         }
 
@@ -362,7 +362,7 @@ public class PortsTest {
             fail(e);
         }
 
-        results = fork.getNow();
+        results = fork.getNowEither();
 
         assertEquals(10, results.size());
 
@@ -382,7 +382,7 @@ public class PortsTest {
             fail(e);
         }
 
-        results = fork.getNow();
+        results = fork.getNowEither();
 
         assertEquals(10, results.size());
 
@@ -401,6 +401,12 @@ public class PortsTest {
     public void threadIdleLifetime() {
         A a = new A();
         B b = new B();
+
+        Ports.domain("test-a", AsyncPolicy.ASYNCHRONOUS)
+                .add(a);
+
+        Ports.domain("test-b", AsyncPolicy.ASYNCHRONOUS)
+                .add(b);
 
         Ports.connect(a).and(b);
 

@@ -44,7 +44,7 @@ public final class PortsVaadinSpring {
         self = this;
 
         // NO_CONTEXT_SWITCHES is the default value, but just to be sure, let's set it here.
-        Ports.setAsyncPolicy(AsyncPolicy.NO_CONTEXT_SWITCHES);
+        Ports.setAsyncPolicy(AsyncPolicy.COMPONENT_SYNC_SAME_THREAD);
     }
 
     /**

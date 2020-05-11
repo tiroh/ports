@@ -18,7 +18,6 @@ package org.timux.ports;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -44,9 +43,11 @@ import java.util.stream.IntStream;
 public class Request<I, O> {
 
     private Function<I, O> port;
+    private Method portMethod;
     private boolean isAsyncReceiver;
     private String requestTypeName;
     private Object owner;
+    private Object receiver;
     private String memberName;
 
     public Request() {
@@ -64,12 +65,14 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    private synchronized void connect(Function<I, O> port, boolean isAsyncReceiver) {
+    private synchronized void connect(Function<I, O> port, Method portMethod, Object receiver, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
         this.port = port;
+        this.portMethod = portMethod;
+        this.receiver = receiver;
         this.isAsyncReceiver = isAsyncReceiver;
     }
 
@@ -87,7 +90,7 @@ public class Request<I, O> {
             }
         };
 
-        connect(portFunction, portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
+        connect(portFunction, portMethod, methodOwner, portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
     }
 
     /**
@@ -97,7 +100,7 @@ public class Request<I, O> {
         port = null;
     }
 
-    synchronized O callWST(I payload) {
+    synchronized O callWST(I payload, Domain receiverDomain) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -145,11 +148,7 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
-        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
-            return callWST(payload);
-        } else {
-            return submit(payload).get();
-        }
+        return submit(payload).get();
     }
 
     /**
@@ -173,8 +172,11 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public synchronized PortsFuture<O> submit(I payload) {
-        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.NO_CONTEXT_SWITCHES) {
-            return new PortsFuture<>(callWST(payload));
+        Domain senderDomain = DomainManager.getDomain(owner);
+        Domain receiverDomain = DomainManager.getDomain(receiver);
+
+        if (senderDomain == receiverDomain) {
+            return new PortsFuture<>(callWST(payload, receiverDomain));
         }
 
         if (Protocol.areProtocolsActive) {
@@ -203,7 +205,37 @@ public class Request<I, O> {
             return new PortsFuture<>(response);
         } else {
             Function<I, O> portFunction = x -> {
-                O response = port.apply(x);
+                O response;
+
+                switch (receiverDomain.getAsyncPolicy()) {
+                case ASYNCHRONOUS:
+                    response = port.apply(x);
+                    break;
+
+                case DOMAIN_SYNC:
+                case DOMAIN_SYNC_SAME_THREAD:
+                    synchronized (receiverDomain) {
+                        response = port.apply(x);
+                    }
+                    break;
+
+                case COMPONENT_SYNC:
+                case COMPONENT_SYNC_SAME_THREAD:
+                    synchronized (receiver) {
+                        response = port.apply(x);
+                    }
+                    break;
+
+                case PORT_SYNC:
+                case PORT_SYNC_SAME_THREAD:
+                    synchronized (portMethod) {
+                        response = port.apply(x);
+                    }
+                    break;
+
+                default:
+                    throw new IllegalStateException("unhandled async policy: " + receiverDomain.getAsyncPolicy());
+                }
 
                 if (Protocol.areProtocolsActive) {
                     Protocol.onDataReceived(requestTypeName, owner, response);

@@ -32,6 +32,12 @@ public class TestApplication {
         F f = new F();
         G g = new G();
 
+        Ports.domain("test", AsyncPolicy.DOMAIN_SYNC)
+                .add(a);
+
+        Ports.domain("test", AsyncPolicy.DOMAIN_SYNC)
+                .add(b);
+
         Ports.connect(a).and(b);
         Ports.connect(b).and(c);
         Ports.connect(c).and(d);
