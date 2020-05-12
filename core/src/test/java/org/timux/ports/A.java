@@ -26,14 +26,12 @@ class A {
     public Event<IntEvent> intEvent;
 
     @In
-    @AsyncPort
     private Double onDoubleRequest(DoubleRequest request) {
         receivedData = request.getData();
         return 1.5 * request.getData();
     }
 
     @In
-    @AsyncPort
     private Double onSlowRequest(SlowRequest request) {
         try {
             Thread.sleep(request.getData() < 5 ? 250 : 750);

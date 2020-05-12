@@ -29,7 +29,6 @@ class B {
     public Request<SlowRequest, Double> slowRequest;
 
     @In
-    @AsyncPort
     private void onInt(IntEvent event) {
         receivedData = doubleRequest.submit(new DoubleRequest(event.getData())).get();
     }

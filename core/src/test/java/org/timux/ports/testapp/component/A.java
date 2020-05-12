@@ -47,14 +47,12 @@ public class A {
     }
 
     @In
-    @AsyncPort
     private void onInt(IntEvent event) {
         field *= 2;
         System.out.println("A received test input: " + event.getData() + ", private field is " + field);
     }
 
     @In
-    @AsyncPort
     private void onRuntimeException(RuntimeException exception) {
         System.out.println("Received exception: " + exception.getMessage());
     }

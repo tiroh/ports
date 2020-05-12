@@ -29,7 +29,6 @@ public class B {
     }
 
     @In
-    @AsyncPort
     private void onInt(IntEvent event) {
         System.out.println("B received IntEvent: " + event.getData());
         runtimeExceptionEvent.trigger(new RuntimeException("Test exception with data " + event.getData()));
@@ -42,13 +41,11 @@ public class B {
     }
 
     @In
-    @AsyncPort
     private void onObject(ObjectEvent event) {
         System.out.println("B received ObjectEvent: " + event.getObject());
     }
 
     @In
-    @AsyncPort
     private Double onShortRequest(ShortRequest request) {
         System.out.println("B received request: " + request.getData());
         intEvent.trigger(new IntEvent((int) request.getData() + 1));

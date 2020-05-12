@@ -44,7 +44,6 @@ public class Request<I, O> {
 
     private Function<I, O> port;
     private Method portMethod;
-    private boolean isAsyncReceiver;
     private String requestTypeName;
     private Object owner;
     private Object receiver;
@@ -65,7 +64,7 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    private synchronized void connect(Function<I, O> port, Method portMethod, Object receiver, boolean isAsyncReceiver) {
+    private synchronized void connect(Function<I, O> port, Method portMethod, Object receiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
@@ -73,7 +72,6 @@ public class Request<I, O> {
         this.port = port;
         this.portMethod = portMethod;
         this.receiver = receiver;
-        this.isAsyncReceiver = isAsyncReceiver;
     }
 
     @SuppressWarnings("unchecked")
@@ -90,7 +88,7 @@ public class Request<I, O> {
             }
         };
 
-        connect(portFunction, portMethod, methodOwner, portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
+        connect(portFunction, portMethod, methodOwner);
     }
 
     /**
@@ -133,13 +131,13 @@ public class Request<I, O> {
     }
 
     /**
-     * Sends the given payload to the connected IN port. The request will be handled synchronously, regardless of
-     * whether the IN port is an {@link AsyncPort} or not.
+     * Sends the given payload to the connected IN port. The request will be handled synchronously, but not
+     * necessarily within the thread of the sender (this depends on the {@link Domain} of the receiver).
      *
      * @param payload The payload to be sent.
      *
      * @see #submit
-     * @see Ports#setAsyncPolicy
+     * @see Domain
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      * @throws PortNotConnectedException If this port is not connected.
@@ -152,15 +150,13 @@ public class Request<I, O> {
     }
 
     /**
-     * Sends the given payload to the connected IN port. The request will be handled asynchronously if the IN port is
-     * an {@link AsyncPort} and if the {@link SyncPolicy} allows it; if not, the request will be handled
-     * synchronously.
+     * Sends the given payload to the connected IN port. Whether the request will be dispatched synchronously or
+     * asynchronously or whether (and how) it will be synchronized depends on the {@link Domain} of the receiver.
      *
      * @param payload The payload to be sent.
      *
      * @see #call
-     * @see AsyncPort
-     * @see SyncPolicy
+     * @see Domain
      *
      * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
      *   {@link PortsFuture#getNow}, or {@link PortsFuture#getOrElse} methods to access the response object.

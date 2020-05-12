@@ -42,12 +42,10 @@ public class Event<T> {
 
         Consumer<T> port;
         WeakReference<?> receiverRef;
-        boolean isAsyncReceiver;
 
-        PortEntry(Consumer<T> port, Object receiverRef, boolean isAsyncReceiver) {
+        PortEntry(Consumer<T> port, Object receiverRef) {
             this.port = port;
             this.receiverRef = new WeakReference<>(receiverRef);
-            this.isAsyncReceiver = isAsyncReceiver;
         }
     }
 
@@ -71,12 +69,12 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    private synchronized void connect(Consumer<T> port, Object receiver, boolean isAsyncReceiver) {
+    private synchronized void connect(Consumer<T> port, Object receiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        ports.add(new PortEntry<>(port, receiver, isAsyncReceiver));
+        ports.add(new PortEntry<>(port, receiver));
     }
 
     synchronized void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
@@ -124,7 +122,7 @@ public class Event<T> {
                     }));
         }
 
-        connect(portOwners.get(key), methodOwner, portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
+        connect(portOwners.get(key), methodOwner);
     }
 
     /**
@@ -134,7 +132,7 @@ public class Event<T> {
      * @param port The IN port that this OUT port should be connected to.
      */
     void connect(QueuePort<T> port, Object portOwner) {
-        connect(port::add, portOwner, false);
+        connect(port::add, portOwner);
     }
 
     /**
@@ -144,7 +142,7 @@ public class Event<T> {
      * @param port The IN port that this OUT port should be connected to.
      */
     void connect(StackPort<T> port, Object portOwner) {
-        connect(port::push, portOwner, false);
+        connect(port::push, portOwner);
     }
 
     /**
@@ -248,15 +246,13 @@ public class Event<T> {
     }
 
     /**
-     * Sends the given payload to the connected IN port(s). For each IN port, the event will be handled asynchronously
-     * if the IN port is an {@link AsyncPort} and if the {@link SyncPolicy} allows it; if not, the event will be
-     * handled synchronously, but not necessarily within the thread of the caller.
+     * Sends the given payload to the connected IN port(s). Whether the event will be dispatched synchronously or
+     * asynchronously or whether (and how) it will be synchronized depends on the {@link Domain}(s) of the receiver(s).
      *
      * @param payload The payload to be sent.
      *
      * @see #trigger
-     * @see AsyncPort
-     * @see SyncPolicy
+     * @see Domain
      *
      * @since 0.5.0
      */
