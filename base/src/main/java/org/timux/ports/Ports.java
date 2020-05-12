@@ -549,18 +549,10 @@ public final class Ports {
     }
 
     /**
-     * Specifies how Ports should handle asynchronicity.
-     *
-     * @since 0.5.0
-     */
-    public static void setAsyncPolicy(SyncPolicy syncPolicy) {
-        MessageQueue.setSyncPolicy(syncPolicy);
-    }
-
-    /**
      * @since 0.5.0
      */
     public static Domain domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
+        DomainManager.gc();
         return new Domain(name, syncPolicy, dispatchPolicy);
     }
 

@@ -47,8 +47,6 @@ public class TestApplication {
 
         Ports.verify(a, b, c, d, e, f, g);
 
-        Ports.setAsyncPolicy(SyncPolicy.ASYNCHRONOUS);
-
         a.doWork();
         c.doStringWork();
         c.doIntWork();

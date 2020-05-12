@@ -115,12 +115,6 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(a);
-
-        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(b);
-
         Ports.register(a, b);
 
         ValueContainer<Boolean> firstActionA = new ValueContainer<>(false);

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -51,8 +52,6 @@ final class Protocol {
         Request requestPort = null;
     }
 
-    private static final Domain PROTOCOL_DOMAIN = new Domain("protocol", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.SAME_THREAD);
-
     // keys = message type names
     private static final Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();
     private static final Map<String, ConditionalActions> conditionsOnReceived = new HashMap<>();
@@ -60,6 +59,8 @@ final class Protocol {
     private static final Map<Object, ResponseRegistry> responseRegistries = new HashMap<>();
 
     private static final List<Object> componentRegistry = new ArrayList<>();
+
+    private static final AtomicInteger nextProtocolId = new AtomicInteger();
 
     static boolean areProtocolsActive = false;
 
@@ -139,7 +140,7 @@ final class Protocol {
         if (outPortType == Event.class) {
             try {
                 Event eventPort = (Event) outPortField.get(state.currentWithOwner);
-                return (x, owner) -> eventPort.triggerWST(payload);
+                return (x, owner) -> eventPort.trigger(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -148,7 +149,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             try {
                 Request requestPort = (Request) outPortField.get(state.currentWithOwner);
-                return (x, owner) -> requestPort.callWST(payload, PROTOCOL_DOMAIN);
+                return (x, owner) -> requestPort.call(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -162,13 +163,16 @@ final class Protocol {
 
         ProtocolComponent protocolComponent = new ProtocolComponent();
 
+        Ports.domain("protocol-" + nextProtocolId.getAndIncrement(), SyncPolicy.DOMAIN_SYNC, DispatchPolicy.SAME_THREAD)
+                .add(protocolComponent);
+
         Field outPortField = null;
         Action action = null;
 
         if (outPortType == Event.class) {
             protocolComponent.eventPort = new Event<>(state.currentWithRequestType, protocolComponent);
 
-            action = (x, owner) -> protocolComponent.eventPort.triggerWST(payload);
+            action = (x, owner) -> protocolComponent.eventPort.trigger(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("eventPort");
@@ -180,7 +184,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             protocolComponent.requestPort = new Request<>(state.currentWithRequestType, "requestPort", protocolComponent);
 
-            action = (x, owner) -> protocolComponent.requestPort.callWST(payload, PROTOCOL_DOMAIN);
+            action = (x, owner) -> protocolComponent.requestPort.call(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("requestPort");

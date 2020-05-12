@@ -41,12 +41,12 @@ public class Event<T> {
     private static class PortEntry<T> {
 
         Consumer<T> port;
-        WeakReference<?> receiver;
+        WeakReference<?> receiverRef;
         boolean isAsyncReceiver;
 
-        PortEntry(Consumer<T> port, Object receiver, boolean isAsyncReceiver) {
+        PortEntry(Consumer<T> port, Object receiverRef, boolean isAsyncReceiver) {
             this.port = port;
-            this.receiver = new WeakReference<>(receiver);
+            this.receiverRef = new WeakReference<>(receiverRef);
             this.isAsyncReceiver = isAsyncReceiver;
         }
     }
@@ -261,8 +261,6 @@ public class Event<T> {
      * @since 0.5.0
      */
     public synchronized void trigger(T payload) {
-        Domain senderDomain = DomainManager.getDomain(owner);
-
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
@@ -279,53 +277,68 @@ public class Event<T> {
             return;
         }
 
+        Domain senderDomain = DomainManager.getDomain(owner);
+
         for (i--; i >= 0; i--) {
-            Domain receiverDomain = DomainManager.getDomain(p.get(i).receiver);
-            WeakReference<?> receiverRef = p.get(i).receiver;
-            Consumer<T> port = p.get(i).port;
+            PortEntry<T> portEntry = p.get(i);
 
-            Consumer<T> portFunction = x -> {
-                Object receiver = receiverRef.get();
+            Object receiver = portEntry.receiverRef.get();
 
-                if (receiver == null) {
-                    return;
-                }
+            if (receiver == null) {
+                continue;
+            }
 
-                switch (receiverDomain.getSyncPolicy()) {
-                case ASYNCHRONOUS:
-                    port.accept(x);
-                    break;
-
-                case COMPONENT_SYNC:
-                    synchronized (receiverRef) {
-                        port.accept(x);
-                    }
-                    break;
-
-                case DOMAIN_SYNC:
-                    synchronized (receiverDomain) {
-                        port.accept(x);
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
-                }
-            };
+            Domain receiverDomain = DomainManager.getDomain(receiver);
+            Consumer<T> syncFunction = getSyncFunction(portEntry, receiverDomain);
 
             switch (receiverDomain.getDispatchPolicy()) {
             case SAME_THREAD:
-                portFunction.accept(payload);
+                syncFunction.accept(payload);
                 break;
 
             case PARALLEL:
-                MessageQueue.enqueueAsync(portFunction, payload);
+                if (senderDomain == receiverDomain) {
+                    syncFunction.accept(payload);
+                } else {
+                    MessageQueue.enqueue(syncFunction, payload);
+                }
                 break;
 
             default:
                 throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
             }
         }
+    }
+
+    private static <T> Consumer<T> getSyncFunction(PortEntry<T> portEntry, Domain receiverDomain) {
+        return x -> {
+            Object receiver_ = portEntry.receiverRef.get();
+
+            if (receiver_ == null) {
+                return;
+            }
+
+            switch (receiverDomain.getSyncPolicy()) {
+            case ASYNCHRONOUS:
+                portEntry.port.accept(x);
+                break;
+
+            case COMPONENT_SYNC:
+                synchronized (receiver_) {
+                    portEntry.port.accept(x);
+                }
+                break;
+
+            case DOMAIN_SYNC:
+                synchronized (receiverDomain) {
+                    portEntry.port.accept(x);
+                }
+                break;
+
+            default:
+                throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
+            }
+        };
     }
 
     /**

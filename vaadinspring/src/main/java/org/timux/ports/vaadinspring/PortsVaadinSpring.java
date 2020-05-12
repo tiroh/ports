@@ -18,8 +18,6 @@ package org.timux.ports.vaadinspring;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.timux.ports.SyncPolicy;
-import org.timux.ports.Ports;
 
 import javax.annotation.PostConstruct;
 
@@ -42,9 +40,6 @@ public final class PortsVaadinSpring {
     @PostConstruct
     private void init() {
         self = this;
-
-        // NO_CONTEXT_SWITCHES is the default value, but just to be sure, let's set it here.
-        Ports.setAsyncPolicy(SyncPolicy.COMPONENT_SYNC);
     }
 
     /**

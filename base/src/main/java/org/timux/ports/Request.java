@@ -172,13 +172,6 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public synchronized PortsFuture<O> submit(I payload) {
-        Domain senderDomain = DomainManager.getDomain(owner);
-        Domain receiverDomain = DomainManager.getDomain(receiver);
-
-        if (senderDomain == receiverDomain) {
-            return new PortsFuture<>(callWST(payload, receiverDomain));
-        }
-
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -195,7 +188,29 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        Function<I, O> portFunction = x -> {
+        Domain senderDomain = DomainManager.getDomain(owner);
+        Domain receiverDomain = DomainManager.getDomain(receiver);
+
+        Function<I, O> syncFunction = getSyncFunction(receiverDomain);
+
+        switch (receiverDomain.getDispatchPolicy()) {
+        case SAME_THREAD:
+            return new PortsFuture<>(syncFunction.apply(payload));
+
+        case PARALLEL:
+            if (senderDomain == receiverDomain) {
+                return new PortsFuture<>(syncFunction.apply(payload));
+            } else {
+                return MessageQueue.enqueue(syncFunction, payload);
+            }
+
+        default:
+            throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
+        }
+    }
+
+    private Function<I, O> getSyncFunction(Domain receiverDomain) {
+        return x -> {
             O response;
 
             switch (receiverDomain.getSyncPolicy()) {
@@ -225,17 +240,6 @@ public class Request<I, O> {
 
             return response;
         };
-
-        switch (receiverDomain.getDispatchPolicy()) {
-        case SAME_THREAD:
-            return new PortsFuture<>(portFunction.apply(payload));
-
-        case PARALLEL:
-            return MessageQueue.enqueueAsync(portFunction, payload);
-
-        default:
-            throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
-        }
     }
 
     /**

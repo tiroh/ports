@@ -17,7 +17,9 @@
 package org.timux.ports;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 class DomainManager {
@@ -55,7 +57,7 @@ class DomainManager {
         @Override
         public String toString() {
             Object component = componentRef.get();
-            return "Key{component=" + component + "}";
+            return "Key{" + component + "}";
         }
     }
 
@@ -71,5 +73,17 @@ class DomainManager {
 
     static synchronized void register(Object component, Domain domain) {
         domains.put(new Key(component), domain);
+    }
+
+    static synchronized void gc() {
+        List<Key> garbageKeys = new ArrayList<>();
+
+        for (Map.Entry<Key, Domain> e : domains.entrySet()) {
+            if (e.getKey().componentRef.get() == null) {
+                garbageKeys.add(e.getKey());
+            }
+        }
+
+        garbageKeys.forEach(domains::remove);
     }
 }
