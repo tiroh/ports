@@ -295,10 +295,10 @@ public class PortsTest {
         Ports.connect(a).and(b);
 
         Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(a);
+                .addComponents(a);
 
         Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(b);
+                .addComponents(b);
 
         Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
 
@@ -322,10 +322,10 @@ public class PortsTest {
         B b = new B();
 
         Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(a);
+                .addComponents(a);
 
         Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(b);
+                .addComponents(b);
 
         Ports.connect(a).and(b);
 
@@ -392,10 +392,10 @@ public class PortsTest {
         B b = new B();
 
         Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(a);
+                .addComponents(a);
 
         Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
-                .add(b);
+                .addComponents(b);
 
         Ports.connect(a).and(b);
 

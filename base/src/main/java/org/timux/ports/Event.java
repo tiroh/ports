@@ -308,9 +308,9 @@ public class Event<T> {
 
     private static <T> Consumer<T> getSyncFunction(PortEntry<T> portEntry, Domain receiverDomain) {
         return x -> {
-            Object receiver_ = portEntry.receiverRef.get();
+            Object receiver = portEntry.receiverRef.get();
 
-            if (receiver_ == null) {
+            if (receiver == null) {
                 return;
             }
 
@@ -320,7 +320,7 @@ public class Event<T> {
                 break;
 
             case COMPONENT_SYNC:
-                synchronized (receiver_) {
+                synchronized (receiver) {
                     portEntry.port.accept(x);
                 }
                 break;

@@ -164,7 +164,7 @@ final class Protocol {
         ProtocolComponent protocolComponent = new ProtocolComponent();
 
         Ports.domain("protocol-" + nextProtocolId.getAndIncrement(), SyncPolicy.DOMAIN_SYNC, DispatchPolicy.SAME_THREAD)
-                .add(protocolComponent);
+                .addComponents(protocolComponent);
 
         Field outPortField = null;
         Action action = null;

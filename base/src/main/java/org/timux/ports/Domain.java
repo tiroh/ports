@@ -31,7 +31,7 @@ public class Domain {
         this.dispatchPolicy = dispatchPolicy;
     }
 
-    public Domain add(Object... components) {
+    public Domain addComponents(Object... components) {
         for (Object component : components) {
             DomainManager.register(component, this);
         }
