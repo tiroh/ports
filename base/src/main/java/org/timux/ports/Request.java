@@ -153,14 +153,14 @@ public class Request<I, O> {
 
     /**
      * Sends the given payload to the connected IN port. The request will be handled asynchronously if the IN port is
-     * an {@link AsyncPort} and if the {@link AsyncPolicy} allows it; if not, the request will be handled
+     * an {@link AsyncPort} and if the {@link SyncPolicy} allows it; if not, the request will be handled
      * synchronously.
      *
      * @param payload The payload to be sent.
      *
      * @see #call
      * @see AsyncPort
-     * @see AsyncPolicy
+     * @see SyncPolicy
      *
      * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
      *   {@link PortsFuture#getNow}, or {@link PortsFuture#getOrElse} methods to access the response object.
@@ -195,56 +195,46 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        if (!isAsyncReceiver) {
-            O response = MessageQueue.enqueueSync(port, payload);
+        Function<I, O> portFunction = x -> {
+            O response;
+
+            switch (receiverDomain.getSyncPolicy()) {
+            case ASYNCHRONOUS:
+                response = port.apply(x);
+                break;
+
+            case DOMAIN_SYNC:
+                synchronized (receiverDomain) {
+                    response = port.apply(x);
+                }
+                break;
+
+            case COMPONENT_SYNC:
+                synchronized (receiver) {
+                    response = port.apply(x);
+                }
+                break;
+
+            default:
+                throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
+            }
 
             if (Protocol.areProtocolsActive) {
                 Protocol.onDataReceived(requestTypeName, owner, response);
             }
 
-            return new PortsFuture<>(response);
-        } else {
-            Function<I, O> portFunction = x -> {
-                O response;
+            return response;
+        };
 
-                switch (receiverDomain.getAsyncPolicy()) {
-                case ASYNCHRONOUS:
-                    response = port.apply(x);
-                    break;
+        switch (receiverDomain.getDispatchPolicy()) {
+        case SAME_THREAD:
+            return new PortsFuture<>(portFunction.apply(payload));
 
-                case DOMAIN_SYNC:
-                case DOMAIN_SYNC_SAME_THREAD:
-                    synchronized (receiverDomain) {
-                        response = port.apply(x);
-                    }
-                    break;
-
-                case COMPONENT_SYNC:
-                case COMPONENT_SYNC_SAME_THREAD:
-                    synchronized (receiver) {
-                        response = port.apply(x);
-                    }
-                    break;
-
-                case PORT_SYNC:
-                case PORT_SYNC_SAME_THREAD:
-                    synchronized (portMethod) {
-                        response = port.apply(x);
-                    }
-                    break;
-
-                default:
-                    throw new IllegalStateException("unhandled async policy: " + receiverDomain.getAsyncPolicy());
-                }
-
-                if (Protocol.areProtocolsActive) {
-                    Protocol.onDataReceived(requestTypeName, owner, response);
-                }
-
-                return response;
-            };
-
+        case PARALLEL:
             return MessageQueue.enqueueAsync(portFunction, payload);
+
+        default:
+            throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
         }
     }
 

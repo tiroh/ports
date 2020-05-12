@@ -51,7 +51,7 @@ final class Protocol {
         Request requestPort = null;
     }
 
-    private static final Domain PROTOCOL_DOMAIN = new Domain("protocol", AsyncPolicy.ASYNCHRONOUS);
+    private static final Domain PROTOCOL_DOMAIN = new Domain("protocol", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.SAME_THREAD);
 
     // keys = message type names
     private static final Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();

@@ -59,7 +59,7 @@ class MessageQueue {
     private static final DispatchThread dispatchThread = new DispatchThread();
     private static final Executor workerExecutor = new Executor("ports-worker");
     private static final Executor asyncExecutor = new Executor("ports-async");
-    private static AsyncPolicy asyncPolicy = AsyncPolicy.COMPONENT_SYNC_SAME_THREAD;
+    private static SyncPolicy syncPolicy = SyncPolicy.COMPONENT_SYNC;
 
     static void enqueueSync(Consumer eventPort, Object payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
@@ -82,10 +82,10 @@ class MessageQueue {
         asyncExecutor.submit(task);
     }
 
-    static <I, O> O enqueueSync(Function<I, O> requestPort, I payload) {
+    static <I, O> PortsFuture<O> enqueueSync(Function<I, O> requestPort, I payload) {
         if (workerExecutor.isOwnThread(Thread.currentThread())) {
             try {
-                return requestPort.apply(payload);
+                return new PortsFuture<>(requestPort.apply(payload));
             } catch (Throwable t) {
                 throw new ExecutionException(t);
             }
@@ -98,7 +98,7 @@ class MessageQueue {
             messageQueue.notify();
         }
 
-        return (O) task.waitForResponse();
+        return new PortsFuture<>((O) task.waitForResponse());
     }
 
     static <I, O> PortsFuture<O> enqueueAsync(Function<I, O> requestPort, I payload) {
@@ -114,11 +114,11 @@ class MessageQueue {
         } while (!workerExecutor.isQuiescent() || !asyncExecutor.isQuiescent());
     }
 
-    static void setAsyncPolicy(AsyncPolicy asyncPolicy) {
-        MessageQueue.asyncPolicy = asyncPolicy;
+    static void setSyncPolicy(SyncPolicy syncPolicy) {
+        MessageQueue.syncPolicy = syncPolicy;
     }
 
-    static AsyncPolicy getAsyncPolicy() {
-        return asyncPolicy;
+    static SyncPolicy getSyncPolicy() {
+        return syncPolicy;
     }
 }

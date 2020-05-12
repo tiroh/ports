@@ -332,10 +332,10 @@ public class PortsTest {
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", AsyncPolicy.ASYNCHRONOUS)
+        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
                 .add(a);
 
-        Ports.domain("test-b", AsyncPolicy.ASYNCHRONOUS)
+        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
                 .add(b);
 
         Ports.connect(a).and(b);
@@ -402,10 +402,10 @@ public class PortsTest {
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", AsyncPolicy.ASYNCHRONOUS)
+        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
                 .add(a);
 
-        Ports.domain("test-b", AsyncPolicy.ASYNCHRONOUS)
+        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
                 .add(b);
 
         Ports.connect(a).and(b);

@@ -553,15 +553,15 @@ public final class Ports {
      *
      * @since 0.5.0
      */
-    public static void setAsyncPolicy(AsyncPolicy asyncPolicy) {
-        MessageQueue.setAsyncPolicy(asyncPolicy);
+    public static void setAsyncPolicy(SyncPolicy syncPolicy) {
+        MessageQueue.setSyncPolicy(syncPolicy);
     }
 
     /**
      * @since 0.5.0
      */
-    public static Domain domain(String name, AsyncPolicy asyncPolicy) {
-        return new Domain(name, asyncPolicy);
+    public static Domain domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
+        return new Domain(name, syncPolicy, dispatchPolicy);
     }
 
     static void printWarning(String message) {

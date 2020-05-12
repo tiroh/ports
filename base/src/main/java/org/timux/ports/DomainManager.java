@@ -60,7 +60,7 @@ class DomainManager {
     }
 
     private static final String DEFAULT_DOMAIN_NAME = "ports-default";
-    private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, AsyncPolicy.COMPONENT_SYNC_SAME_THREAD);
+    private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, SyncPolicy.COMPONENT_SYNC, DispatchPolicy.SAME_THREAD);
 
     private static Map<Key, Domain> domains = new HashMap<>();
 

@@ -16,7 +16,8 @@
  
 package org.timux.ports.testapp;
 
-import org.timux.ports.AsyncPolicy;
+import org.timux.ports.DispatchPolicy;
+import org.timux.ports.SyncPolicy;
 import org.timux.ports.Ports;
 import org.timux.ports.PortsOptions;
 import org.timux.ports.testapp.component.*;
@@ -32,10 +33,10 @@ public class TestApplication {
         F f = new F();
         G g = new G();
 
-        Ports.domain("test", AsyncPolicy.DOMAIN_SYNC)
+        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
                 .add(a);
 
-        Ports.domain("test", AsyncPolicy.DOMAIN_SYNC)
+        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
                 .add(b);
 
         Ports.connect(a).and(b);
@@ -46,7 +47,7 @@ public class TestApplication {
 
         Ports.verify(a, b, c, d, e, f, g);
 
-        Ports.setAsyncPolicy(AsyncPolicy.ASYNCHRONOUS);
+        Ports.setAsyncPolicy(SyncPolicy.ASYNCHRONOUS);
 
         a.doWork();
         c.doStringWork();

@@ -22,11 +22,13 @@ package org.timux.ports;
 public class Domain {
 
     private final String name;
-    private final AsyncPolicy asyncPolicy;
+    private final SyncPolicy syncPolicy;
+    private final DispatchPolicy dispatchPolicy;
 
-    Domain(String name, AsyncPolicy asyncPolicy) {
+    Domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
         this.name = name;
-        this.asyncPolicy = asyncPolicy;
+        this.syncPolicy = syncPolicy;
+        this.dispatchPolicy = dispatchPolicy;
     }
 
     public Domain add(Object... components) {
@@ -37,12 +39,16 @@ public class Domain {
         return this;
     }
 
-    public AsyncPolicy getAsyncPolicy() {
-        return asyncPolicy;
+    public SyncPolicy getSyncPolicy() {
+        return syncPolicy;
+    }
+
+    public DispatchPolicy getDispatchPolicy() {
+        return dispatchPolicy;
     }
 
     @Override
     public String toString() {
-        return "Domain{'" + name + "', " + asyncPolicy + "}";
+        return "Domain{'" + name + "', " + syncPolicy + ", " + dispatchPolicy + "}";
     }
 }

@@ -261,19 +261,19 @@ public class Event<T> {
 
     /**
      * Sends the given payload to the connected IN port(s). For each IN port, the event will be handled asynchronously
-     * if the IN port is an {@link AsyncPort} and if the {@link AsyncPolicy} allows it; if not, the event will be
+     * if the IN port is an {@link AsyncPort} and if the {@link SyncPolicy} allows it; if not, the event will be
      * handled synchronously, but not necessarily within the thread of the caller.
      *
      * @param payload The payload to be sent.
      *
      * @see #trigger
      * @see AsyncPort
-     * @see AsyncPolicy
+     * @see SyncPolicy
      *
      * @since 0.5.0
      */
     public synchronized void trigger(T payload) {
-        if (MessageQueue.getAsyncPolicy() == AsyncPolicy.COMPONENT_SYNC_SAME_THREAD) {
+        if (MessageQueue.getSyncPolicy() == SyncPolicy.COMPONENT_SYNC) {
             triggerWST(payload);
             return;
         }

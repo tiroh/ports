@@ -17,52 +17,25 @@
 package org.timux.ports;
 
 /**
- * An enum class providing options for the way asynchronicity is handled.
+ * An enum providing options for the way asynchronicity is handled within a {@link Domain}.
  *
  * @since 0.5.0
  */
-public enum AsyncPolicy {
+public enum SyncPolicy {
+
+    /**
+     * Specifies that message processing is subject to mutual exclusion w.r.t. to
+     * individual components.
+     *
+     * <p> This is the default setting.
+     */
+    COMPONENT_SYNC,
 
     /**
      * Specifies that message processing is subject to mutual exclusion w.r.t. to the
      * complete domain.
      */
     DOMAIN_SYNC,
-
-    /**
-     * Specifies that message processing is subject to mutual exclusion w.r.t. to
-     * individual components.
-     */
-    COMPONENT_SYNC,
-
-    /**
-     * Specifies that message processing is subject to mutual exclusion w.r.t. to
-     * individual IN ports.
-     */
-    PORT_SYNC,
-
-    /**
-     * Specifies that message processing is subject to mutual exclusion w.r.t. to
-     * individual components. In addition, all messages have to be processed within
-     * the thread of the sender.
-     *
-     * <p> This is the default setting.
-     */
-    COMPONENT_SYNC_SAME_THREAD,
-
-    /**
-     * Specifies that message processing is subject to mutual exclusion w.r.t. to the
-     * complete domain. In addition, all messages have to be processed within
-     * the thread of the sender.
-     */
-    DOMAIN_SYNC_SAME_THREAD,
-
-    /**
-     * Specifies that message processing is subject to mutual exclusion w.r.t. to
-     * individual IN ports. In addition, all messages have to be processed within
-     * the thread of the sender.
-     */
-    PORT_SYNC_SAME_THREAD,
 
     /**
      * Specifies that messages may be processed asynchronously without any synchronization.
