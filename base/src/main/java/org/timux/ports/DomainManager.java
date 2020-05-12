@@ -64,12 +64,12 @@ class DomainManager {
 
     private static Map<Key, Domain> domains = new HashMap<>();
 
-    synchronized static Domain getDomain(Object component) {
+    static synchronized Domain getDomain(Object component) {
         Domain domain = domains.get(new Key(component));
         return domain != null ? domain : DEFAULT_DOMAIN;
     }
 
-    synchronized static void register(Object component, Domain domain) {
+    static synchronized void register(Object component, Domain domain) {
         domains.put(new Key(component), domain);
     }
 }

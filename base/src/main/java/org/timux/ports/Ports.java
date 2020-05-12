@@ -148,15 +148,15 @@ public final class Ports {
             int portsOptions) throws IllegalAccessException
     {
         if (inPortField != null) {
-            if (inPortField.getType() == Queue.class) {
+            if (inPortField.getType() == QueuePort.class) {
                 if (inPortField.get(to) == null) {
-                    inPortField.set(to, new Queue());
+                    inPortField.set(to, new QueuePort());
                 }
             }
 
-            if (inPortField.getType() == Stack.class) {
+            if (inPortField.getType() == StackPort.class) {
                 if (inPortField.get(to) == null) {
-                    inPortField.set(to, new Stack());
+                    inPortField.set(to, new StackPort());
                 }
             }
         }
@@ -188,13 +188,13 @@ public final class Ports {
                 }
 
                 if (inPortField != null) {
-                    if (inPortField.getType() == Queue.class) {
-                        event.connect((Queue) inPortField.get(to));
+                    if (inPortField.getType() == QueuePort.class) {
+                        event.connect((QueuePort) inPortField.get(to), to);
                         portsWereConnected = true;
                     }
 
-                    if (inPortField.getType() == Stack.class) {
-                        event.connect((Stack) inPortField.get(to));
+                    if (inPortField.getType() == StackPort.class) {
+                        event.connect((StackPort) inPortField.get(to), to);
                         portsWereConnected = true;
                     }
                 }

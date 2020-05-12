@@ -41,8 +41,6 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        Ports.awaitQuiescence();
-
         assertEquals(4.5, b.receivedData);
     }
 
@@ -56,8 +54,6 @@ public class PortsTest {
         Ports.connect(a).and(c2);
 
         a.intEvent.trigger(new IntEvent(3));
-
-        Ports.awaitQuiescence();
 
         assertEquals(3, c1.data);
         assertEquals(0, c2.data);
@@ -73,8 +69,6 @@ public class PortsTest {
         Ports.connect(a).and(c2, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
 
         a.intEvent.trigger(new IntEvent(3));
-
-        Ports.awaitQuiescence();
 
         assertEquals(3, c1.data);
         assertEquals(c1.data, c2.data);
@@ -93,8 +87,6 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        Ports.awaitQuiescence();
-
         assertEquals(0, c1.data);
         assertEquals(3, c2.data);
     }
@@ -112,8 +104,6 @@ public class PortsTest {
 
         a.intEvent.trigger(new IntEvent(3));
 
-        Ports.awaitQuiescence();
-
         assertEquals(0, c1.data);
         assertEquals(3, c2.data);
     }
@@ -124,6 +114,12 @@ public class PortsTest {
         B b = new B();
 
         Ports.connect(a).and(b);
+
+        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+                .add(a);
+
+        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+                .add(b);
 
         Ports.register(a, b);
 
@@ -245,8 +241,6 @@ public class PortsTest {
             .with(EitherRequest.class, Double.class, String.class)
                 .call(new EitherRequest(1.0));
 
-        Ports.awaitQuiescence();
-
         assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, Double::parseDouble), 0.0);
     }
@@ -271,8 +265,6 @@ public class PortsTest {
             .with(Either3Request.class, Double.class, Integer.class, String.class)
                 .call(new Either3Request(1));
 
-        Ports.awaitQuiescence();
-
         assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, x -> (double) x, Double::parseDouble), 0.0);
     }
@@ -284,7 +276,6 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
         a.intEvent.trigger(new IntEvent(3));
-        Ports.awaitQuiescence();
         assertEquals(4.5, b.receivedData);
 
         b = null;
@@ -292,14 +283,12 @@ public class PortsTest {
         System.gc();
 
         a.intEvent.trigger(new IntEvent(8));
-        Ports.awaitQuiescence();
         assertEquals(3.0, a.receivedData);
 
         b = new B();
 
         Ports.connect(a).and(b);
         a.intEvent.trigger(new IntEvent(10));
-        Ports.awaitQuiescence();
         assertEquals(10.0, a.receivedData);
         assertEquals(15.0, b.receivedData);
     }
@@ -310,6 +299,12 @@ public class PortsTest {
         B b = new B();
 
         Ports.connect(a).and(b);
+
+        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+                .add(a);
+
+        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+                .add(b);
 
         Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
 

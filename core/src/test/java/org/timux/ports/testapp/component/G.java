@@ -17,13 +17,15 @@
 package org.timux.ports.testapp.component;
 
 import org.timux.ports.In;
-import org.timux.ports.Queue;
-import org.timux.ports.Stack;
+import org.timux.ports.QueuePort;
+import org.timux.ports.StackPort;
 
 public class G {
 
-    @In Queue<IntEvent> inInt;
-    @In Stack<StringEvent> inStr;
+    @In
+    QueuePort<IntEvent> inInt;
+    @In
+    StackPort<StringEvent> inStr;
 
     @In void onDataHasBeenSent(DataHasBeenSentEvent event) {
         while (!inInt.isEmpty()) {

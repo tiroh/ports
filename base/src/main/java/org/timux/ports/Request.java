@@ -203,14 +203,14 @@ public class Request<I, O> {
                 response = port.apply(x);
                 break;
 
-            case DOMAIN_SYNC:
-                synchronized (receiverDomain) {
+            case COMPONENT_SYNC:
+                synchronized (receiver) {
                     response = port.apply(x);
                 }
                 break;
 
-            case COMPONENT_SYNC:
-                synchronized (receiver) {
+            case DOMAIN_SYNC:
+                synchronized (receiverDomain) {
                     response = port.apply(x);
                 }
                 break;

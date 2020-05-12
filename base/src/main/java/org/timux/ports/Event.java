@@ -41,17 +41,18 @@ public class Event<T> {
     private static class PortEntry<T> {
 
         Consumer<T> port;
+        WeakReference<?> receiver;
         boolean isAsyncReceiver;
 
-        PortEntry(Consumer<T> port, boolean isAsyncReceiver) {
+        PortEntry(Consumer<T> port, Object receiver, boolean isAsyncReceiver) {
             this.port = port;
+            this.receiver = new WeakReference<>(receiver);
             this.isAsyncReceiver = isAsyncReceiver;
         }
     }
 
     private final List<PortEntry<T>> ports = new ArrayList<>(4);
     private Map<Method, Map<WeakReference<?>, Consumer<T>>> portMethods = null;
-    private PortEntry<T> singlePort = null;
     private String eventTypeName;
     private Object owner;
 
@@ -70,16 +71,12 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    private synchronized void connect(Consumer<T> port, boolean isAsyncReceiver) {
+    private synchronized void connect(Consumer<T> port, Object receiver, boolean isAsyncReceiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        ports.add(new PortEntry<>(port, isAsyncReceiver));
-
-        singlePort = ports.size() == 1
-                ? ports.get(0)
-                : null;
+        ports.add(new PortEntry<>(port, receiver, isAsyncReceiver));
     }
 
     synchronized void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
@@ -127,7 +124,7 @@ public class Event<T> {
                     }));
         }
 
-        connect(portOwners.get(key), portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
+        connect(portOwners.get(key), methodOwner, portMethod.getDeclaredAnnotation(AsyncPort.class) != null);
     }
 
     /**
@@ -136,8 +133,8 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to.
      */
-    void connect(Queue<T> port) {
-        connect(port::add, false);
+    void connect(QueuePort<T> port, Object portOwner) {
+        connect(port::add, portOwner, false);
     }
 
     /**
@@ -146,8 +143,8 @@ public class Event<T> {
      *
      * @param port The IN port that this OUT port should be connected to.
      */
-    void connect(Stack<T> port) {
-        connect(port::push, false);
+    void connect(StackPort<T> port, Object portOwner) {
+        connect(port::push, portOwner, false);
     }
 
     /**
@@ -165,10 +162,6 @@ public class Event<T> {
 
         if (index >= 0) {
             ports.remove(index);
-
-            singlePort = ports.size() == 1
-                    ? ports.get(0)
-                    : null;
         }
     }
 
@@ -237,11 +230,6 @@ public class Event<T> {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
 
-        if (singlePort != null) {
-            singlePort.port.accept(payload);
-            return;
-        }
-
         final List<PortEntry<T>> p = ports;
 
         int i = p.size();
@@ -273,23 +261,10 @@ public class Event<T> {
      * @since 0.5.0
      */
     public synchronized void trigger(T payload) {
-        if (MessageQueue.getSyncPolicy() == SyncPolicy.COMPONENT_SYNC) {
-            triggerWST(payload);
-            return;
-        }
+        Domain senderDomain = DomainManager.getDomain(owner);
 
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
-        }
-
-        if (singlePort != null) {
-            if (singlePort.isAsyncReceiver) {
-                MessageQueue.enqueueAsync(singlePort.port, payload);
-            } else {
-                MessageQueue.enqueueSync(singlePort.port, payload);
-            }
-
-            return;
         }
 
         final List<PortEntry<T>> p = ports;
@@ -305,10 +280,50 @@ public class Event<T> {
         }
 
         for (i--; i >= 0; i--) {
-            if (p.get(i).isAsyncReceiver) {
-                MessageQueue.enqueueAsync(p.get(i).port, payload);
-            } else {
-                MessageQueue.enqueueSync(p.get(i).port, payload);
+            Domain receiverDomain = DomainManager.getDomain(p.get(i).receiver);
+            WeakReference<?> receiverRef = p.get(i).receiver;
+            Consumer<T> port = p.get(i).port;
+
+            Consumer<T> portFunction = x -> {
+                Object receiver = receiverRef.get();
+
+                if (receiver == null) {
+                    return;
+                }
+
+                switch (receiverDomain.getSyncPolicy()) {
+                case ASYNCHRONOUS:
+                    port.accept(x);
+                    break;
+
+                case COMPONENT_SYNC:
+                    synchronized (receiverRef) {
+                        port.accept(x);
+                    }
+                    break;
+
+                case DOMAIN_SYNC:
+                    synchronized (receiverDomain) {
+                        port.accept(x);
+                    }
+                    break;
+
+                default:
+                    throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
+                }
+            };
+
+            switch (receiverDomain.getDispatchPolicy()) {
+            case SAME_THREAD:
+                portFunction.accept(payload);
+                break;
+
+            case PARALLEL:
+                MessageQueue.enqueueAsync(portFunction, payload);
+                break;
+
+            default:
+                throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
             }
         }
     }

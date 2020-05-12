@@ -16,7 +16,7 @@
  
 package org.timux.ports.verification;
 
-import org.timux.ports.Queue;
+import org.timux.ports.QueuePort;
 import org.timux.ports.*;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -33,8 +33,8 @@ public class AnnotationProcessor extends AbstractProcessor {
     private final static String EVENT_TYPE = Event.class.getName();
     private final static String REQUEST_TYPE = Request.class.getName();
 
-    private final static String STACK_TYPE = org.timux.ports.Stack.class.getName();
-    private final static String QUEUE_TYPE = Queue.class.getName();
+    private final static String STACK_TYPE = StackPort.class.getName();
+    private final static String QUEUE_TYPE = QueuePort.class.getName();
 
     private Reporter reporter;
     private VerificationModel verificationModel;

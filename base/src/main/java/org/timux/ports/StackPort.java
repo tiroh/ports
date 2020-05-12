@@ -20,7 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * A class that represents an IN port with stack semantics. That is, incoming data does not trigger an event, but
+ * Represents an IN port with stack semantics. That is, incoming data does not trigger an event, but
  * is stored and can be retrieved in LIFO order.
  *
  * <p> Any field of this type that is supposed to serve as an IN port must be annotated with the {@link In}
@@ -31,12 +31,12 @@ import java.util.Deque;
  *
  * @param <T> The type of data items stored in this stack.
  *
- * @see Queue
+ * @see QueuePort
  *
  * @author Tim Rohlfs
  * @since 0.1
  */
-public class Stack<T> {
+public class StackPort<T> {
 
     private Deque<T> deque = new ArrayDeque<>();
 

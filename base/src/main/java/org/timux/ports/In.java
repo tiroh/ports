@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 
 /**
  * Use this annotation on methods or fields that represent IN ports. When using on fields, they must be of
- * the {@link Stack} or {@link Queue} type.
+ * the {@link StackPort} or {@link QueuePort} type.
  *
  * @see Out
  *
