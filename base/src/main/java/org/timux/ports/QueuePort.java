@@ -27,7 +27,7 @@ import java.util.Deque;
  * annotation.
  *
  * <p> (If you want incoming data to trigger an event, create a handler method and annotate it with the
- * {@link In} annotation).)
+ * {@link In} annotation.)
  *
  * @param <T> The type of data items stored in this queue.
  *

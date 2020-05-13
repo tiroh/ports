@@ -22,10 +22,8 @@ import org.timux.ports.StackPort;
 
 public class G {
 
-    @In
-    QueuePort<IntEvent> inInt;
-    @In
-    StackPort<StringEvent> inStr;
+    @In QueuePort<IntEvent> inInt;
+    @In StackPort<StringEvent> inStr;
 
     @In void onDataHasBeenSent(DataHasBeenSentEvent event) {
         while (!inInt.isEmpty()) {

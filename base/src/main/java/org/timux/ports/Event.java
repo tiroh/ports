@@ -273,8 +273,6 @@ public class Event<T> {
             return;
         }
 
-        Domain senderDomain = DomainManager.getDomain(owner);
-
         for (i--; i >= 0; i--) {
             PortEntry<T> portEntry = p.get(i);
 
@@ -292,12 +290,9 @@ public class Event<T> {
                 syncFunction.accept(payload);
                 break;
 
+            case ASYNCHRONOUS:
             case PARALLEL:
-                if (senderDomain == receiverDomain) {
-                    syncFunction.accept(payload);
-                } else {
-                    MessageQueue.enqueue(syncFunction, payload);
-                }
+                receiverDomain.enqueue(syncFunction, payload);
                 break;
 
             default:
@@ -315,7 +310,7 @@ public class Event<T> {
             }
 
             switch (receiverDomain.getSyncPolicy()) {
-            case ASYNCHRONOUS:
+            case NO_SYNC:
                 portEntry.port.accept(x);
                 break;
 

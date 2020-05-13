@@ -184,21 +184,16 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        Domain senderDomain = DomainManager.getDomain(owner);
         Domain receiverDomain = DomainManager.getDomain(receiver);
-
         Function<I, O> syncFunction = getSyncFunction(receiverDomain);
 
         switch (receiverDomain.getDispatchPolicy()) {
         case SAME_THREAD:
             return new PortsFuture<>(syncFunction.apply(payload));
 
+        case ASYNCHRONOUS:
         case PARALLEL:
-            if (senderDomain == receiverDomain) {
-                return new PortsFuture<>(syncFunction.apply(payload));
-            } else {
-                return MessageQueue.enqueue(syncFunction, payload);
-            }
+            return receiverDomain.enqueue(syncFunction, payload);
 
         default:
             throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
@@ -210,7 +205,7 @@ public class Request<I, O> {
             O response;
 
             switch (receiverDomain.getSyncPolicy()) {
-            case ASYNCHRONOUS:
+            case NO_SYNC:
                 response = port.apply(x);
                 break;
 

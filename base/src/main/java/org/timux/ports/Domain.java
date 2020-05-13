@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 /**
  * @since 0.5.0
  */
@@ -24,11 +27,29 @@ public class Domain {
     private final String name;
     private final SyncPolicy syncPolicy;
     private final DispatchPolicy dispatchPolicy;
+    private final MessageQueue messageQueue;
 
     Domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
         this.name = name;
         this.syncPolicy = syncPolicy;
         this.dispatchPolicy = dispatchPolicy;
+
+        switch (dispatchPolicy) {
+        case SAME_THREAD:
+            messageQueue = null;
+            break;
+
+        case ASYNCHRONOUS:
+            messageQueue = new MessageQueue(name, 1);
+            break;
+
+        case PARALLEL:
+            messageQueue = new MessageQueue(name, Runtime.getRuntime().availableProcessors());
+            break;
+
+        default:
+            throw new IllegalStateException("unhandled dispatch policy: " + dispatchPolicy);
+        }
     }
 
     public Domain addComponents(Object... components) {
@@ -39,12 +60,26 @@ public class Domain {
         return this;
     }
 
-    public SyncPolicy getSyncPolicy() {
+    SyncPolicy getSyncPolicy() {
         return syncPolicy;
     }
 
-    public DispatchPolicy getDispatchPolicy() {
+    DispatchPolicy getDispatchPolicy() {
         return dispatchPolicy;
+    }
+
+    <T> void enqueue(Consumer<T> portFunction, T payload) {
+        messageQueue.enqueue(portFunction, payload);
+    }
+
+    <I, O> PortsFuture<O> enqueue(Function<I, O> portFunction, I payload) {
+        return messageQueue.enqueue(portFunction, payload);
+    }
+
+    void awaitQuiescence() {
+        if (messageQueue != null) {
+            messageQueue.awaitQuiescence();
+        }
     }
 
     @Override

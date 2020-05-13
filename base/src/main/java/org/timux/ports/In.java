@@ -22,7 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Use this annotation on methods or fields that represent IN ports. When using on fields, they must be of
+ * Use this annotation on methods or fields that represent IN ports. When used on fields, they must be of
  * the {@link StackPort} or {@link QueuePort} type.
  *
  * @see Out

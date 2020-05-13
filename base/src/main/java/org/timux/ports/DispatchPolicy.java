@@ -24,14 +24,21 @@ package org.timux.ports;
 public enum DispatchPolicy {
 
     /**
-     * Specifies that all messages shall be dispatched within the threads of their respective senders.
+     * Specifies that messages shall be dispatched within the original threads of their
+     * respective senders. This implies synchronous execution.
      *
      * <p> This is the default setting.
      */
     SAME_THREAD,
 
     /**
-     * Specifies that massages shall be dispatched in parallel within separate threads.
+     * Specifies that messages shall be dispatched asynchronously within a separate thread.
+     */
+    ASYNCHRONOUS,
+
+    /**
+     * Specifies that messages shall be dispatched in parallel within an indeterminate number
+     * of separate threads.
      */
     PARALLEL
 }

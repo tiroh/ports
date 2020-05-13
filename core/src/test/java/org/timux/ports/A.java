@@ -34,7 +34,8 @@ class A {
     @In
     private Double onSlowRequest(SlowRequest request) {
         try {
-            Thread.sleep(request.getData() < 5 ? 250 : 750);
+            System.out.println("sleeping " + Thread.currentThread().getName());
+            Thread.sleep(request.getData() < 5 ? 500 : 1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

@@ -24,6 +24,18 @@ package org.timux.ports;
 public enum SyncPolicy {
 
     /**
+     * Specifies that messages shall be processed without any synchronization. Should there be
+     * different threads sending messages, the framework will not take any measures of synchronizing
+     * them.
+     *
+     * <p> <strong>This is a dangerous setting.</strong> Take care that the complete domain is
+     * thread-safe. Note that it is not enough to ensure that each individual IN port or each
+     * individual component is thread-safe as their interplay could still lead to race
+     * conditions.
+     */
+    NO_SYNC,
+
+    /**
      * Specifies that message processing is subject to mutual exclusion w.r.t. to
      * individual components.
      *
@@ -35,14 +47,5 @@ public enum SyncPolicy {
      * Specifies that message processing is subject to mutual exclusion w.r.t. to the
      * complete domain.
      */
-    DOMAIN_SYNC,
-
-    /**
-     * Specifies that messages may be processed asynchronously without any synchronization.
-     *
-     * <p> <strong>This is a dangerous setting.</strong> Take care that all components in the domain are
-     * thread-safe. Note that it is not enough to ensure that each individual IN port is thread-safe
-     * because the interplay of multiple thread-safe IN ports can still lead to race conditions.
-     */
-    ASYNCHRONOUS
+    DOMAIN_SYNC
 }

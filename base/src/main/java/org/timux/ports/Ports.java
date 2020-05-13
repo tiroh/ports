@@ -545,7 +545,7 @@ public final class Ports {
      * @since 0.5.0
      */
     public static void awaitQuiescence() {
-        MessageQueue.awaitQuiescence();
+        DomainManager.awaitQuiescence();
     }
 
     /**

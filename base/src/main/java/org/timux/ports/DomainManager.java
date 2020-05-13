@@ -61,7 +61,7 @@ class DomainManager {
         }
     }
 
-    private static final String DEFAULT_DOMAIN_NAME = "ports-default";
+    private static final String DEFAULT_DOMAIN_NAME = "default";
     private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, SyncPolicy.COMPONENT_SYNC, DispatchPolicy.SAME_THREAD);
 
     private static Map<Key, Domain> domains = new HashMap<>();
@@ -85,5 +85,11 @@ class DomainManager {
         }
 
         garbageKeys.forEach(domains::remove);
+    }
+
+    static synchronized void awaitQuiescence() {
+        for (Map.Entry<Key, Domain> e : domains.entrySet()) {
+            e.getValue().awaitQuiescence();
+        }
     }
 }

@@ -23,7 +23,11 @@ import org.timux.ports.testapp.component.IntEvent;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PortsTest {
 
@@ -294,10 +298,10 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
                 .addComponents(a);
 
-        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
                 .addComponents(b);
 
         Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
@@ -318,13 +322,15 @@ public class PortsTest {
 
     @Test
     public void forkGetNow() {
+        Executor.TEST_API_MAX_NUMBER_OF_THREADS = 10;
+
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
                 .addComponents(a);
 
-        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
                 .addComponents(b);
 
         Ports.connect(a).and(b);
@@ -388,25 +394,29 @@ public class PortsTest {
 
     @Test
     public void threadIdleLifetime() {
+        Executor.TEST_API_MAX_NUMBER_OF_THREADS = 10;
+
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
                 .addComponents(a);
 
-        Ports.domain("test-b", SyncPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
                 .addComponents(b);
 
         Ports.connect(a).and(b);
 
         Fork<Double> fork = b.slowRequest.fork(10, SlowRequest::new);
+        Map<Thread, StackTraceElement[]> t = Thread.getAllStackTraces();
+        t.keySet().forEach(x -> System.out.println(x));
         fork.get();
 
         long startTime = System.currentTimeMillis();
 
         for (;;) {
             try {
-                Thread.sleep(500);
+                Thread.sleep(250);
             } catch (InterruptedException e) {
                 fail(e);
             }
@@ -414,15 +424,15 @@ public class PortsTest {
             Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
 
             long numberOfAsyncThreads = threads.keySet().stream()
-                    .filter(thread -> thread.getName().startsWith("ports-async-"))
+                    .filter(thread -> thread.getName().startsWith("ports-worker-"))
                     .count();
 
             long waitTime = System.currentTimeMillis() - startTime;
 
-            if (waitTime > 1500) {
-                assertEquals(0, numberOfAsyncThreads);
+            if (waitTime > 2300) {
+                assertEquals(1, numberOfAsyncThreads);
                 break;
-            } else if (waitTime > 1000) {
+            } else if (waitTime > 1900) {
                 assertEquals(5, numberOfAsyncThreads);
             } else {
                 assertEquals(10, numberOfAsyncThreads);

@@ -18,11 +18,17 @@ package org.timux.ports;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Executor {
 
     private static final long IDLE_LIFETIME_MS = 1300;
+
+    // Must not be private or final because it is modified by the tests to achieve
+    // deterministic behavior.
+    static int TEST_API_MAX_NUMBER_OF_THREADS = -1;
 
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
@@ -42,50 +48,61 @@ class Executor {
         @Override
         public void run() {
             while (true) {
-                synchronized (this) {
+
+//                synchronized (messageQueue) {
                     long remainingWaitTime = IDLE_LIFETIME_MS;
 
                     while (task == null) {
                         long startTime = System.currentTimeMillis();
 
                         try {
-                            wait(remainingWaitTime);
+//                            messageQueue.wait(remainingWaitTime);
+                            poolSemaphore.tryAcquire(remainingWaitTime, TimeUnit.MILLISECONDS);
                         } catch (InterruptedException e) {
-                            synchronized (availableThreads) {
-                                availableThreads.remove(this);
-                                numberOfThreads--;
+                            synchronized (threadPool) {
+                                threadPool.remove(this);
                                 return;
                             }
                         }
 
-                        if (task != null) {
-                            break;
+                        synchronized (messageQueue) {
+                            task = messageQueue.poll();
+
+                            if (task != null) {
+                                numberOfBusyThreads++;
+                                break;
+                            }
                         }
 
                         remainingWaitTime -= System.currentTimeMillis() - startTime;
 
+                        System.out.println(remainingWaitTime);
+
                         if (remainingWaitTime <= 0) {
-                            synchronized (availableThreads) {
+                            remainingWaitTime = IDLE_LIFETIME_MS;
+
+                            synchronized (threadPool) {
                                 // It could be that right before we entered this sync block,
                                 // this thread got popped from the stack,
                                 // so we have to check this race condition.
+                                // Also, do not kill this thread if it is the only one left.
 
-                                if (task == null) {
-                                    availableThreads.remove(this);
-                                    numberOfThreads--;
+                                if (task == null && threadPool.size() > 1) {
+                                    System.out.println("kill " + Thread.currentThread().getName());
+                                    threadPool.remove(this);
                                     return;
                                 }
                             }
                         }
                     }
-                }
+//                }
 
                 // Exception handling is done within the task, so not required here.
                 task.run();
                 task = null;
 
-                synchronized (availableThreads) {
-                    availableThreads.push(this);
+                synchronized (threadPool) {
+                    numberOfBusyThreads--;
                 }
             }
         }
@@ -94,8 +111,8 @@ class Executor {
         public void uncaughtException(Thread thread, Throwable t) {
             // This should never happen because we catch all exceptions.
 
-            synchronized (availableThreads) {
-                numberOfThreads--;
+            synchronized (threadPool) {
+                threadPool.remove(thread);
             }
 
             System.err.println("Thread [" + thread.getName() + "] died because of uncaught exception:");
@@ -103,32 +120,37 @@ class Executor {
         }
     }
 
-    private final Deque<WorkerThread> availableThreads = new ArrayDeque<>();
+    private final Deque<WorkerThread> threadPool = new ArrayDeque<>();
     private final ThreadGroup threadGroup;
+    private final MessageQueue messageQueue;
     private final AtomicInteger nextThreadId = new AtomicInteger();
-    private int numberOfThreads = 0;
 
-    Executor(String threadGroupName) {
-        threadGroup = new ThreadGroup(threadGroupName);
+    private final Semaphore poolSemaphore = new Semaphore(0);
+
+    private int numberOfBusyThreads = 0;
+    private int maxNumberOfThreads;
+
+    Executor(MessageQueue messageQueue, String threadGroupName, int maxNumberOfThreads) {
+        this.messageQueue = messageQueue;
+        this.threadGroup = new ThreadGroup(threadGroupName);
+        this.maxNumberOfThreads = TEST_API_MAX_NUMBER_OF_THREADS < 0 ? maxNumberOfThreads : TEST_API_MAX_NUMBER_OF_THREADS;
     }
 
-    void submit(Task task) {
-        WorkerThread workerThread;
-
-        synchronized (availableThreads) {
-            if (availableThreads.isEmpty()) {
-                WorkerThread newThread = new WorkerThread(threadGroup);
-                numberOfThreads++;
-                availableThreads.push(newThread);
+    void onTasksAvailable(int numberOfTasks) {
+        synchronized (threadPool) {
+            synchronized (messageQueue) {
+                System.out.println("checking ... " + numberOfTasks + " " + numberOfBusyThreads + "/" + threadPool.size());
+                if (numberOfTasks > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxNumberOfThreads) {
+                    System.out.println("-> creating thread");
+                    threadPool.push(new WorkerThread(threadGroup));
+                }
             }
-
-            workerThread = availableThreads.pollFirst();
-            workerThread.setTask(task);
         }
 
-        synchronized (workerThread) {
-            workerThread.notify();
-        }
+//        synchronized (messageQueue) {
+//            messageQueue.notify();
+//        }
+        poolSemaphore.release();
     }
 
     boolean isOwnThread(Thread thread) {
@@ -137,8 +159,8 @@ class Executor {
 
     void awaitQuiescence() {
         for (int numberOfRuns = 0; ; numberOfRuns = (numberOfRuns + 1) & 0xffffff) {
-            synchronized (availableThreads) {
-                if (availableThreads.size() == numberOfThreads) {
+            synchronized (threadPool) {
+                if (numberOfBusyThreads == 0) {
                     return;
                 }
             }
@@ -146,18 +168,19 @@ class Executor {
             try {
                 Thread.sleep(numberOfRuns < 10 ? 10 : (numberOfRuns < 50 ? 100 : 333));
             } catch (InterruptedException e) {
-                //
+                Ports.printWarning("awaitQuiescence has been interrupted");
+                return;
             }
         }
     }
 
     boolean isQuiescent() {
-        synchronized (availableThreads) {
-            return availableThreads.size() == numberOfThreads;
+        synchronized (threadPool) {
+            return numberOfBusyThreads == 0;
         }
     }
 
     int getNumberOfThreads() {
-        return numberOfThreads;
+        return threadPool.size();
     }
 }
