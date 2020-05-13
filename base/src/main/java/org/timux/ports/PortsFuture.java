@@ -52,6 +52,14 @@ public class PortsFuture<T> implements Future<T> {
         this.task = task;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p> This particular implementation of get does not throw a CancellationException since
+     * PortsFutures are not cancellable.
+     *
+     * @throws ExecutionException if the receiver terminated unexpectedly
+     */
     @Override
     public T get() {
         if (hasReturned) {
@@ -65,6 +73,11 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> This particular implementation of get does not throw a CancellationException since
+     * PortsFutures are not cancellable.
+     *
      * @throws ExecutionException if the receiver terminated unexpectedly
      */
     @Override

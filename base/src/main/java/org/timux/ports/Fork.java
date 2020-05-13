@@ -40,6 +40,11 @@ public class Fork<T> implements Future<List<T>> {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> This particular implementation of get does not throw a CancellationException since
+     * Forks are not cancellable.
+     *
      * @throws ExecutionException if the receiver terminated unexpectedly
      */
     @Override
@@ -54,6 +59,11 @@ public class Fork<T> implements Future<List<T>> {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> This particular implementation of get does not throw a CancellationException since
+     * Forks are not cancellable.
+     *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
     @Override
