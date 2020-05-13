@@ -98,38 +98,6 @@ public class Request<I, O> {
         port = null;
     }
 
-    synchronized O callWST(I payload, Domain receiverDomain) {
-        if (Protocol.areProtocolsActive) {
-            Protocol.onDataSent(requestTypeName, owner, payload);
-
-            Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
-
-            if (responseProvider != null) {
-                O protocolResponse = responseProvider.apply(payload);
-                Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
-                return protocolResponse;
-            }
-        }
-
-        if (port == null) {
-            throw new PortNotConnectedException(memberName, owner.getClass().getName());
-        }
-
-        O response;
-
-        try {
-            response = port.apply(payload);
-        } catch (Throwable t) {
-            throw new ExecutionException(t);
-        }
-
-        if (Protocol.areProtocolsActive) {
-            Protocol.onDataReceived(requestTypeName, owner, response);
-        }
-
-        return response;
-    }
-
     /**
      * Sends the given payload to the connected IN port. The request will be handled synchronously, but not
      * necessarily within the thread of the sender (this depends on the {@link Domain} of the receiver).

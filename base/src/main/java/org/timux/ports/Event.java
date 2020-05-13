@@ -223,28 +223,6 @@ public class Event<T> {
         }
     }
 
-    synchronized void triggerWST(T payload) {
-        if (Protocol.areProtocolsActive) {
-            Protocol.onDataSent(eventTypeName, owner, payload);
-        }
-
-        final List<PortEntry<T>> p = ports;
-
-        int i = p.size();
-
-        if (i == 0) {
-            Ports.printWarning(String.format(
-                    "event %s was fired by component %s but there is no receiver",
-                    eventTypeName,
-                    owner.getClass().getName()));
-            return;
-        }
-
-        for (i--; i >= 0; i--) {
-            p.get(i).port.accept(payload);
-        }
-    }
-
     /**
      * Sends the given payload to the connected IN port(s). Whether the event will be dispatched synchronously or
      * asynchronously or whether (and how) it will be synchronized depends on the {@link Domain}(s) of the receiver(s).
