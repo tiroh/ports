@@ -32,8 +32,6 @@ class Executor {
 
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
-        private Task task;
-
         public WorkerThread(ThreadGroup threadGroup) {
             super(threadGroup, threadGroup.getName() + "-" + nextThreadId.getAndIncrement());
             setDaemon(true);
@@ -71,11 +69,8 @@ class Executor {
                     numberOfBusyThreads++;
                 }
 
-                task = messageQueue.poll();
-
                 // Exception handling is done within the task, so not required here.
-                task.run();
-                task = null;
+                messageQueue.poll().run();
 
                 synchronized (threadPool) {
                     numberOfBusyThreads--;

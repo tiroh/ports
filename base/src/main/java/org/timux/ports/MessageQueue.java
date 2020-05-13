@@ -43,10 +43,14 @@ class MessageQueue {
     <I, O> PortsFuture<O> enqueue(Function<I, O> requestPort, I payload) {
         Task task = new Task(requestPort, payload);
 
+        int queueSize;
+
         synchronized (queue) {
             queue.add(task);
-            workerExecutor.onNewTaskAvailable(queue.size());
+            queueSize = queue.size();
         }
+
+        workerExecutor.onNewTaskAvailable(queueSize);
 
         return new PortsFuture<>(task);
     }
