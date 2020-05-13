@@ -48,7 +48,7 @@ class MessageQueue {
                     }
                 }
 
-                workerExecutor.onTasksAvailable(1);
+                workerExecutor.onNewTaskAvailable(1);
             }
         }
     }
@@ -68,7 +68,7 @@ class MessageQueue {
         synchronized (queue) {
             queue.add(task);
 //            queue.notify();
-            workerExecutor.onTasksAvailable(queue.size());
+            workerExecutor.onNewTaskAvailable(queue.size());
         }
     }
 
@@ -78,7 +78,7 @@ class MessageQueue {
         synchronized (queue) {
             queue.add(task);
 //            queue.notify();
-            workerExecutor.onTasksAvailable(queue.size());
+            workerExecutor.onNewTaskAvailable(queue.size());
         }
 
         return new PortsFuture<>(task);

@@ -347,12 +347,12 @@ public class PortsTest {
             results.get(i).do_(
                     value -> fail("index " + finalI + ": there should be no result available (" + value + ")"),
                     nothing -> {},
-                    throwable -> fail("index " + finalI + ": request should not fail: " + throwable)
+                    throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
             );
         }
 
         try {
-            Thread.sleep(400);
+            Thread.sleep(600);
         } catch (InterruptedException e) {
             fail(e);
         }
@@ -367,12 +367,12 @@ public class PortsTest {
             results.get(i).do_(
                     value -> assertTrue(finalI < 5, "index " + finalI),
                     nothing -> assertTrue(finalI >= 5, "index " + finalI),
-                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+                    throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
             );
         }
 
         try {
-            Thread.sleep(400);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             fail(e);
         }
@@ -387,7 +387,7 @@ public class PortsTest {
             results.get(i).do_(
                     value -> {},
                     nothing -> fail(finalI + ": there should be a result available"),
-                    throwable -> fail("request should not fail (" + finalI + "): " + throwable)
+                    throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
             );
         }
     }
@@ -412,11 +412,13 @@ public class PortsTest {
         t.keySet().forEach(x -> System.out.println(x));
         fork.get();
 
+        System.out.println("fork joined");
+
         long startTime = System.currentTimeMillis();
 
         for (;;) {
             try {
-                Thread.sleep(250);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 fail(e);
             }
@@ -429,12 +431,13 @@ public class PortsTest {
 
             long waitTime = System.currentTimeMillis() - startTime;
 
-            if (waitTime > 2300) {
+            if (waitTime > 2000) {
                 assertEquals(1, numberOfAsyncThreads);
                 break;
-            } else if (waitTime > 1900) {
+            } else if (waitTime > 2000-500) {
                 assertEquals(5, numberOfAsyncThreads);
             } else {
+                System.out.println("wait time: " + waitTime);
                 assertEquals(10, numberOfAsyncThreads);
             }
         }

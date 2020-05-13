@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class Executor {
 
-    private static final long IDLE_LIFETIME_MS = 1300;
+    private static final long IDLE_LIFETIME_MS = 2000;
 
     // Must not be private or final because it is modified by the tests to achieve
     // deterministic behavior.
@@ -48,57 +48,43 @@ class Executor {
         @Override
         public void run() {
             while (true) {
+                while (task == null) {
+                    boolean permitAcquired;
 
-//                synchronized (messageQueue) {
-                    long remainingWaitTime = IDLE_LIFETIME_MS;
-
-                    while (task == null) {
-                        long startTime = System.currentTimeMillis();
-
-                        try {
-//                            messageQueue.wait(remainingWaitTime);
-                            poolSemaphore.tryAcquire(remainingWaitTime, TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            synchronized (threadPool) {
-                                threadPool.remove(this);
-                                return;
-                            }
-                        }
-
-                        synchronized (messageQueue) {
-                            task = messageQueue.poll();
-
-                            if (task != null) {
-                                numberOfBusyThreads++;
-                                break;
-                            }
-                        }
-
-                        remainingWaitTime -= System.currentTimeMillis() - startTime;
-
-                        System.out.println(remainingWaitTime);
-
-                        if (remainingWaitTime <= 0) {
-                            remainingWaitTime = IDLE_LIFETIME_MS;
-
-                            synchronized (threadPool) {
-                                // It could be that right before we entered this sync block,
-                                // this thread got popped from the stack,
-                                // so we have to check this race condition.
-                                // Also, do not kill this thread if it is the only one left.
-
-                                if (task == null && threadPool.size() > 1) {
-                                    System.out.println("kill " + Thread.currentThread().getName());
-                                    threadPool.remove(this);
-                                    return;
-                                }
-                            }
+                    try {
+                        permitAcquired = poolSemaphore.tryAcquire(IDLE_LIFETIME_MS, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        synchronized (threadPool) {
+                            threadPool.remove(this);
+                            return;
                         }
                     }
-//                }
+
+                    if (!permitAcquired) {
+                        synchronized (threadPool) {
+                            if (threadPool.size() == 1) {
+                                // Do not kill this thread because it is the only one left.
+                                continue;
+                            }
+
+                            System.out.println("kill " + Thread.currentThread().getName());
+                            threadPool.remove(this);
+                            return;
+                        }
+                    }
+
+                    synchronized (threadPool) {
+                        numberOfBusyThreads++;
+                    }
+
+                    task = messageQueue.poll();
+                }
 
                 // Exception handling is done within the task, so not required here.
+                long s = System.currentTimeMillis();
+                System.out.println("run " + getName());
                 task.run();
+                System.out.println("done " + getName() + " " + (System.currentTimeMillis() - s));
                 task = null;
 
                 synchronized (threadPool) {
@@ -136,20 +122,15 @@ class Executor {
         this.maxNumberOfThreads = TEST_API_MAX_NUMBER_OF_THREADS < 0 ? maxNumberOfThreads : TEST_API_MAX_NUMBER_OF_THREADS;
     }
 
-    void onTasksAvailable(int numberOfTasks) {
+    void onNewTaskAvailable(int numberOfTasksInQueue) {
         synchronized (threadPool) {
-            synchronized (messageQueue) {
-                System.out.println("checking ... " + numberOfTasks + " " + numberOfBusyThreads + "/" + threadPool.size());
-                if (numberOfTasks > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxNumberOfThreads) {
-                    System.out.println("-> creating thread");
-                    threadPool.push(new WorkerThread(threadGroup));
-                }
+            System.out.println("checking ... " + numberOfTasksInQueue + " " + numberOfBusyThreads + "/" + threadPool.size());
+            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxNumberOfThreads) {
+                System.out.println("-> creating thread");
+                threadPool.push(new WorkerThread(threadGroup));
             }
         }
 
-//        synchronized (messageQueue) {
-//            messageQueue.notify();
-//        }
         poolSemaphore.release();
     }
 
