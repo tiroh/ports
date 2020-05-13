@@ -24,41 +24,10 @@ import java.util.function.Function;
 @SuppressWarnings({"rawtypes", "unchecked"})
 class MessageQueue {
 
-    private class DispatchThread extends Thread {
-
-        public DispatchThread(String name) {
-            setDaemon(true);
-            setName("ports-dispatcher-" + name);
-            start();
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                Task task;
-
-                synchronized (queue) {
-                    while (queue.isEmpty()) {
-                        try {
-                            queue.wait();
-                        } catch (InterruptedException e) {
-                            Ports.printWarning("dispatcher has been interrupted");
-                            return;
-                        }
-                    }
-                }
-
-                workerExecutor.onNewTaskAvailable(1);
-            }
-        }
-    }
-
     private final Deque<Task> queue = new ArrayDeque<>();
-//    private final DispatchThread dispatchThread;
     private final Executor workerExecutor;
 
     MessageQueue(String name, int maxNumberOfThreads) {
-//        dispatchThread = new DispatchThread(name);
         workerExecutor = new Executor(this, "ports-worker-" + name, maxNumberOfThreads);
     }
 
@@ -67,7 +36,6 @@ class MessageQueue {
 
         synchronized (queue) {
             queue.add(task);
-//            queue.notify();
             workerExecutor.onNewTaskAvailable(queue.size());
         }
     }
@@ -77,7 +45,6 @@ class MessageQueue {
 
         synchronized (queue) {
             queue.add(task);
-//            queue.notify();
             workerExecutor.onNewTaskAvailable(queue.size());
         }
 

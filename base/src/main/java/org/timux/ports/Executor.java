@@ -41,50 +41,40 @@ class Executor {
             start();
         }
 
-        public void setTask(Task task) {
-            this.task = task;
-        }
-
         @Override
         public void run() {
             while (true) {
-                while (task == null) {
-                    boolean permitAcquired;
+                boolean permitAcquired;
 
-                    try {
-                        permitAcquired = poolSemaphore.tryAcquire(IDLE_LIFETIME_MS, TimeUnit.MILLISECONDS);
-                    } catch (InterruptedException e) {
-                        synchronized (threadPool) {
-                            threadPool.remove(this);
-                            return;
-                        }
-                    }
-
-                    if (!permitAcquired) {
-                        synchronized (threadPool) {
-                            if (threadPool.size() == 1) {
-                                // Do not kill this thread because it is the only one left.
-                                continue;
-                            }
-
-                            System.out.println("kill " + Thread.currentThread().getName());
-                            threadPool.remove(this);
-                            return;
-                        }
-                    }
-
+                try {
+                    permitAcquired = poolSemaphore.tryAcquire(IDLE_LIFETIME_MS, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
                     synchronized (threadPool) {
-                        numberOfBusyThreads++;
+                        threadPool.remove(this);
+                        return;
                     }
-
-                    task = messageQueue.poll();
                 }
 
+                if (!permitAcquired) {
+                    synchronized (threadPool) {
+                        if (threadPool.size() == 1) {
+                            // Do not kill this thread because it is the only one left.
+                            continue;
+                        }
+
+                        threadPool.remove(this);
+                        return;
+                    }
+                }
+
+                synchronized (threadPool) {
+                    numberOfBusyThreads++;
+                }
+
+                task = messageQueue.poll();
+
                 // Exception handling is done within the task, so not required here.
-                long s = System.currentTimeMillis();
-                System.out.println("run " + getName());
                 task.run();
-                System.out.println("done " + getName() + " " + (System.currentTimeMillis() - s));
                 task = null;
 
                 synchronized (threadPool) {
@@ -110,11 +100,10 @@ class Executor {
     private final ThreadGroup threadGroup;
     private final MessageQueue messageQueue;
     private final AtomicInteger nextThreadId = new AtomicInteger();
-
+    private final int maxNumberOfThreads;
     private final Semaphore poolSemaphore = new Semaphore(0);
 
     private int numberOfBusyThreads = 0;
-    private int maxNumberOfThreads;
 
     Executor(MessageQueue messageQueue, String threadGroupName, int maxNumberOfThreads) {
         this.messageQueue = messageQueue;
@@ -124,18 +113,12 @@ class Executor {
 
     void onNewTaskAvailable(int numberOfTasksInQueue) {
         synchronized (threadPool) {
-            System.out.println("checking ... " + numberOfTasksInQueue + " " + numberOfBusyThreads + "/" + threadPool.size());
             if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxNumberOfThreads) {
-                System.out.println("-> creating thread");
                 threadPool.push(new WorkerThread(threadGroup));
             }
         }
 
         poolSemaphore.release();
-    }
-
-    boolean isOwnThread(Thread thread) {
-        return threadGroup == thread.getThreadGroup();
     }
 
     void awaitQuiescence() {
@@ -162,6 +145,8 @@ class Executor {
     }
 
     int getNumberOfThreads() {
-        return threadPool.size();
+        synchronized (threadPool) {
+            return threadPool.size();
+        }
     }
 }

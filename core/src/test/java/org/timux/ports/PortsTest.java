@@ -23,11 +23,7 @@ import org.timux.ports.testapp.component.IntEvent;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PortsTest {
 
@@ -408,17 +404,13 @@ public class PortsTest {
         Ports.connect(a).and(b);
 
         Fork<Double> fork = b.slowRequest.fork(10, SlowRequest::new);
-        Map<Thread, StackTraceElement[]> t = Thread.getAllStackTraces();
-        t.keySet().forEach(x -> System.out.println(x));
         fork.get();
-
-        System.out.println("fork joined");
 
         long startTime = System.currentTimeMillis();
 
         for (;;) {
             try {
-                Thread.sleep(500);
+                Thread.sleep(250);
             } catch (InterruptedException e) {
                 fail(e);
             }
@@ -431,13 +423,12 @@ public class PortsTest {
 
             long waitTime = System.currentTimeMillis() - startTime;
 
-            if (waitTime > 2000) {
+            if (waitTime > 1950) {
                 assertEquals(1, numberOfAsyncThreads);
                 break;
-            } else if (waitTime > 2000-500) {
+            } else if (waitTime > 1450) {
                 assertEquals(5, numberOfAsyncThreads);
             } else {
-                System.out.println("wait time: " + waitTime);
                 assertEquals(10, numberOfAsyncThreads);
             }
         }
