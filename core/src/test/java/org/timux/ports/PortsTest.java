@@ -19,9 +19,11 @@ package org.timux.ports;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
+import org.timux.ports.types.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -431,6 +433,98 @@ public class PortsTest {
                 assertEquals(5, numberOfAsyncThreads);
             } else {
                 assertEquals(10, numberOfAsyncThreads);
+            }
+        }
+    }
+
+    @Test
+    public void pairTripleEquals() {
+        Triple<Integer, Integer, Integer> t1 = new Triple<>(1, 2, 3);
+        Triple<Integer, Integer, Integer> t2 = new Triple<>(1, 2, 3);
+
+        assertEquals(t1, t2);
+
+        Triple<Integer, Integer, Integer> t3 = new Triple<>(0, 2, 3);
+        Triple<Integer, Integer, Integer> t4 = new Triple<>(1, 0, 3);
+        Triple<Integer, Integer, Integer> t5 = new Triple<>(1, 2, 0);
+
+        assertNotEquals(t1, t3);
+        assertNotEquals(t1, t4);
+        assertNotEquals(t1, t5);
+
+        Pair<Integer, Integer> p1 = new Pair<>(1, 2);
+        Pair<Integer, Integer> p2 = new Pair<>(1, 2);
+
+        assertEquals(p1, p2);
+
+        Pair<Integer, Integer> p3 = new Pair<>(0, 2);
+        Pair<Integer, Integer> p4 = new Pair<>(1, 0);
+
+        assertNotEquals(p1, p3);
+        assertNotEquals(p1, p4);
+    }
+
+    @Test
+    public void pairTripleContains() {
+        Triple<Integer, Integer, Integer> t1 = new Triple<>(1, 2, 3);
+
+        Pair<Integer, Integer> p1 = new Pair<>(1, 2);
+        Pair<Integer, Integer> p2 = new Pair<>(1, 3);
+        Pair<Integer, Integer> p3 = new Pair<>(2, 3);
+        Pair<Integer, Integer> p4 = new Pair<>(2, 1);
+        Pair<Integer, Integer> p5 = new Pair<>(3, 1);
+        Pair<Integer, Integer> p6 = new Pair<>(3, 2);
+
+        assertTrue(t1.containsDistinct(p1));
+        assertTrue(t1.containsDistinct(p2));
+        assertTrue(t1.containsDistinct(p3));
+        assertTrue(t1.containsDistinct(p4));
+        assertTrue(t1.containsDistinct(p5));
+        assertTrue(t1.containsDistinct(p6));
+
+        Pair<Integer, Integer> p7 = new Pair<>(0, 2);
+        Pair<Integer, Integer> p8 = new Pair<>(1, 0);
+
+        assertFalse(t1.containsDistinct(p7));
+
+        Pair<Integer, Integer> p9 = new Pair<>(1, 1);
+        Pair<Integer, Integer> p10 = new Pair<>(2, 2);
+        Pair<Integer, Integer> p11 = new Pair<>(2, null);
+
+        assertFalse(t1.containsDistinct(p9));
+        assertFalse(t1.containsDistinct(p10));
+        assertFalse(t1.containsDistinct(p11));
+    }
+
+    @Test
+    public void pairTripleContainsRandomized() {
+        Random random = new Random(0);
+
+        for (int i = 0; i < 10000; i++) {
+            Integer a = random.nextInt(3) > 0 ? random.nextInt(10) : null;
+            Integer b = random.nextInt(3) > 0 ? random.nextInt(10) : null;
+            Integer c = random.nextInt(3) > 0 ? random.nextInt(10) : null;
+
+            TripleX<Integer> triple = new TripleX<>(a, b, c);
+
+            int x = random.nextInt(3);
+            int y;
+
+            do {
+                y = random.nextInt(3);
+            } while (y == x);
+
+            boolean shallBeEqual = random.nextBoolean();
+
+            if (shallBeEqual) {
+                Pair<Integer, Integer> pair = new Pair<>(triple.get(x), triple.get(y));
+                assertTrue(triple.containsDistinct(pair));
+            } else {
+                Pair<Integer, Integer> pair = new Pair<>(Integer.MAX_VALUE, triple.get(y));
+                assertFalse(triple.containsDistinct(pair));
+
+                pair = new Pair<>(triple.get(x), Integer.MAX_VALUE);
+                assertFalse(triple.containsDistinct(pair));
             }
         }
     }

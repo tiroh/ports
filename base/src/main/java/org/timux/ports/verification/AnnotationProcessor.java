@@ -18,6 +18,8 @@ package org.timux.ports.verification;
 
 import org.timux.ports.QueuePort;
 import org.timux.ports.*;
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;

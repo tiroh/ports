@@ -16,6 +16,9 @@
  
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+import org.timux.ports.types.SuccessOrFailure;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

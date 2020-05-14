@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+
 import java.util.function.Consumer;
 
 class ConditionOrAction<T> {

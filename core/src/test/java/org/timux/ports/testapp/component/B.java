@@ -17,6 +17,7 @@
 package org.timux.ports.testapp.component;
 
 import org.timux.ports.*;
+import org.timux.ports.types.Either;
 
 public class B {
 

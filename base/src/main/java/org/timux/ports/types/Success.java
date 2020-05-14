@@ -13,29 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-package org.timux.ports.testapp.component;
 
-import org.timux.ports.*;
-import org.timux.ports.types.Either;
+package org.timux.ports.types;
 
-public class C {
+import org.timux.ports.Nothing;
 
-    @Out Event<StringEvent> stringEvent;
-    @Out Event<IntEvent> intEvent;
+/**
+ * A type representing a successful computation. When in use, <em>this class should always be instantiated</em>
+ * so that the instanceof operator can be used. Null is not an admissible value for this type.
+ *
+ * @see Failure
+ * @see Nothing
+ * @see Either
+ * @see Either3
+ *
+ * @since 0.5.0
+ */
+public final class Success {
 
-    public void doStringWork() {
-        stringEvent.trigger(new StringEvent("org.timux.Test message"));
-    }
+    public static final Success INSTANCE = new Success();
 
-    public void doIntWork() {
-        intEvent.trigger(new IntEvent(370));
-    }
-
-    @In
-    private Either<Integer, String> onFragileRequest(FragileRequest request) {
-        return request.isOk()
-                ? Either.a(37)
-                : Either.b("an error message");
+    private Success() {
+        //
     }
 }

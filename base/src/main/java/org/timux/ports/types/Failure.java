@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.timux.ports;
+package org.timux.ports.types;
+
+import org.timux.ports.Nothing;
 
 import java.util.Optional;
 
@@ -31,6 +33,8 @@ import java.util.Optional;
  */
 public class Failure {
 
+    public static final Failure INSTANCE = new Failure();
+
     private final String message;
     private final Throwable throwable;
 
@@ -38,15 +42,15 @@ public class Failure {
         this("", null);
     }
 
-    private Failure(String message) {
+    public Failure(String message) {
         this(message, null);
     }
 
-    private Failure(Throwable throwable) {
+    public Failure(Throwable throwable) {
         this("", throwable);
     }
 
-    private Failure(String message, Throwable throwable) {
+    public Failure(String message, Throwable throwable) {
         this.message = message;
         this.throwable = throwable;
     }

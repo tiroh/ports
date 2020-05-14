@@ -16,7 +16,7 @@
  
 package org.timux.ports.verification;
 
-import org.timux.ports.Either;
+import org.timux.ports.types.Either;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;

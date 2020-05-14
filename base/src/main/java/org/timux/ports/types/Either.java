@@ -14,7 +14,10 @@
  * limitations under the License.
  */
  
-package org.timux.ports;
+package org.timux.ports.types;
+
+import org.timux.ports.Nothing;
+import org.timux.ports.Response;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -28,6 +31,8 @@ import java.util.function.Function;
  *
  * @see Either3
  * @see Nothing
+ * @see Pair
+ * @see Triple
  *
  * @param <A> The first type.
  * @param <B> The second type.

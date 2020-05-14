@@ -16,6 +16,11 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
+import org.timux.ports.types.Success;
+
 /**
  * A type representing the absence of a value. When in use, <em>this class should always be instantiated</em>
  * so that the instanceof operator can be used. Null is not an admissible value for this type.

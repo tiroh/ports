@@ -13,29 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-package org.timux.ports.testapp.component;
 
-import org.timux.ports.*;
-import org.timux.ports.types.Either;
+package org.timux.ports.types;
 
-public class C {
+/**
+ * A convenience class representing an ordered collection of two values of the same type.
+ *
+ * @see PairX
+ * @see Triple
+ * @see TripleX
+ * @see Either
+ * @see Either3
+ *
+ * @since 0.5.0
+ */
+@SuppressWarnings("unchecked")
+public class PairX<X> extends Pair<X, X> {
 
-    @Out Event<StringEvent> stringEvent;
-    @Out Event<IntEvent> intEvent;
-
-    public void doStringWork() {
-        stringEvent.trigger(new StringEvent("org.timux.Test message"));
+    public PairX(X a, X b) {
+        super(a, b);
     }
 
-    public void doIntWork() {
-        intEvent.trigger(new IntEvent(370));
+    @Override
+    public X get(int index) {
+        return (X) super.get(index);
     }
 
-    @In
-    private Either<Integer, String> onFragileRequest(FragileRequest request) {
-        return request.isOk()
-                ? Either.a(37)
-                : Either.b("an error message");
+    public Tuple<X> asTupleX() {
+        return (Tuple<X>) this;
     }
 }

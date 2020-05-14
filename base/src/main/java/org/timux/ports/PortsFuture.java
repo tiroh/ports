@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -59,6 +62,7 @@ public class PortsFuture<T> implements Future<T> {
      * PortsFutures are not cancellable.
      *
      * @throws ExecutionException if the receiver terminated unexpectedly
+     * @throws java.util.concurrent.CancellationException {@inheritDoc}
      */
     @Override
     public T get() {
@@ -79,6 +83,7 @@ public class PortsFuture<T> implements Future<T> {
      * PortsFutures are not cancellable.
      *
      * @throws ExecutionException if the receiver terminated unexpectedly
+     * @throws java.util.concurrent.CancellationException {@inheritDoc}
      */
     @Override
     public T get(long timeout, TimeUnit unit) throws TimeoutException {

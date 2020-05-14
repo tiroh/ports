@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package org.timux.ports;
+package org.timux.ports.types;
 
-/**
- * A type representing a successful computation. When in use, <em>this class should always be instantiated</em>
- * so that the instanceof operator can be used. Null is not an admissible value for this type.
- *
- * @see Failure
- * @see Nothing
- * @see Either
- * @see Either3
- *
- * @since 0.5.0
- */
-public final class Success {
+import java.util.List;
+import java.util.Set;
 
-    public static final Success INSTANCE = new Success();
+public interface Tuple<T> {
 
-    private Success() {
-        //
-    }
+    int getArity();
+    T get(int index) throws IndexOutOfBoundsException;
+    List<? extends T> toList();
+    T[] toArray();
+    Set<? extends T> toOrderedSet();
 }

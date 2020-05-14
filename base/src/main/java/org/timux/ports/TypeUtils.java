@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+
 class TypeUtils {
 
     public static void verifyResponseType(Class<?> requestType, Class<?> responseType) {
