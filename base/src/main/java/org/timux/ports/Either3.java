@@ -50,7 +50,7 @@ public abstract class Either3<A, B, C> {
     /**
      * Executes the provided actions on the constituents of this union.
      */
-    public abstract Either3<A, B, C> do_(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC);
+    public abstract Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC);
 
     /**
      * Executes the provided action on the A constituent, if it exists, and returns this union.
@@ -109,7 +109,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public Either3<A, B, C> do_(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
+            public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 aC.accept(a);
                 return this;
             }
@@ -148,7 +148,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public Either3<A, B, C> do_(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
+            public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 bC.accept(b);
                 return this;
             }
@@ -187,7 +187,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public Either3<A, B, C> do_(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
+            public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 cC.accept(c);
                 return this;
             }

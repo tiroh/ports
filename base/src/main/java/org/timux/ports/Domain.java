@@ -35,7 +35,7 @@ public class Domain {
         this.dispatchPolicy = dispatchPolicy;
 
         switch (dispatchPolicy) {
-        case SAME_THREAD:
+        case SYNCHRONOUS:
             messageQueue = null;
             break;
 

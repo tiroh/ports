@@ -24,21 +24,25 @@ package org.timux.ports;
 public enum DispatchPolicy {
 
     /**
-     * Specifies that messages shall be dispatched within the original threads of their
-     * respective senders. This implies synchronous execution.
+     * Specifies that messages shall be dispatched synchronously within the original threads of their
+     * respective senders.
      *
      * <p> This is the default setting.
      */
-    SAME_THREAD,
+    SYNCHRONOUS,
 
     /**
-     * Specifies that messages shall be dispatched asynchronously within a separate thread.
+     * Specifies that messages shall be dispatched asynchronously within a single separate thread.
+     *
+     * <p> This setting renders the {@link SyncPolicy} setting effectively irrelevant because with
+     * just one thread, there is nothing to synchronize.
      */
     ASYNCHRONOUS,
 
     /**
      * Specifies that messages shall be dispatched in parallel within an indeterminate number
-     * of separate threads.
+     * of separate threads. (The number of threads depends on the number of logical cores available to
+     * the virtual machine).
      */
     PARALLEL
 }

@@ -28,7 +28,7 @@ public enum SyncPolicy {
      * different threads sending messages, the framework will not take any measures of synchronizing
      * them.
      *
-     * <p> <strong>This is a dangerous setting.</strong> Take care that the complete domain is
+     * <p> Take care that the complete domain is
      * thread-safe. Note that it is not enough to ensure that each individual IN port or each
      * individual component is thread-safe as their interplay could still lead to race
      * conditions.

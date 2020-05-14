@@ -264,7 +264,7 @@ public class Event<T> {
             Consumer<T> syncFunction = getSyncFunction(portEntry, receiverDomain);
 
             switch (receiverDomain.getDispatchPolicy()) {
-            case SAME_THREAD:
+            case SYNCHRONOUS:
                 syncFunction.accept(payload);
                 break;
 

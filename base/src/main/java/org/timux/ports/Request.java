@@ -156,7 +156,7 @@ public class Request<I, O> {
         Function<I, O> syncFunction = getSyncFunction(receiverDomain);
 
         switch (receiverDomain.getDispatchPolicy()) {
-        case SAME_THREAD:
+        case SYNCHRONOUS:
             return new PortsFuture<>(syncFunction.apply(payload));
 
         case ASYNCHRONOUS:

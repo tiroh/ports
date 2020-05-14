@@ -17,21 +17,21 @@
 package org.timux.ports;
 
 /**
- * A type representing the absence of a value. When in use, <em>this class should always be instantiated</em>
+ * A type representing a successful computation. When in use, <em>this class should always be instantiated</em>
  * so that the instanceof operator can be used. Null is not an admissible value for this type.
  *
- * @see Success
  * @see Failure
+ * @see Nothing
  * @see Either
  * @see Either3
  *
  * @since 0.5.0
  */
-public final class Nothing {
+public final class Success {
 
-    public static final Nothing INSTANCE = new Nothing();
+    public static final Success INSTANCE = new Success();
 
-    private Nothing() {
+    private Success() {
         //
     }
 }

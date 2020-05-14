@@ -309,7 +309,7 @@ public class PortsTest {
         for (int i = 0; i < results.size(); i++) {
             int finalI = i;
 
-            results.get(i).do_(
+            results.get(i).on(
                     value -> assertEquals(finalI * 1.5, value),
                     throwable -> fail("index " + finalI + ": request should not fail: " + throwable)
             );
@@ -340,7 +340,7 @@ public class PortsTest {
         for (int i = 0; i < results.size(); i++) {
             int finalI = i;
 
-            results.get(i).do_(
+            results.get(i).on(
                     value -> fail("index " + finalI + ": there should be no result available (" + value + ")"),
                     nothing -> {},
                     throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
@@ -360,7 +360,7 @@ public class PortsTest {
         for (int i = 0; i < results.size(); i++) {
             int finalI = i;
 
-            results.get(i).do_(
+            results.get(i).on(
                     value -> assertTrue(finalI < 5, "index " + finalI),
                     nothing -> assertTrue(finalI >= 5, "index " + finalI),
                     throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
@@ -380,7 +380,7 @@ public class PortsTest {
         for (int i = 0; i < results.size(); i++) {
             int finalI = i;
 
-            results.get(i).do_(
+            results.get(i).on(
                     value -> {},
                     nothing -> fail(finalI + ": there should be a result available"),
                     throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
