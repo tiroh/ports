@@ -24,11 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class Executor {
 
-    private static final long IDLE_LIFETIME_MS = 2000;
+    private static final long IDLE_LIFETIME_MS = 10000;
 
-    // Must not be private or final because it is modified by the tests to achieve
-    // deterministic behavior.
+    // The following TEST_API fields must not be private or final because they are
+    // modified by the tests to achieve deterministic behavior.
     static int TEST_API_MAX_NUMBER_OF_THREADS = -1;
+    static long TEST_API_IDLE_LIFETIME_MS = -1L;
 
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
@@ -45,7 +46,7 @@ class Executor {
                 boolean permitAcquired;
 
                 try {
-                    permitAcquired = poolSemaphore.tryAcquire(IDLE_LIFETIME_MS, TimeUnit.MILLISECONDS);
+                    permitAcquired = poolSemaphore.tryAcquire(idleLifetimeMs, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     synchronized (threadPool) {
                         threadPool.remove(this);
@@ -95,20 +96,22 @@ class Executor {
     private final ThreadGroup threadGroup;
     private final MessageQueue messageQueue;
     private final AtomicInteger nextThreadId = new AtomicInteger();
-    private final int maxNumberOfThreads;
+    private final int maxThreadPoolSize;
+    private final long idleLifetimeMs;
     private final Semaphore poolSemaphore = new Semaphore(0);
 
     private int numberOfBusyThreads = 0;
 
-    Executor(MessageQueue messageQueue, String threadGroupName, int maxNumberOfThreads) {
+    Executor(MessageQueue messageQueue, String threadGroupName, int maxThreadPoolSize) {
         this.messageQueue = messageQueue;
         this.threadGroup = new ThreadGroup(threadGroupName);
-        this.maxNumberOfThreads = TEST_API_MAX_NUMBER_OF_THREADS < 0 ? maxNumberOfThreads : TEST_API_MAX_NUMBER_OF_THREADS;
+        this.maxThreadPoolSize = TEST_API_MAX_NUMBER_OF_THREADS < 0 ? maxThreadPoolSize : TEST_API_MAX_NUMBER_OF_THREADS;
+        this.idleLifetimeMs = TEST_API_IDLE_LIFETIME_MS < 0 ? IDLE_LIFETIME_MS : TEST_API_IDLE_LIFETIME_MS;
     }
 
     void onNewTaskAvailable(int numberOfTasksInQueue) {
         synchronized (threadPool) {
-            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxNumberOfThreads) {
+            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxThreadPoolSize) {
                 threadPool.push(new WorkerThread(threadGroup));
             }
         }

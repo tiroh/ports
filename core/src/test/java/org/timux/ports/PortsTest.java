@@ -391,6 +391,7 @@ public class PortsTest {
     @Test
     public void threadIdleLifetime() {
         Executor.TEST_API_MAX_NUMBER_OF_THREADS = 10;
+        Executor.TEST_API_IDLE_LIFETIME_MS = 2000;
 
         A a = new A();
         B b = new B();
