@@ -123,7 +123,9 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
-     * Returns either the result or the provided defaultValue, in case the result is not yet available.
+     * Returns either the result or the provided 'defaultValue', in case the result is not yet available.
+     *
+     * <p> <em>This call is non-blocking.</em>
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
@@ -142,31 +144,38 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
-     * Returns an {@link Either} representing either the result (if available) or the provided elseValue.
+     * Returns an {@link Either3} representing either the result (if available), the provided 'elseValue', or
+     * a {@link Throwable} (if the respective receiver terminated with an exception).
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * <p> <em>This call is non-blocking.</em>
      */
-    public <E> Either<T, E> getEither(E elseValue) {
+    public <E> Either3<T, E, Throwable> getEither(E elseValue) {
         if (hasReturned) {
-            return Either.a(result);
+            return Either3.a(result);
         }
 
         if (task.hasReturned()) {
-            result = (T) task.waitForResponse();
-            hasReturned = true;
-            return Either.a(result);
+            try {
+                result = (T) task.waitForResponse();
+                hasReturned = true;
+                return Either3.a(result);
+            } catch (Throwable throwable) {
+                return Either3.c(throwable);
+            }
         }
 
-        return Either.b(elseValue);
+        return Either3.b(elseValue);
     }
 
     /**
      * Applies the provided mapping function to the result and returns the mapped value. If no result is available,
      * returns the provided 'elseValue'.
      *
+     * <p> <em>This call is non-blocking.</em>
+     *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
-    public <R> R mapOrElse(Function<T, R> mapper, R elseValue) {
+    public <R> R map(Function<T, R> mapper, R elseValue) {
         if (hasReturned) {
             return mapper.apply(result);
         }
@@ -178,6 +187,25 @@ public class PortsFuture<T> implements Future<T> {
         }
 
         return elseValue;
+    }
+
+    /**
+     * Returns an {@link Either} containing either:
+     *
+     * <ol>
+     * <li>the result transformed by the provided 'mapper' function (if the result is available),</li>
+     * <li>the provided 'elseValue' (if no result is available),</li>
+     * <li>a {@link Throwable} (if the receiver terminated with an exception).</li>
+     * </ol>
+     *
+     * <p> <em>This call is non-blocking.</em>
+     */
+    public <R> Either<R, Throwable> mapEither(Function<T, R> mapper, R elseValue) {
+        try {
+            return Either.a(map(mapper, elseValue));
+        } catch (Throwable throwable) {
+            return Either.b(throwable);
+        }
     }
 
     /**
