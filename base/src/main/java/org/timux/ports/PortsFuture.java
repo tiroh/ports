@@ -26,7 +26,7 @@ import java.util.function.Function;
  *
  * <p> Whenever you issue an asynchronous request via {@link Request#submit}, you will retrieve
  * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},
- * {@link #getNow}, or {@link #getOrElse}.
+ * {@link #getNow}, or {@link #getEither}.
  *
  * <p> <em>Instances of PortsFuture are not cancellable.</em> Accordingly, both {@link #cancel} and
  * {@link #isCancelled} always return false.
@@ -93,6 +93,36 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
+     * Returns an {@link Either} providing either the result or a {@link Throwable} in case the
+     * respective receiver terminated with an exception.
+     *
+     * <p> <em>This call is blocking.</em>
+     */
+    public Either<T, Throwable> getEither() {
+        try {
+            return Either.a(get());
+        } catch (Throwable throwable) {
+            return Either.b(throwable);
+        }
+    }
+
+    /**
+     * Returns an {@link Either3} providing either the result, a {@link Nothing} (if a timeout occurs),
+     * or a {@link Throwable} (if the respective receiver terminated with an exception).
+     *
+     * <p> <em>This call is blocking.</em>
+     */
+    public Either3<T, Nothing, Throwable> getEither(long timeout, TimeUnit timeUnit) {
+        try {
+            return Either3.a(get(timeout, timeUnit));
+        } catch (TimeoutException e) {
+            return Either3.b(Nothing.INSTANCE);
+        } catch (Throwable throwable) {
+            return Either3.c(throwable);
+        }
+    }
+
+    /**
      * Returns either the result or the provided defaultValue, in case the result is not yet available.
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
@@ -116,7 +146,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
-    public <E> Either<T, E> getOrElse(E elseValue) {
+    public <E> Either<T, E> getEither(E elseValue) {
         if (hasReturned) {
             return Either.a(result);
         }

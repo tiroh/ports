@@ -72,7 +72,7 @@ class Task implements Runnable {
             try {
                 wait();
             } catch (InterruptedException e) {
-                //
+                throw new ExecutionException(e);
             }
         }
 
@@ -92,7 +92,7 @@ class Task implements Runnable {
             try {
                 wait(waitMillis);
             } catch (InterruptedException e) {
-                //
+                throw new ExecutionException(e);
             }
 
             if (!hasReturned) {

@@ -127,7 +127,7 @@ public class Request<I, O> {
      * @see Domain
      *
      * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
-     *   {@link PortsFuture#getNow}, or {@link PortsFuture#getOrElse} methods to access the response object.
+     *   {@link PortsFuture#getNow}, or {@link PortsFuture#getEither} methods to access the response object.
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      * @throws PortNotConnectedException If this port is not connected.

@@ -86,23 +86,23 @@ public class Fork<T> implements Future<List<T>> {
     }
 
     /**
-     * Returns a list of {@link Either} instances providing for each request either the result or
-     * a throwable in case the respective receiver terminated with an exception.
-     *
-     * <p> For each request, the provided timeout will be respected while waiting for a response.
-     * If a timeout occurs, a {@link java.util.concurrent.TimeoutException} will be stored in the result list.
+     * Returns a list of {@link Either3} instances providing for each request either the result,
+     * a {@link Nothing} (if a timeout occurs), or a {@link Throwable} (if the respective receiver terminated
+     * with an exception).
      *
      * <p> <em>This call is blocking.</em>
      */
-    public List<Either<T, Throwable>> getEither(long timeout, TimeUnit timeUnit) {
-        List<Either<T, Throwable>> results = new ArrayList<>();
+    public List<Either3<T, Nothing, Throwable>> getEither(long timeout, TimeUnit timeUnit) {
+        List<Either3<T, Nothing, Throwable>> results = new ArrayList<>();
 
         for (PortsFuture<T> future : futures) {
             try {
                 T result = future.get(timeout, timeUnit);
-                results.add(Either.a(result));
+                results.add(Either3.a(result));
+            } catch (TimeoutException e) {
+                results.add(Either3.b(Nothing.INSTANCE));
             } catch (Throwable throwable) {
-                results.add(Either.b(throwable));
+                results.add(Either3.c(throwable));
             }
         }
 
@@ -132,7 +132,7 @@ public class Fork<T> implements Future<List<T>> {
 
     /**
      * Returns a list of {@link Either3} instances providing for each request either (a) the result,
-     * (b) a {@link Nothing} in case the result is not yet available, or (c) a throwable in case the
+     * (b) a {@link Nothing} in case the result is not yet available, or (c) a {@link Throwable} in case the
      * respective receiver terminated with an exception.
      *
      * <p> <em>This call is non-blocking.</em>
