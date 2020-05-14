@@ -16,7 +16,6 @@
  
 package org.timux.ports.types;
 
-import org.timux.ports.Nothing;
 import org.timux.ports.Response;
 
 import java.util.Optional;

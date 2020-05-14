@@ -17,7 +17,6 @@
 package org.timux.ports.types;
 
 import org.timux.ports.FailureResponse;
-import org.timux.ports.Nothing;
 import org.timux.ports.SuccessResponse;
 
 import java.util.Optional;

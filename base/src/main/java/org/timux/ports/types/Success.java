@@ -16,8 +16,6 @@
 
 package org.timux.ports.types;
 
-import org.timux.ports.Nothing;
-
 /**
  * A type representing a successful computation. When in use, <em>this class should always be instantiated</em>
  * so that the instanceof operator can be used. Null is not an admissible value for this type.

@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-package org.timux.ports;
-
-import org.timux.ports.types.Either;
-import org.timux.ports.types.Either3;
-import org.timux.ports.types.Failure;
-import org.timux.ports.types.Success;
+package org.timux.ports.types;
 
 /**
  * A type representing the absence of a value. When in use, <em>this class should always be instantiated</em>
