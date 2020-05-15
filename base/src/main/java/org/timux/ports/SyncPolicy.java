@@ -33,7 +33,7 @@ public enum SyncPolicy {
      * individual component is thread-safe as their interplay could still lead to race
      * conditions.
      */
-    NO_SYNC,
+    NONE,
 
     /**
      * Specifies that message processing is subject to mutual exclusion w.r.t. to
@@ -41,11 +41,11 @@ public enum SyncPolicy {
      *
      * <p> This is the default setting.
      */
-    COMPONENT_SYNC,
+    COMPONENT,
 
     /**
      * Specifies that message processing is subject to mutual exclusion w.r.t. to the
      * complete domain.
      */
-    DOMAIN_SYNC
+    DOMAIN
 }

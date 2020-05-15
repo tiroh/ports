@@ -270,7 +270,7 @@ public class Event<T> {
 
             case ASYNCHRONOUS:
             case PARALLEL:
-                receiverDomain.enqueue(syncFunction, payload);
+                receiverDomain.dispatch(syncFunction, payload);
                 break;
 
             default:
@@ -288,17 +288,17 @@ public class Event<T> {
             }
 
             switch (receiverDomain.getSyncPolicy()) {
-            case NO_SYNC:
+            case NONE:
                 portEntry.port.accept(x);
                 break;
 
-            case COMPONENT_SYNC:
+            case COMPONENT:
                 synchronized (receiver) {
                     portEntry.port.accept(x);
                 }
                 break;
 
-            case DOMAIN_SYNC:
+            case DOMAIN:
                 synchronized (receiverDomain) {
                     portEntry.port.accept(x);
                 }

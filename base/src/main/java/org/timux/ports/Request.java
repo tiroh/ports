@@ -161,7 +161,7 @@ public class Request<I, O> {
 
         case ASYNCHRONOUS:
         case PARALLEL:
-            return receiverDomain.enqueue(syncFunction, payload);
+            return receiverDomain.dispatch(syncFunction, payload);
 
         default:
             throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
@@ -173,17 +173,17 @@ public class Request<I, O> {
             O response;
 
             switch (receiverDomain.getSyncPolicy()) {
-            case NO_SYNC:
+            case NONE:
                 response = port.apply(x);
                 break;
 
-            case COMPONENT_SYNC:
+            case COMPONENT:
                 synchronized (receiver) {
                     response = port.apply(x);
                 }
                 break;
 
-            case DOMAIN_SYNC:
+            case DOMAIN:
                 synchronized (receiverDomain) {
                     response = port.apply(x);
                 }

@@ -16,8 +16,8 @@
 
 package org.timux.ports;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +71,7 @@ class Executor {
                 }
 
                 // Exception handling is done within the task, so not required here.
-                messageQueue.poll().run();
+                dispatcher.poll().run();
 
                 synchronized (threadPool) {
                     numberOfBusyThreads--;
@@ -92,9 +92,9 @@ class Executor {
         }
     }
 
-    private final Deque<WorkerThread> threadPool = new ArrayDeque<>();
+    private final List<WorkerThread> threadPool = new ArrayList<>();
     private final ThreadGroup threadGroup;
-    private final MessageQueue messageQueue;
+    private final Dispatcher dispatcher;
     private final AtomicInteger nextThreadId = new AtomicInteger();
     private final int maxThreadPoolSize;
     private final long idleLifetimeMs;
@@ -102,8 +102,8 @@ class Executor {
 
     private int numberOfBusyThreads = 0;
 
-    Executor(MessageQueue messageQueue, String threadGroupName, int maxThreadPoolSize) {
-        this.messageQueue = messageQueue;
+    Executor(Dispatcher dispatcher, String threadGroupName, int maxThreadPoolSize) {
+        this.dispatcher = dispatcher;
         this.threadGroup = new ThreadGroup(threadGroupName);
         this.maxThreadPoolSize = TEST_API_MAX_NUMBER_OF_THREADS < 0 ? maxThreadPoolSize : TEST_API_MAX_NUMBER_OF_THREADS;
         this.idleLifetimeMs = TEST_API_IDLE_LIFETIME_MS < 0 ? IDLE_LIFETIME_MS : TEST_API_IDLE_LIFETIME_MS;
@@ -112,7 +112,7 @@ class Executor {
     void onNewTaskAvailable(int numberOfTasksInQueue) {
         synchronized (threadPool) {
             if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxThreadPoolSize) {
-                threadPool.push(new WorkerThread(threadGroup));
+                threadPool.add(new WorkerThread(threadGroup));
             }
         }
 

@@ -27,7 +27,7 @@ public class Domain {
     private final String name;
     private final SyncPolicy syncPolicy;
     private final DispatchPolicy dispatchPolicy;
-    private final MessageQueue messageQueue;
+    private final Dispatcher dispatcher;
 
     Domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
         this.name = name;
@@ -36,15 +36,15 @@ public class Domain {
 
         switch (dispatchPolicy) {
         case SYNCHRONOUS:
-            messageQueue = null;
+            dispatcher = null;
             break;
 
         case ASYNCHRONOUS:
-            messageQueue = new MessageQueue(name, 1);
+            dispatcher = new Dispatcher(name, 1);
             break;
 
         case PARALLEL:
-            messageQueue = new MessageQueue(name, Runtime.getRuntime().availableProcessors());
+            dispatcher = new Dispatcher(name, Runtime.getRuntime().availableProcessors());
             break;
 
         default:
@@ -68,17 +68,17 @@ public class Domain {
         return dispatchPolicy;
     }
 
-    <T> void enqueue(Consumer<T> portFunction, T payload) {
-        messageQueue.enqueue(portFunction, payload);
+    <T> void dispatch(Consumer<T> portFunction, T payload) {
+        dispatcher.dispatch(portFunction, payload);
     }
 
-    <I, O> PortsFuture<O> enqueue(Function<I, O> portFunction, I payload) {
-        return messageQueue.enqueue(portFunction, payload);
+    <I, O> PortsFuture<O> dispatch(Function<I, O> portFunction, I payload) {
+        return dispatcher.dispatch(portFunction, payload);
     }
 
     void awaitQuiescence() {
-        if (messageQueue != null) {
-            messageQueue.awaitQuiescence();
+        if (dispatcher != null) {
+            dispatcher.awaitQuiescence();
         }
     }
 

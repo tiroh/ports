@@ -296,10 +296,10 @@ public class PortsTest {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
                 .addComponents(a);
 
-        Ports.domain("test-b", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
                 .addComponents(b);
 
         Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
@@ -325,10 +325,10 @@ public class PortsTest {
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
                 .addComponents(a);
 
-        Ports.domain("test-b", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
                 .addComponents(b);
 
         Ports.connect(a).and(b);
@@ -398,10 +398,10 @@ public class PortsTest {
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
                 .addComponents(a);
 
-        Ports.domain("test-b", SyncPolicy.NO_SYNC, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
                 .addComponents(b);
 
         Ports.connect(a).and(b);
@@ -421,7 +421,7 @@ public class PortsTest {
             Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
 
             long numberOfAsyncThreads = threads.keySet().stream()
-                    .filter(thread -> thread.getName().startsWith("ports-worker-"))
+                    .filter(thread -> thread.getName().startsWith("ports-dispatcher-"))
                     .count();
 
             long waitTime = System.currentTimeMillis() - startTime;

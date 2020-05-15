@@ -22,16 +22,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-class MessageQueue {
+class Dispatcher {
 
     private final Deque<Task> queue = new ArrayDeque<>();
     private final Executor workerExecutor;
 
-    MessageQueue(String name, int maxNumberOfThreads) {
-        workerExecutor = new Executor(this, "ports-worker-" + name, maxNumberOfThreads);
+    Dispatcher(String name, int maxNumberOfThreads) {
+        workerExecutor = new Executor(this, "ports-dispatcher-" + name, maxNumberOfThreads);
     }
 
-    void enqueue(Consumer eventPort, Object payload) {
+    void dispatch(Consumer eventPort, Object payload) {
         Task task = new Task(eventPort, payload);
 
         synchronized (queue) {
@@ -40,13 +40,13 @@ class MessageQueue {
         }
     }
 
-    <I, O> PortsFuture<O> enqueue(Function<I, O> requestPort, I payload) {
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload) {
         Task task = new Task(requestPort, payload);
 
         int queueSize;
 
         synchronized (queue) {
-            queue.add(task);
+            queue.addLast(task);
             queueSize = queue.size();
         }
 
@@ -57,7 +57,7 @@ class MessageQueue {
 
     Task poll() {
         synchronized (queue) {
-            return queue.poll();
+            return queue.pollFirst();
         }
     }
 
