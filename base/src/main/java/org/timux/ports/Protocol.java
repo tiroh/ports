@@ -76,6 +76,8 @@ final class Protocol {
             responseRegistries.clear();
             componentRegistry.clear();
         }
+
+        DomainManager.invalidate();
     }
 
     static void registerComponent(Object component) {
@@ -163,7 +165,7 @@ final class Protocol {
 
         ProtocolComponent protocolComponent = new ProtocolComponent();
 
-        Ports.domain("protocol-" + nextProtocolId.getAndIncrement(), SyncPolicy.DOMAIN, DispatchPolicy.SYNCHRONOUS)
+        Ports.domain("protocol-" + nextProtocolId.getAndIncrement(), DispatchPolicy.SYNCHRONOUS, SyncPolicy.DOMAIN)
                 .addInstances(protocolComponent);
 
         Field outPortField = null;

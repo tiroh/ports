@@ -33,10 +33,10 @@ public class TestApplication {
         F f = new F();
         G g = new G();
 
-        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addInstances(a);
 
-        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addInstances(b);
 
         Ports.connect(a).and(b);

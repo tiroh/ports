@@ -20,19 +20,35 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
+ * Represents a synchronization domain. Each Ports component is assigned to exactly one
+ * synchronization domain that specifies how (a) messages are dispatched (synchronously,
+ * asynchronously, or in parallel) and (b) how parallel accesses are synchronized.
+ *
+ * <p> You should configure synchronization domains as early as possible during application
+ * startup so that all Ports communication is handled correctly. You can do this using the
+ * {@link Ports#domain} method.
+ *
+ * <p> By default, each component is assigned to a default domain that dispatches synchronously
+ * ({@link DispatchPolicy#SYNCHRONOUS}) and that synchronizes on component level
+ * ({@link SyncPolicy#COMPONENT}).
+ *
+ * @see Ports#domain
+ * @see SyncPolicy
+ * @see DispatchPolicy
+ *
  * @since 0.5.0
  */
 public class Domain {
 
     private final String name;
-    private final SyncPolicy syncPolicy;
     private final DispatchPolicy dispatchPolicy;
+    private final SyncPolicy syncPolicy;
     private final Dispatcher dispatcher;
 
-    Domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
+    Domain(String name, DispatchPolicy dispatchPolicy, SyncPolicy syncPolicy) {
         this.name = name;
-        this.syncPolicy = syncPolicy;
         this.dispatchPolicy = dispatchPolicy;
+        this.syncPolicy = syncPolicy;
 
         switch (dispatchPolicy) {
         case SYNCHRONOUS:

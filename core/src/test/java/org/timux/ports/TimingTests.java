@@ -33,7 +33,7 @@ public class TimingTests {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addClasses(A.class);
 
         List<Either<Double, Throwable>> results = assertTimeout(Duration.ofMillis(1100), () -> {
@@ -58,10 +58,10 @@ public class TimingTests {
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addInstances(a);
 
-        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addInstances(b);
 
         Ports.connect(a).and(b);
@@ -128,10 +128,10 @@ public class TimingTests {
         A a = new A();
         B b = new B();
 
-        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-a", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addPackages("org.timux");
 
-        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+        Ports.domain("test-b", DispatchPolicy.PARALLEL, SyncPolicy.NONE)
                 .addInstances(b);
 
         Ports.connect(a).and(b);

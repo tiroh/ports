@@ -523,7 +523,6 @@ public final class Ports {
      */
     public static ConditionOrAction<?> protocol() {
         Protocol.areProtocolsActive = true;
-        DomainManager.invalidate();
         return new ConditionOrAction<>(new ProtocolParserState());
     }
 
@@ -535,7 +534,6 @@ public final class Ports {
      */
     public static void releaseProtocols() {
         Protocol.clear();
-        DomainManager.invalidate();
     }
 
     /**
@@ -551,14 +549,36 @@ public final class Ports {
     }
 
     /**
+     * Configures a synchronization domain. Each Ports component is assigned to exactly one
+     * synchronization domain that specifies how (a) messages are dispatched (synchronously,
+     * asynchronously, or in parallel) and (b) how parallel accesses are synchronized.
+     *
+     * <p> You should configure synchronization domains as early as possible during application
+     * startup so that all Ports communication is handled correctly.
+     *
+     * <p> By default, each component is assigned to a default domain that dispatches synchronously
+     * ({@link DispatchPolicy#SYNCHRONOUS}) and that synchronizes on component level
+     * ({@link SyncPolicy#COMPONENT}).
+     *
+     * @see SyncPolicy
+     * @see DispatchPolicy
+     *
      * @since 0.5.0
      */
-    public static Domain domain(String name, SyncPolicy syncPolicy, DispatchPolicy dispatchPolicy) {
+    public static Domain domain(String name, DispatchPolicy dispatchPolicy, SyncPolicy syncPolicy) {
         DomainManager.gc();
-        return new Domain(name, syncPolicy, dispatchPolicy);
+        return new Domain(name, dispatchPolicy, syncPolicy);
     }
 
     /**
+     * Removes all synchronization domains from the registry. This causes all components to fall
+     * back to the default domain (which uses synchronous dispatch and component-level synchronization).
+     *
+     * <p> This method does NOT stop or kill any threads that might have been created by the domains.
+     * Any running threads will continue to run and process their message queues. However, because their
+     * domains will be out of order, the message queues will not receive any new messages, and because of this,
+     * most of the threads will eventually kill themselves.
+     *
      * @seince 0.5.0
      */
     public static void releaseDomains() {

@@ -62,7 +62,7 @@ class DomainManager {
     }
 
     private static final String DEFAULT_DOMAIN_NAME = "default";
-    private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, SyncPolicy.COMPONENT, DispatchPolicy.SYNCHRONOUS);
+    private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, DispatchPolicy.SYNCHRONOUS, SyncPolicy.COMPONENT);
 
     private static Map<Key, Domain> instanceDomains = new HashMap<>();
     private static Map<Class<?>, Domain> classDomains = new HashMap<>();
