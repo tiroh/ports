@@ -23,33 +23,45 @@ import java.util.function.Function;
 
 class Task implements Runnable {
 
-    private Consumer eventPort;
-    private Function requestPort;
-    private Object payload;
+    private final Consumer eventPort;
+    private final Function requestPort;
+    private final Object payload;
     private Object response;
     private boolean hasReturned = false;
     private Throwable throwable;
 
     Task(Consumer eventPort, Object payload) {
         this.eventPort = eventPort;
+        this.requestPort = null;
         this.payload = payload;
     }
 
     Task(Function requestPort, Object payload) {
+        this.eventPort = null;
         this.requestPort = requestPort;
         this.payload = payload;
     }
 
+    Task(Throwable throwable) {
+        this.eventPort = null;
+        this.requestPort = null;
+        this.payload = null;
+        this.throwable = throwable;
+        this.hasReturned = true;
+    }
+
     @Override
     public void run() {
-        try {
-            if (eventPort != null) {
-                eventPort.accept(payload);
-            } else {
-                response = requestPort.apply(payload);
+        if (throwable == null) {
+            try {
+                if (eventPort != null) {
+                    eventPort.accept(payload);
+                } else {
+                    response = requestPort.apply(payload);
+                }
+            } catch (Throwable t) {
+                throwable = t;
             }
-        } catch (Throwable t) {
-            throwable = t;
         }
 
         hasReturned = true;
