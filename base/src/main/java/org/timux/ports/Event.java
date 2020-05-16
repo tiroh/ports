@@ -43,6 +43,7 @@ public class Event<T> {
         Consumer<T> port;
         WeakReference<?> receiverRef;
         Domain receiverDomain;
+        Consumer<T> syncFunction;
 
         PortEntry(Consumer<T> port, Object receiverRef) {
             this.port = port;
@@ -272,18 +273,17 @@ public class Event<T> {
 
             if (updateDomains) {
                 portEntry.receiverDomain = DomainManager.getDomain(receiver);
+                portEntry.syncFunction = getSyncFunction(portEntry, portEntry.receiverDomain);
             }
-
-            Consumer<T> syncFunction = getSyncFunction(portEntry, portEntry.receiverDomain);
 
             switch (portEntry.receiverDomain.getDispatchPolicy()) {
             case SYNCHRONOUS:
-                syncFunction.accept(payload);
+                portEntry.syncFunction.accept(payload);
                 break;
 
             case ASYNCHRONOUS:
             case PARALLEL:
-                portEntry.receiverDomain.dispatch(syncFunction, payload);
+                portEntry.receiverDomain.dispatch(portEntry.syncFunction, payload);
                 break;
 
             default:

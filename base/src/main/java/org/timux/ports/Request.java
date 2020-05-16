@@ -47,6 +47,7 @@ public class Request<I, O> {
     private Object owner;
     private Object receiver;
     private Domain receiverDomain;
+    private Function<I, O> syncFunction;
     private int domainVersion = -1;
     private String memberName;
 
@@ -157,9 +158,8 @@ public class Request<I, O> {
         if (domainVersion != DomainManager.getCurrentVersion()) {
             domainVersion = DomainManager.getCurrentVersion();
             receiverDomain = DomainManager.getDomain(receiver);
+            syncFunction = getSyncFunction(receiverDomain);
         }
-
-        Function<I, O> syncFunction = getSyncFunction(receiverDomain);
 
         switch (receiverDomain.getDispatchPolicy()) {
         case SYNCHRONOUS:
