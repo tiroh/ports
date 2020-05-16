@@ -293,34 +293,35 @@ public class Event<T> {
     }
 
     private static <T> Consumer<T> getSyncFunction(PortEntry<T> portEntry, Domain receiverDomain) {
-        return x -> {
-            Object receiver = portEntry.receiverRef.get();
+        if (receiverDomain.getDispatchPolicy() == DispatchPolicy.ASYNCHRONOUS) {
+            return portEntry.port;
+        }
 
-            if (receiver == null) {
-                return;
-            }
+        switch (receiverDomain.getSyncPolicy()) {
+        case NONE:
+            return portEntry.port;
 
-            switch (receiverDomain.getSyncPolicy()) {
-            case NONE:
-                portEntry.port.accept(x);
-                break;
+        case COMPONENT:
+            return x -> {
+                Object receiver = portEntry.receiverRef.get();
 
-            case COMPONENT:
-                synchronized (receiver) {
-                    portEntry.port.accept(x);
+                if (receiver != null) {
+                    synchronized (receiver) {
+                        portEntry.port.accept(x);
+                    }
                 }
-                break;
+            };
 
-            case DOMAIN:
+        case DOMAIN:
+            return x -> {
                 synchronized (receiverDomain) {
                     portEntry.port.accept(x);
                 }
-                break;
+            };
 
-            default:
-                throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
-            }
-        };
+        default:
+            throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
+        }
     }
 
     /**

@@ -121,6 +121,10 @@ class DomainManager {
         return currentVersion;
     }
 
+    static synchronized void invalidate() {
+        currentVersion++;
+    }
+
     static synchronized void release() {
         instanceDomains.clear();
         classDomains.clear();

@@ -175,36 +175,63 @@ public class Request<I, O> {
     }
 
     private Function<I, O> getSyncFunction(Domain receiverDomain) {
-        return x -> {
-            O response;
-
+        if (Protocol.areProtocolsActive) {
             switch (receiverDomain.getSyncPolicy()) {
             case NONE:
-                response = port.apply(x);
-                break;
+                return x -> {
+                    O response = port.apply(x);
+                    Protocol.onDataReceived(requestTypeName, owner, response);
+                    return response;
+                };
 
             case COMPONENT:
-                synchronized (receiver) {
-                    response = port.apply(x);
-                }
-                break;
+                return x -> {
+                    synchronized (receiver) {
+                        O response = port.apply(x);
+                        Protocol.onDataReceived(requestTypeName, owner, response);
+                        return response;
+                    }
+                };
 
             case DOMAIN:
-                synchronized (receiverDomain) {
-                    response = port.apply(x);
-                }
-                break;
+                return x -> {
+                    synchronized (receiverDomain) {
+                        O response = port.apply(x);
+                        Protocol.onDataReceived(requestTypeName, owner, response);
+                        return response;
+                    }
+                };
 
             default:
                 throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
             }
+        }
 
-            if (Protocol.areProtocolsActive) {
-                Protocol.onDataReceived(requestTypeName, owner, response);
-            }
+        if (receiverDomain.getDispatchPolicy() == DispatchPolicy.ASYNCHRONOUS) {
+            return port;
+        }
 
-            return response;
-        };
+        switch (receiverDomain.getSyncPolicy()) {
+        case NONE:
+            return port;
+
+        case COMPONENT:
+            return x -> {
+                synchronized (receiver) {
+                    return port.apply(x);
+                }
+            };
+
+        case DOMAIN:
+            return x -> {
+                synchronized (receiverDomain) {
+                    return port.apply(x);
+                }
+            };
+
+        default:
+            throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
+        }
     }
 
     /**
