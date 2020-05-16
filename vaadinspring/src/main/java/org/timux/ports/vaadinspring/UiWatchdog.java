@@ -22,9 +22,6 @@ import com.vaadin.flow.server.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
 /**
  * Watches Vaadin's sessions and takes care that Ports components are
  * disconnected whenever a session is destroyed. This avoids memory leaks.
@@ -40,8 +37,6 @@ public class UiWatchdog implements
         ComponentEventListener<DetachEvent>
 {
     private final static Logger logger = LoggerFactory.getLogger(UiWatchdog.class);
-
-    private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private static PortConnector portConnector = null;
 

@@ -19,11 +19,14 @@ package org.timux.ports.vaadinspring;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.communication.PushMode;
+import com.vaadin.flow.spring.scopes.VaadinSessionScope;
+import com.vaadin.flow.spring.scopes.VaadinUIScope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.stereotype.Component;
@@ -41,18 +44,17 @@ import java.util.Map;
 public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFactoryPostProcessor {
 
     private static final String ROOT_SCOPE = "root";
-    private static final String SINGLETON_SCOPE = "singleton";
+    private static final String SINGLETON_SCOPE = ConfigurableBeanFactory.SCOPE_SINGLETON;
     private static final String APPLICATION_SCOPE = "application";
     private static final String SESSION_SCOPE = "session";
-    private static final String VAADIN_SESSION_SCOPE = "vaadin-session";
-    private static final String UI_SCOPE = "vaadin-ui";
+    private static final String VAADIN_SESSION_SCOPE = VaadinSessionScope.VAADIN_SESSION_SCOPE_NAME;
+    private static final String UI_SCOPE = VaadinUIScope.VAADIN_UI_SCOPE_NAME;
     private static final String VAADIN_VIEW_SCOPE = "vaadin-view";
-    private static final String PROTOTYPE_SCOPE = "prototype";
+    private static final String PROTOTYPE_SCOPE = ConfigurableBeanFactory.SCOPE_PROTOTYPE;
 
     private static final Logger logger = LoggerFactory.getLogger(PortConnector.class);
 
     private Map<Object, Scope> beans = new HashMap<>();
-
     private Scope rootScope = new Scope(ROOT_SCOPE);
 
     private final Map<String, Integer> SCOPE_ORDERING = new HashMap<>();
