@@ -46,6 +46,7 @@ public class Request<I, O> {
     private String requestTypeName;
     private Object owner;
     private Object receiver;
+    private Domain ownerDomain;
     private Domain receiverDomain;
     private Function<I, O> syncFunction;
     private int domainVersion = -1;
@@ -157,6 +158,7 @@ public class Request<I, O> {
 
         if (domainVersion != DomainManager.getCurrentVersion()) {
             domainVersion = DomainManager.getCurrentVersion();
+            ownerDomain = DomainManager.getDomain(owner);
             receiverDomain = DomainManager.getDomain(receiver);
             syncFunction = getSyncFunction(receiverDomain);
         }
@@ -166,6 +168,12 @@ public class Request<I, O> {
             return new PortsFuture<>(syncFunction.apply(payload));
 
         case ASYNCHRONOUS:
+            if (ownerDomain == receiverDomain) {
+                return new PortsFuture<>(syncFunction.apply(payload));
+            }
+
+            return receiverDomain.dispatch(syncFunction, payload);
+
         case PARALLEL:
             return receiverDomain.dispatch(syncFunction, payload);
 

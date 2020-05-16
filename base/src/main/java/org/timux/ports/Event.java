@@ -55,6 +55,7 @@ public class Event<T> {
     private Map<Method, Map<WeakReference<?>, Consumer<T>>> portMethods = null;
     private String eventTypeName;
     private Object owner;
+    private Domain ownerDomain;
     private int domainVersion = -1;
 
     public Event() {
@@ -260,6 +261,7 @@ public class Event<T> {
 
         if (updateDomains) {
             domainVersion = DomainManager.getCurrentVersion();
+            ownerDomain = DomainManager.getDomain(owner);
         }
 
         for (i--; i >= 0; i--) {
@@ -282,6 +284,13 @@ public class Event<T> {
                 break;
 
             case ASYNCHRONOUS:
+                if (ownerDomain == portEntry.receiverDomain) {
+                    portEntry.syncFunction.accept(payload);
+                } else {
+                    portEntry.receiverDomain.dispatch(portEntry.syncFunction, payload);
+                }
+                break;
+
             case PARALLEL:
                 portEntry.receiverDomain.dispatch(portEntry.syncFunction, payload);
                 break;
