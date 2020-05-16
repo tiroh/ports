@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ProtocolTests {
 
     @BeforeEach
-    public void setupEach() {
+    public void beforeEach() {
         Ports.releaseProtocols();
     }
 

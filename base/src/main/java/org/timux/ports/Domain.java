@@ -52,9 +52,25 @@ public class Domain {
         }
     }
 
-    public Domain addComponents(Object... components) {
+    public Domain addInstances(Object... components) {
         for (Object component : components) {
             DomainManager.register(component, this);
+        }
+
+        return this;
+    }
+
+    public Domain addClasses(Class<?>... classes) {
+        for (Class<?> clazz : classes) {
+            DomainManager.register(clazz, this);
+        }
+
+        return this;
+    }
+
+    public Domain addPackages(String... packages) {
+        for (String pkg : packages) {
+            DomainManager.register(pkg, this);
         }
 
         return this;

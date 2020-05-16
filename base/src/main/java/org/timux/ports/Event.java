@@ -42,6 +42,7 @@ public class Event<T> {
 
         Consumer<T> port;
         WeakReference<?> receiverRef;
+        Domain receiverDomain;
 
         PortEntry(Consumer<T> port, Object receiverRef) {
             this.port = port;
@@ -53,6 +54,7 @@ public class Event<T> {
     private Map<Method, Map<WeakReference<?>, Consumer<T>>> portMethods = null;
     private String eventTypeName;
     private Object owner;
+    private int domainVersion = -1;
 
     public Event() {
         //
@@ -75,6 +77,7 @@ public class Event<T> {
         }
 
         ports.add(new PortEntry<>(port, receiver));
+        domainVersion = -1;
     }
 
     synchronized void connect(Method portMethod, Object methodOwner, EventWrapper eventWrapper) {
@@ -160,6 +163,7 @@ public class Event<T> {
 
         if (index >= 0) {
             ports.remove(index);
+            domainVersion = -1;
         }
     }
 
@@ -251,6 +255,12 @@ public class Event<T> {
             return;
         }
 
+        boolean updateDomains = domainVersion != DomainManager.getCurrentVersion();
+
+        if (updateDomains) {
+            domainVersion = DomainManager.getCurrentVersion();
+        }
+
         for (i--; i >= 0; i--) {
             PortEntry<T> portEntry = p.get(i);
 
@@ -260,21 +270,24 @@ public class Event<T> {
                 continue;
             }
 
-            Domain receiverDomain = DomainManager.getDomain(receiver);
-            Consumer<T> syncFunction = getSyncFunction(portEntry, receiverDomain);
+            if (updateDomains) {
+                portEntry.receiverDomain = DomainManager.getDomain(receiver);
+            }
 
-            switch (receiverDomain.getDispatchPolicy()) {
+            Consumer<T> syncFunction = getSyncFunction(portEntry, portEntry.receiverDomain);
+
+            switch (portEntry.receiverDomain.getDispatchPolicy()) {
             case SYNCHRONOUS:
                 syncFunction.accept(payload);
                 break;
 
             case ASYNCHRONOUS:
             case PARALLEL:
-                receiverDomain.dispatch(syncFunction, payload);
+                portEntry.receiverDomain.dispatch(syncFunction, payload);
                 break;
 
             default:
-                throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
+                throw new IllegalStateException("unhandled dispatch policy: " + portEntry.receiverDomain.getDispatchPolicy());
             }
         }
     }

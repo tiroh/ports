@@ -64,31 +64,84 @@ class DomainManager {
     private static final String DEFAULT_DOMAIN_NAME = "default";
     private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, SyncPolicy.COMPONENT, DispatchPolicy.SYNCHRONOUS);
 
-    private static Map<Key, Domain> domains = new HashMap<>();
+    private static Map<Key, Domain> instanceDomains = new HashMap<>();
+    private static Map<Class<?>, Domain> classDomains = new HashMap<>();
+    private static Map<String, Domain> packageDomains = new HashMap<>();
 
-    static synchronized Domain getDomain(Object component) {
-        Domain domain = domains.get(new Key(component));
+    private static int currentVersion = 0;
+
+    static synchronized Domain getDomain(Object instance) {
+        String pkg = instance.getClass().getPackage().getName();
+
+        Domain domain;
+
+        for (;;) {
+            domain = packageDomains.get(pkg);
+
+            if (domain != null) {
+                return domain;
+            }
+
+            int dotIndex = pkg.lastIndexOf('.');
+
+            if (dotIndex < 0) {
+                break;
+            }
+
+            pkg = pkg.substring(0, dotIndex);
+        }
+
+        domain = classDomains.get(instance.getClass());
+
+        if (domain != null) {
+            return domain;
+        }
+
+        domain = instanceDomains.get(new Key(instance));
+
         return domain != null ? domain : DEFAULT_DOMAIN;
     }
 
-    static synchronized void register(Object component, Domain domain) {
-        domains.put(new Key(component), domain);
+    static synchronized void register(Object instance, Domain domain) {
+        instanceDomains.put(new Key(instance), domain);
+        currentVersion++;
+    }
+
+    static synchronized void register(Class<?> clazz, Domain domain) {
+        classDomains.put(clazz, domain);
+        currentVersion++;
+    }
+
+    static synchronized void register(String pkg, Domain domain) {
+        packageDomains.put(pkg, domain);
+        currentVersion++;
+    }
+
+    static int getCurrentVersion() {
+        return currentVersion;
+    }
+
+    static synchronized void release() {
+        instanceDomains.clear();
+        classDomains.clear();
+        packageDomains.clear();
+        currentVersion++;
     }
 
     static synchronized void gc() {
         List<Key> garbageKeys = new ArrayList<>();
 
-        for (Map.Entry<Key, Domain> e : domains.entrySet()) {
+        for (Map.Entry<Key, Domain> e : instanceDomains.entrySet()) {
             if (e.getKey().componentRef.get() == null) {
                 garbageKeys.add(e.getKey());
             }
         }
 
-        garbageKeys.forEach(domains::remove);
+        garbageKeys.forEach(instanceDomains::remove);
     }
 
     static synchronized void awaitQuiescence() {
-        for (Map.Entry<Key, Domain> e : domains.entrySet()) {
+        for (Map.Entry<Key, Domain> e : instanceDomains.entrySet()) {
             e.getValue().awaitQuiescence();
         }
     }

@@ -556,6 +556,13 @@ public final class Ports {
         return new Domain(name, syncPolicy, dispatchPolicy);
     }
 
+    /**
+     * @seince 0.5.0
+     */
+    public static void releaseDomains() {
+        DomainManager.release();
+    }
+
     static void printWarning(String message) {
         System.err.println("[ports] warning: " + message);
     }

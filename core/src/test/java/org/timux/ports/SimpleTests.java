@@ -18,12 +18,10 @@ package org.timux.ports;
 
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
-import org.timux.ports.types.Either;
 import org.timux.ports.types.Pair;
 import org.timux.ports.types.Triple;
 import org.timux.ports.types.TripleX;
 
-import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -128,35 +126,6 @@ public class SimpleTests {
         a.intEvent.trigger(new IntEvent(10));
         assertEquals(10.0, a.receivedData);
         assertEquals(15.0, b.receivedData);
-    }
-
-    @Test
-    public void forkGet() {
-        A a = new A();
-        B b = new B();
-
-        Ports.connect(a).and(b);
-
-        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
-                .addComponents(a);
-
-        Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
-                .addComponents(b);
-
-        Fork<Double> fork = b.doubleRequest.fork(10, DoubleRequest::new);
-
-        List<Either<Double, Throwable>> results = fork.getEither();
-
-        assertEquals(10, results.size());
-
-        for (int i = 0; i < results.size(); i++) {
-            int finalI = i;
-
-            results.get(i).on(
-                    value -> assertEquals(finalI * 1.5, value),
-                    throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
-            );
-        }
     }
 
     @Test

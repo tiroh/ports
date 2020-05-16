@@ -43,10 +43,11 @@ import java.util.stream.IntStream;
 public class Request<I, O> {
 
     private Function<I, O> port;
-    private Method portMethod;
     private String requestTypeName;
     private Object owner;
     private Object receiver;
+    private Domain receiverDomain;
+    private int domainVersion = -1;
     private String memberName;
 
     public Request() {
@@ -64,14 +65,14 @@ public class Request<I, O> {
      *
      * @param port The IN port that this OUT port should be connected to. Must not be null.
      */
-    private synchronized void connect(Function<I, O> port, Method portMethod, Object receiver) {
+    private synchronized void connect(Function<I, O> port, Object receiver) {
         if (port == null) {
             throw new IllegalArgumentException("port must not be null");
         }
 
         this.port = port;
-        this.portMethod = portMethod;
         this.receiver = receiver;
+        this.domainVersion = -1;
     }
 
     @SuppressWarnings("unchecked")
@@ -88,7 +89,7 @@ public class Request<I, O> {
             }
         };
 
-        connect(portFunction, portMethod, methodOwner);
+        connect(portFunction, methodOwner);
     }
 
     /**
@@ -96,6 +97,7 @@ public class Request<I, O> {
      */
     public void disconnect() {
         port = null;
+        domainVersion = -1;
     }
 
     /**
@@ -152,7 +154,11 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        Domain receiverDomain = DomainManager.getDomain(receiver);
+        if (domainVersion != DomainManager.getCurrentVersion()) {
+            domainVersion = DomainManager.getCurrentVersion();
+            receiverDomain = DomainManager.getDomain(receiver);
+        }
+
         Function<I, O> syncFunction = getSyncFunction(receiverDomain);
 
         switch (receiverDomain.getDispatchPolicy()) {

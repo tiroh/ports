@@ -1,10 +1,13 @@
 package org.timux.ports;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Nothing;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -13,9 +16,41 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TimingTests {
 
     @BeforeAll
-    public static void setup() {
+    public static void beforeAll() {
         Executor.TEST_API_MAX_NUMBER_OF_THREADS = ExecutorBlockingQueue.TEST_API_MAX_NUMBER_OF_THREADS = 10;
         Executor.TEST_API_IDLE_LIFETIME_MS = ExecutorBlockingQueue.TEST_API_IDLE_LIFETIME_MS = 2000;
+    }
+
+    @BeforeEach
+    public void beforeEach() {
+        Ports.releaseDomains();
+    }
+
+    @Test
+    public void forkGet() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+
+        Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
+                .addClasses(A.class);
+
+        List<Either<Double, Throwable>> results = assertTimeout(Duration.ofMillis(1100), () -> {
+            Fork<Double> fork = b.slowRequest.fork(10, SlowRequest::new);
+            return fork.getEither();
+        });
+
+        assertEquals(10, results.size());
+
+        for (int i = 0; i < results.size(); i++) {
+            int finalI = i;
+
+            results.get(i).on(
+                    value -> assertEquals(finalI * 1.5, value),
+                    throwable -> fail("index " + finalI + ": request should not fail: ", throwable)
+            );
+        }
     }
 
     @Test
@@ -24,10 +59,10 @@ public class TimingTests {
         B b = new B();
 
         Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
-                .addComponents(a);
+                .addInstances(a);
 
         Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
-                .addComponents(b);
+                .addInstances(b);
 
         Ports.connect(a).and(b);
 
@@ -94,10 +129,10 @@ public class TimingTests {
         B b = new B();
 
         Ports.domain("test-a", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
-                .addComponents(a);
+                .addPackages("org.timux");
 
         Ports.domain("test-b", SyncPolicy.NONE, DispatchPolicy.PARALLEL)
-                .addComponents(b);
+                .addInstances(b);
 
         Ports.connect(a).and(b);
 
