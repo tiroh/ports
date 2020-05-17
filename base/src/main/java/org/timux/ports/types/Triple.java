@@ -17,6 +17,8 @@
 package org.timux.ports.types;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A convenience class representing an ordered collection of three values of different types.
@@ -31,9 +33,9 @@ import java.util.*;
  */
 public class Triple<A, B, C> implements Tuple {
 
-    private final A a;
-    private final B b;
-    private final C c;
+    protected final A a;
+    protected final B b;
+    protected final C c;
 
     protected Triple(A a, B b, C c) {
         this.a = a;
@@ -160,6 +162,73 @@ public class Triple<A, B, C> implements Tuple {
     @Override
     public int getArity() {
         return 3;
+    }
+
+    @Override
+    public void forEach(Consumer<Object> action) {
+        action.accept(a);
+        action.accept(b);
+        action.accept(c);
+    }
+
+    @Override
+    public void forEachNotNull(Consumer<Object> action) {
+        if (a != null) {
+            action.accept(a);
+        }
+
+        if (b != null) {
+            action.accept(b);
+        }
+
+        if (c != null) {
+            action.accept(b);
+        }
+    }
+
+    @Override
+    public Triple<C, B, A> reverse() {
+        return new Triple<>(c, b, a);
+    }
+
+    public void on(Consumer<? super A> aConsumer, Consumer<? super B> bConsumer, Consumer<? super C> cConsumer) {
+        aConsumer.accept(a);
+        bConsumer.accept(b);
+        cConsumer.accept(c);
+    }
+
+    public void onNotNull(Consumer<? super A> aConsumer, Consumer<? super B> bConsumer, Consumer<? super C> cConsumer) {
+        if (a != null) {
+            aConsumer.accept(a);
+        }
+
+        if (b != null) {
+            bConsumer.accept(b);
+        }
+
+        if (c != null) {
+            cConsumer.accept(c);
+        }
+    }
+
+    public <X, Y, Z> Triple<X, Y, Z> map(Function<A, X> mapperA, Function<B, Y> mapperB, Function<C, Z> mapperC) {
+        return new Triple<>(mapperA.apply(a), mapperB.apply(b), mapperC.apply(c));
+    }
+
+    public <X> TripleX<X> mapX(Function<A, X> mapperA, Function<B, X> mapperB, Function<C, X> mapperC) {
+        return new TripleX<>(mapperA.apply(a), mapperB.apply(b), mapperC.apply(c));
+    }
+
+    public Pair<A, B> pairAB() {
+        return new Pair<>(a, b);
+    }
+
+    public Pair<A, C> pairAC() {
+        return new Pair<>(a, c);
+    }
+
+    public Pair<B, C> pairBC() {
+        return new Pair<>(b, c);
     }
 
     @Override

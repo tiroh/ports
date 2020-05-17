@@ -18,6 +18,8 @@ package org.timux.ports.types;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A convenience class representing an ordered collection of three values of the same type.
@@ -55,5 +57,49 @@ public class TripleX<X> extends Triple<X, X, X> {
     @Override
     public Set<X> toOrderedSet() {
         return (Set<X>) super.toOrderedSet();
+    }
+
+    @Override
+    public TripleX<X> reverse() {
+        return new TripleX<>(c, b, a);
+    }
+
+    public void forEachX(Consumer<X> action) {
+        action.accept(a);
+        action.accept(b);
+        action.accept(c);
+    }
+
+    public void forEachXNotNull(Consumer<X> action) {
+        if (a != null) {
+            action.accept(a);
+        }
+
+        if (b != null) {
+            action.accept(b);
+        }
+
+        if (c != null) {
+            action.accept(c);
+        }
+    }
+
+    public <R> TripleX<R> map(Function<X, R> mapper) {
+        return new TripleX<>(mapper.apply(a), mapper.apply(b), mapper.apply(c));
+    }
+
+    @Override
+    public PairX<X> pairAB() {
+        return new PairX<>(a, b);
+    }
+
+    @Override
+    public PairX<X> pairAC() {
+        return new PairX<>(a, c);
+    }
+
+    @Override
+    public PairX<X> pairBC() {
+        return new PairX<>(b, c);
     }
 }

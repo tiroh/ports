@@ -17,6 +17,8 @@
 package org.timux.ports.types;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A convenience class representing an ordered collection of two values of different types.
@@ -31,8 +33,8 @@ import java.util.*;
  */
 public class Pair<A, B> implements Tuple {
 
-    private final A a;
-    private final B b;
+    protected final A a;
+    protected final B b;
 
     protected Pair(A a, B b) {
         this.a = a;
@@ -88,6 +90,51 @@ public class Pair<A, B> implements Tuple {
     @Override
     public int getArity() {
         return 2;
+    }
+
+    @Override
+    public void forEach(Consumer<Object> action) {
+        action.accept(a);
+        action.accept(b);
+    }
+
+    @Override
+    public void forEachNotNull(Consumer<Object> action) {
+        if (a != null) {
+            action.accept(a);
+        }
+
+        if (b != null) {
+            action.accept(b);
+        }
+    }
+
+    @Override
+    public Pair<B, A> reverse() {
+        return new Pair<>(b, a);
+    }
+
+    public void on(Consumer<? super A> aConsumer, Consumer<? super B> bConsumer) {
+        aConsumer.accept(a);
+        bConsumer.accept(b);
+    }
+
+    public void onNotNull(Consumer<? super A> aConsumer, Consumer<? super B> bConsumer) {
+        if (a != null) {
+            aConsumer.accept(a);
+        }
+
+        if (b != null) {
+            bConsumer.accept(b);
+        }
+    }
+
+    public <X, Y> Pair<X, Y> map(Function<A, X> mapperA, Function<B, Y> mapperB) {
+        return new Pair<>(mapperA.apply(a), mapperB.apply(b));
+    }
+
+    public <X> PairX<X> mapX(Function<A, X> mapperA, Function<B, X> mapperB) {
+        return new PairX<>(mapperA.apply(a), mapperB.apply(b));
     }
 
     @Override

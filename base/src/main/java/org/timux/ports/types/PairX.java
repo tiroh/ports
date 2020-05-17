@@ -18,6 +18,8 @@ package org.timux.ports.types;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * A convenience class representing an ordered collection of two values of the same type.
@@ -55,5 +57,29 @@ public class PairX<X> extends Pair<X, X> {
     @Override
     public Set<X> toOrderedSet() {
         return (Set<X>) super.toOrderedSet();
+    }
+
+    @Override
+    public PairX<X> reverse() {
+        return new PairX<>(b, a);
+    }
+
+    public void forEachX(Consumer<X> action) {
+        action.accept(a);
+        action.accept(b);
+    }
+
+    public void forEachXNotNull(Consumer<X> action) {
+        if (a != null) {
+            action.accept(a);
+        }
+
+        if (b != null) {
+            action.accept(b);
+        }
+    }
+
+    public <R> PairX<R> map(Function<X, R> mapper) {
+        return new PairX<>(mapper.apply(a), mapper.apply(b));
     }
 }

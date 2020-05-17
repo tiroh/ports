@@ -18,6 +18,7 @@ package org.timux.ports.types;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public interface Tuple {
 
@@ -42,4 +43,7 @@ public interface Tuple {
     List<?> toList();
     Object[] toArray();
     Set<?> toOrderedSet();
+    void forEach(Consumer<Object> action);
+    void forEachNotNull(Consumer<Object> action);
+    Tuple reverse();
 }
