@@ -88,7 +88,7 @@ public class Pair<A, B> implements Tuple {
     }
 
     @Override
-    public int getArity() {
+    public int arity() {
         return 2;
     }
 

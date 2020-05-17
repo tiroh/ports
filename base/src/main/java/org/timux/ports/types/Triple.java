@@ -160,7 +160,7 @@ public class Triple<A, B, C> implements Tuple {
     }
 
     @Override
-    public int getArity() {
+    public int arity() {
         return 3;
     }
 

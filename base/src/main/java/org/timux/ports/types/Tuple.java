@@ -38,7 +38,7 @@ public interface Tuple {
         return new TripleX<>(a, b, c);
     }
 
-    int getArity();
+    int arity();
     Object get(int index) throws IndexOutOfBoundsException;
     List<?> toList();
     Object[] toArray();
