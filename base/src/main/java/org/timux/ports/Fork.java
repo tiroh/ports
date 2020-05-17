@@ -92,6 +92,14 @@ public class Fork<T> implements Future<List<T>> {
     }
 
     /**
+     * Returns a list of {@link PortsFuture}s providing access to the individual request futures that
+     * have been created by this fork.
+     */
+    public List<PortsFuture<T>> getFutures() {
+        return new ArrayList<>(futures);
+    }
+
+    /**
      * Returns a list of {@link Either3} instances providing for each request either the result,
      * a {@link Nothing} (if a timeout occurs), or a {@link Throwable} (if the respective receiver terminated
      * with an exception).

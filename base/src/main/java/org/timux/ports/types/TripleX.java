@@ -22,7 +22,7 @@ import java.util.Set;
 /**
  * A convenience class representing an ordered collection of three values of the same type.
  *
- * @see TripleX
+ * @see Triple
  * @see Pair
  * @see PairX
  * @see Either
@@ -33,7 +33,7 @@ import java.util.Set;
 @SuppressWarnings("unchecked")
 public class TripleX<X> extends Triple<X, X, X> {
 
-    public TripleX(X a, X b, X c) {
+    protected TripleX(X a, X b, X c) {
         super(a, b, c);
     }
 
@@ -55,9 +55,5 @@ public class TripleX<X> extends Triple<X, X, X> {
     @Override
     public Set<X> toOrderedSet() {
         return (Set<X>) super.toOrderedSet();
-    }
-
-    public Tuple<X> asTupleX() {
-        return (Tuple<X>) this;
     }
 }

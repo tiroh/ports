@@ -29,12 +29,12 @@ import java.util.*;
  *
  * @since 0.5.0
  */
-public class Pair<A, B> implements Tuple<Object> {
+public class Pair<A, B> implements Tuple {
 
     private final A a;
     private final B b;
 
-    public Pair(A a, B b) {
+    protected Pair(A a, B b) {
         this.a = a;
         this.b = b;
     }

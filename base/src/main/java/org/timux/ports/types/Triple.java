@@ -29,13 +29,13 @@ import java.util.*;
  *
  * @since 0.5.0
  */
-public class Triple<A, B, C> implements Tuple<Object> {
+public class Triple<A, B, C> implements Tuple {
 
     private final A a;
     private final B b;
     private final C c;
 
-    public Triple(A a, B b, C c) {
+    protected Triple(A a, B b, C c) {
         this.a = a;
         this.b = b;
         this.c = c;

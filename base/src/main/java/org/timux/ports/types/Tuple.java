@@ -19,11 +19,27 @@ package org.timux.ports.types;
 import java.util.List;
 import java.util.Set;
 
-public interface Tuple<T> {
+public interface Tuple {
+
+    static <A, B> Pair<A, B> of(A a, B b) {
+        return new Pair<>(a, b);
+    }
+
+    static <X> PairX<X> ofX(X a, X b) {
+        return new PairX<>(a, b);
+    }
+
+    static <A, B, C> Triple<A, B, C> of(A a, B b, C c) {
+        return new Triple<>(a, b, c);
+    }
+
+    static <X> TripleX<X> ofX(X a, X b, X c) {
+        return new TripleX<>(a, b, c);
+    }
 
     int getArity();
-    T get(int index) throws IndexOutOfBoundsException;
-    List<? extends T> toList();
-    T[] toArray();
-    Set<? extends T> toOrderedSet();
+    Object get(int index) throws IndexOutOfBoundsException;
+    List<?> toList();
+    Object[] toArray();
+    Set<?> toOrderedSet();
 }

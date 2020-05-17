@@ -16,10 +16,13 @@
 
 package org.timux.ports.types;
 
+import java.util.List;
+import java.util.Set;
+
 /**
  * A convenience class representing an ordered collection of two values of the same type.
  *
- * @see PairX
+ * @see Pair
  * @see Triple
  * @see TripleX
  * @see Either
@@ -30,7 +33,7 @@ package org.timux.ports.types;
 @SuppressWarnings("unchecked")
 public class PairX<X> extends Pair<X, X> {
 
-    public PairX(X a, X b) {
+    protected PairX(X a, X b) {
         super(a, b);
     }
 
@@ -39,7 +42,18 @@ public class PairX<X> extends Pair<X, X> {
         return (X) super.get(index);
     }
 
-    public Tuple<X> asTupleX() {
-        return (Tuple<X>) this;
+    @Override
+    public List<X> toList() {
+        return (List<X>) super.toList();
+    }
+
+    @Override
+    public X[] toArray() {
+        return (X[]) super.toArray();
+    }
+
+    @Override
+    public Set<X> toOrderedSet() {
+        return (Set<X>) super.toOrderedSet();
     }
 }

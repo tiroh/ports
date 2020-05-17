@@ -116,6 +116,6 @@ public class Domain {
 
     @Override
     public String toString() {
-        return "Domain{'" + name + "', " + syncPolicy + ", " + dispatchPolicy + "}";
+        return "Domain{'" + name + "', " + dispatchPolicy + ", " + syncPolicy + "}";
     }
 }

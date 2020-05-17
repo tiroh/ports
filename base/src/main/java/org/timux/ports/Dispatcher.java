@@ -25,10 +25,10 @@ import java.util.function.Function;
 class Dispatcher {
 
     private final Deque<Task> queue = new ArrayDeque<>();
-    private final Executor workerExecutor;
+    private final Executor executor;
 
     Dispatcher(String name, int maxNumberOfThreads) {
-        workerExecutor = new Executor(this, "ports-dispatcher-" + name, maxNumberOfThreads);
+        executor = new Executor(this, "ports-dispatcher-" + name, maxNumberOfThreads);
     }
 
     void dispatch(Consumer eventPort, Object payload) {
@@ -36,7 +36,7 @@ class Dispatcher {
 
         synchronized (queue) {
             queue.add(task);
-            workerExecutor.onNewTaskAvailable(queue.size());
+            executor.onNewTaskAvailable(queue.size());
         }
     }
 
@@ -50,7 +50,7 @@ class Dispatcher {
             queueSize = queue.size();
         }
 
-        workerExecutor.onNewTaskAvailable(queueSize);
+        executor.onNewTaskAvailable(queueSize);
 
         return new PortsFuture<>(task);
     }
@@ -62,6 +62,6 @@ class Dispatcher {
     }
 
     void awaitQuiescence() {
-        workerExecutor.awaitQuiescence();
+        executor.awaitQuiescence();
     }
 }

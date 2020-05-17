@@ -523,6 +523,7 @@ public final class Ports {
      */
     public static ConditionOrAction<?> protocol() {
         Protocol.areProtocolsActive = true;
+        DomainManager.invalidate();
         return new ConditionOrAction<>(new ProtocolParserState());
     }
 
