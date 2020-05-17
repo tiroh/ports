@@ -17,6 +17,7 @@
 package org.timux.ports.types;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -62,6 +63,16 @@ public class PairX<X> extends Pair<X, X> {
     @Override
     public PairX<X> reverse() {
         return new PairX<>(b, a);
+    }
+
+    @Override
+    public PairX<Optional<X>> toOptionals() {
+        return new PairX<>(Optional.ofNullable(a), Optional.ofNullable(b));
+    }
+
+    @Override
+    public PairX<Either<X, Nothing>> toEithers() {
+        return new PairX<>(Either.ofNullable(a), Either.ofNullable(b));
     }
 
     public void forEachX(Consumer<X> action) {

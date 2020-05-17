@@ -191,6 +191,16 @@ public class Triple<A, B, C> implements Tuple {
         return new Triple<>(c, b, a);
     }
 
+    @Override
+    public Triple<Optional<A>, Optional<B>, Optional<C>> toOptionals() {
+        return new Triple<>(Optional.ofNullable(a), Optional.ofNullable(b), Optional.ofNullable(c));
+    }
+
+    @Override
+    public Triple<Either<A, Nothing>, Either<B, Nothing>, Either<C, Nothing>> toEithers() {
+        return new Triple<>(Either.ofNullable(a), Either.ofNullable(b), Either.ofNullable(c));
+    }
+
     public void on(Consumer<? super A> aConsumer, Consumer<? super B> bConsumer, Consumer<? super C> cConsumer) {
         aConsumer.accept(a);
         bConsumer.accept(b);

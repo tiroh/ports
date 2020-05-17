@@ -17,6 +17,7 @@
 package org.timux.ports.types;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -62,6 +63,16 @@ public class TripleX<X> extends Triple<X, X, X> {
     @Override
     public TripleX<X> reverse() {
         return new TripleX<>(c, b, a);
+    }
+
+    @Override
+    public TripleX<Optional<X>> toOptionals() {
+        return new TripleX<>(Optional.ofNullable(a), Optional.ofNullable(b), Optional.ofNullable(c));
+    }
+
+    @Override
+    public TripleX<Either<X, Nothing>> toEithers() {
+        return new TripleX<>(Either.ofNullable(a), Either.ofNullable(b), Either.ofNullable(c));
     }
 
     public void forEachX(Consumer<X> action) {

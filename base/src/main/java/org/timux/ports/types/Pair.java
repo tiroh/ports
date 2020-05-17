@@ -114,6 +114,16 @@ public class Pair<A, B> implements Tuple {
         return new Pair<>(b, a);
     }
 
+    @Override
+    public Pair<Optional<A>, Optional<B>> toOptionals() {
+        return new Pair<>(Optional.ofNullable(a), Optional.ofNullable(b));
+    }
+
+    @Override
+    public Pair<Either<A, Nothing>, Either<B, Nothing>> toEithers() {
+        return new Pair<>(Either.ofNullable(a), Either.ofNullable(b));
+    }
+
     public void on(Consumer<? super A> aConsumer, Consumer<? super B> bConsumer) {
         aConsumer.accept(a);
         bConsumer.accept(b);

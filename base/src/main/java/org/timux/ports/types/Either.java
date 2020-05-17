@@ -40,8 +40,12 @@ import java.util.function.Function;
  */
 public abstract class Either<A, B> {
 
-    protected Either() {
+    private Either() {
         //
+    }
+
+    public static <T> Either<T, Nothing> ofNullable(T t) {
+        return t == null ? Either.b(Nothing.INSTANCE) : Either.a(t);
     }
 
     /**
@@ -63,6 +67,18 @@ public abstract class Either<A, B> {
      * Executes the provided action on the B constituent, if it exists, and returns this union.
      */
     public abstract Either<A, B> onB(Consumer<? super B> bC);
+
+    /**
+     * Returns a {@link Pair} that represents the current state of this union, indicating a missing
+     * value with null.
+     */
+    public abstract Pair<A, B> toPair();
+
+    /**
+     * Returns a {@link Pair} that represents the current state of this union, indicating a missing
+     * value with an empty {@link Optional}.
+     */
+    public abstract Pair<Optional<A>, Optional<B>> toPairOfOptionals();
 
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
@@ -114,6 +130,16 @@ public abstract class Either<A, B> {
             public Either<A, B> onB(Consumer<? super B> bC) {
                 return this;
             }
+
+            @Override
+            public Pair<A, B> toPair() {
+                return new Pair<>(a, null);
+            }
+
+            @Override
+            public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
+                return new Pair<>(Optional.of(a), Optional.empty());
+            }
         };
     }
 
@@ -147,6 +173,16 @@ public abstract class Either<A, B> {
             public Either<A, B> onB(Consumer<? super B> bC) {
                 bC.accept(b);
                 return this;
+            }
+
+            @Override
+            public Pair<A, B> toPair() {
+                return new Pair<>(null, b);
+            }
+
+            @Override
+            public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
+                return new Pair<>(Optional.empty(), Optional.of(b));
             }
         };
     }

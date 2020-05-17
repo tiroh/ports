@@ -73,6 +73,18 @@ public abstract class Either3<A, B, C> {
     public abstract Either3<A, B, C> onC(Consumer<? super C> cC);
 
     /**
+     * Returns a {@link Triple} that represents the current state of this union, indicating a missing
+     * value with null.
+     */
+    public abstract Triple<A, B, C> toTriple();
+
+    /**
+     * Returns a {@link Triple} that represents the current state of this union, indicating a missing
+     * value with an empty {@link Optional}.
+     */
+    public abstract Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals();
+
+    /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
      */
     public Optional<A> getA() {
@@ -134,6 +146,16 @@ public abstract class Either3<A, B, C> {
             public Either3<A, B, C> onC(Consumer<? super C> cC) {
                 return this;
             }
+
+            @Override
+            public Triple<A, B, C> toTriple() {
+                return new Triple<>(a, null, null);
+            }
+
+            @Override
+            public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
+                return new Triple<>(Optional.of(a), Optional.empty(), Optional.empty());
+            }
         };
     }
 
@@ -173,6 +195,16 @@ public abstract class Either3<A, B, C> {
             public Either3<A, B, C> onC(Consumer<? super C> cC) {
                 return this;
             }
+
+            @Override
+            public Triple<A, B, C> toTriple() {
+                return new Triple<>(null, b, null);
+            }
+
+            @Override
+            public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
+                return new Triple<>(Optional.empty(), Optional.of(b), Optional.empty());
+            }
         };
     }
 
@@ -211,6 +243,16 @@ public abstract class Either3<A, B, C> {
             public Either3<A, B, C> onC(Consumer<? super C> cC) {
                 cC.accept(c);
                 return this;
+            }
+
+            @Override
+            public Triple<A, B, C> toTriple() {
+                return new Triple<>(null, null, c);
+            }
+
+            @Override
+            public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
+                return new Triple<>(Optional.empty(), Optional.empty(), Optional.of(c));
             }
         };
     }

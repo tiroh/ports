@@ -46,4 +46,6 @@ public interface Tuple {
     void forEach(Consumer<Object> action);
     void forEachNotNull(Consumer<Object> action);
     Tuple reverse();
+    Tuple toOptionals();
+    Tuple toEithers();
 }
