@@ -56,10 +56,6 @@ public class PortsFuture<T> implements Future<T> {
         this.task = task;
     }
 
-    PortsFuture(Throwable throwable) {
-        this.task = new Task(throwable);
-    }
-
     /**
      * {@inheritDoc}
      *

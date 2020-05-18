@@ -42,8 +42,8 @@ public class Event<T> {
 
         Consumer<T> port;
         WeakReference<?> receiverRef;
+
         Domain receiverDomain;
-        Consumer<T> syncFunction;
 
         PortEntry(Consumer<T> port, Object receiverRef) {
             this.port = port;
@@ -55,6 +55,7 @@ public class Event<T> {
     private Map<Method, Map<WeakReference<?>, Consumer<T>>> portMethods = null;
     private String eventTypeName;
     private Object owner;
+
     private Domain ownerDomain;
     private int domainVersion = -1;
 
@@ -275,61 +276,28 @@ public class Event<T> {
 
             if (updateDomains) {
                 portEntry.receiverDomain = DomainManager.getDomain(receiver);
-                portEntry.syncFunction = getSyncFunction(portEntry, portEntry.receiverDomain);
             }
 
             switch (portEntry.receiverDomain.getDispatchPolicy()) {
             case SYNCHRONOUS:
-                portEntry.syncFunction.accept(payload);
+                portEntry.port.accept(payload);
                 break;
 
             case ASYNCHRONOUS:
                 if (ownerDomain == portEntry.receiverDomain) {
-                    portEntry.syncFunction.accept(payload);
+                    portEntry.port.accept(payload);
                 } else {
-                    portEntry.receiverDomain.dispatch(portEntry.syncFunction, payload);
+                    portEntry.receiverDomain.dispatch(portEntry.port, payload, receiver);
                 }
                 break;
 
             case PARALLEL:
-                portEntry.receiverDomain.dispatch(portEntry.syncFunction, payload);
+                portEntry.receiverDomain.dispatch(portEntry.port, payload, receiver);
                 break;
 
             default:
                 throw new IllegalStateException("unhandled dispatch policy: " + portEntry.receiverDomain.getDispatchPolicy());
             }
-        }
-    }
-
-    private static <T> Consumer<T> getSyncFunction(PortEntry<T> portEntry, Domain receiverDomain) {
-        if (receiverDomain.getDispatchPolicy() == DispatchPolicy.ASYNCHRONOUS) {
-            return portEntry.port;
-        }
-
-        switch (receiverDomain.getSyncPolicy()) {
-        case NONE:
-            return portEntry.port;
-
-        case COMPONENT:
-            return x -> {
-                Object receiver = portEntry.receiverRef.get();
-
-                if (receiver != null) {
-                    synchronized (receiver) {
-                        portEntry.port.accept(x);
-                    }
-                }
-            };
-
-        case DOMAIN:
-            return x -> {
-                synchronized (receiverDomain) {
-                    portEntry.port.accept(x);
-                }
-            };
-
-        default:
-            throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
         }
     }
 

@@ -151,7 +151,7 @@ public class TimingTests {
             Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
 
             long numberOfAsyncThreads = threads.keySet().stream()
-                    .filter(thread -> thread.getName().startsWith("ports-dispatcher-"))
+                    .filter(thread -> thread.getName().startsWith("ports-worker-"))
                     .count();
 
             long waitTime = System.currentTimeMillis() - startTime;

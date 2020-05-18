@@ -67,6 +67,7 @@ public class B {
 
     @In
     private Either<Boolean, Integer> onTestCommand(TestCommand command) {
+        System.out.println("B received TestCommand");
         System.out.println(fragileRequest.call(new FragileRequest(false)).toString());
 
         fragileRequest.call(new FragileRequest(true))

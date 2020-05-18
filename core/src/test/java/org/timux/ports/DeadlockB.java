@@ -16,11 +16,13 @@
 
 package org.timux.ports;
 
-public class ValueContainer<T> {
+public class DeadlockB {
 
-    public T value;
+    @Out
+    private Request<DoubleRequest, Double> doubleRequest;
 
-    public ValueContainer(T defaultValue) {
-        value = defaultValue;
+    @In
+    private Double onDoubleRequest(DoubleRequest request) {
+        return doubleRequest.call(new DoubleRequest(request.getData() - 1.0));
     }
 }

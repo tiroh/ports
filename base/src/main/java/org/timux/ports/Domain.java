@@ -16,6 +16,7 @@
 
 package org.timux.ports;
 
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -100,12 +101,28 @@ public class Domain {
         return dispatchPolicy;
     }
 
-    <T> void dispatch(Consumer<T> portFunction, T payload) {
-        dispatcher.dispatch(portFunction, payload);
+    <T> void dispatch(Consumer<T> eventPort, T payload, Object receiverComponent) {
+        dispatcher.dispatch(eventPort, payload, getMutexSubject(receiverComponent));
     }
 
-    <I, O> PortsFuture<O> dispatch(Function<I, O> portFunction, I payload) {
-        return dispatcher.dispatch(portFunction, payload);
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object receiverComponent) {
+        return dispatcher.dispatch(requestPort, payload, getMutexSubject(receiverComponent));
+    }
+
+    private Object getMutexSubject(Object receiverComponent) {
+        switch (syncPolicy) {
+        case NONE:
+            return null;
+
+        case COMPONENT:
+            return receiverComponent;
+
+        case DOMAIN:
+            return this;
+
+        default:
+            throw new IllegalStateException("unhandled sync policy: " + syncPolicy);
+        }
     }
 
     void awaitQuiescence() {

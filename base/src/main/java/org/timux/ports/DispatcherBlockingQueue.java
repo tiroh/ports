@@ -33,8 +33,8 @@ class DispatcherBlockingQueue {
         workerExecutor = new ExecutorBlockingQueue(this, "ports-dispatcher-" + name, maxNumberOfThreads);
     }
 
-    void dispatch(Consumer eventPort, Object payload) {
-        Task task = new Task(eventPort, payload);
+    void dispatch(Consumer eventPort, Object payload, Object mutexSubject) {
+        Task task = new Task(eventPort, payload, mutexSubject);
 
         synchronized (queue) {
             queue.add(task);
@@ -42,13 +42,13 @@ class DispatcherBlockingQueue {
         }
     }
 
-    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload) {
-        Task task = new Task(requestPort, payload);
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
+        Task task = new Task(requestPort, payload, mutexSubject);
 
         try {
             queue.put(task);
         } catch (InterruptedException e) {
-            return new PortsFuture<>(e);
+            return new PortsFuture<>(new Task(e, mutexSubject));
         }
 
         workerExecutor.onNewTaskAvailable(queue.size());
@@ -60,7 +60,7 @@ class DispatcherBlockingQueue {
         try {
             return queue.poll(timeout, timeUnit);
         } catch (InterruptedException e) {
-            return new Task(e);
+            return null;
         }
 
     }

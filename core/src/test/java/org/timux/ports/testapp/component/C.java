@@ -34,6 +34,7 @@ public class C {
 
     @In
     private Either<Integer, String> onFragileRequest(FragileRequest request) {
+        System.out.println("C received FragileRequest");
         return request.isOk()
                 ? Either.a(37)
                 : Either.b("an error message");

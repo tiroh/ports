@@ -24,7 +24,7 @@ import java.util.Map;
 
 class DomainManager {
 
-    static class Key {
+    private static class Key {
 
         final WeakReference<?> componentRef;
         final int hashCode;

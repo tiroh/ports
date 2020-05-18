@@ -16,6 +16,8 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -46,11 +48,12 @@ public class Request<I, O> {
     private String requestTypeName;
     private Object owner;
     private Object receiver;
+    private String memberName;
+
     private Domain ownerDomain;
     private Domain receiverDomain;
-    private Function<I, O> syncFunction;
+    private Function<I, O> wrappedFunction;
     private int domainVersion = -1;
-    private String memberName;
 
     public Request() {
         //
@@ -114,11 +117,29 @@ public class Request<I, O> {
      * @throws ExecutionException If the receiver terminated unexpectedly.
      * @throws PortNotConnectedException If this port is not connected.
      *
-     * @return The response of the connected component.
+     * @return The response of the receiver.
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
         return submit(payload).get();
+    }
+
+    /**
+     * Sends the given payload to the connected IN port. The request will be handled synchronously, but not
+     * necessarily within the thread of the sender (this depends on the {@link Domain} of the receiver).
+     *
+     * @param payload The payload to be sent.
+     *
+     * @see #submit
+     * @see Domain
+     *
+     * @throws PortNotConnectedException If this port is not connected.
+     *
+     * @return An {@link Either} containing either the response of the receiver or a
+     *   {@link Throwable} in case the receiver terminated with an exception.
+     */
+    public Either<O, Throwable> callEither(I payload) {
+        return submit(payload).getEither();
     }
 
     /**
@@ -130,10 +151,10 @@ public class Request<I, O> {
      * @see #call
      * @see Domain
      *
-     * @return A future of the response of the connected component. Use its {@link PortsFuture#get},
+     * @return A future of the response of the receiver. Use its {@link PortsFuture#get},
      *   {@link PortsFuture#getNow}, or {@link PortsFuture#getEither} methods to access the response object.
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws ExecutionException If the receiver terminated with an exception.
      * @throws PortNotConnectedException If this port is not connected.
      *
      * @since 0.5.0
@@ -160,86 +181,36 @@ public class Request<I, O> {
             domainVersion = DomainManager.getCurrentVersion();
             ownerDomain = DomainManager.getDomain(owner);
             receiverDomain = DomainManager.getDomain(receiver);
-            syncFunction = getSyncFunction(receiverDomain);
+            wrappedFunction = getWrappedFunctionForProtocols();
         }
 
         switch (receiverDomain.getDispatchPolicy()) {
         case SYNCHRONOUS:
-            return new PortsFuture<>(syncFunction.apply(payload));
+            return new PortsFuture<>(wrappedFunction.apply(payload));
 
         case ASYNCHRONOUS:
             if (ownerDomain == receiverDomain) {
-                return new PortsFuture<>(syncFunction.apply(payload));
+                return new PortsFuture<>(wrappedFunction.apply(payload));
+            } else {
+                return receiverDomain.dispatch(wrappedFunction, payload, receiver);
             }
 
-            return receiverDomain.dispatch(syncFunction, payload);
-
         case PARALLEL:
-            return receiverDomain.dispatch(syncFunction, payload);
+            return receiverDomain.dispatch(wrappedFunction, payload, receiver);
 
         default:
             throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
         }
     }
 
-    private Function<I, O> getSyncFunction(Domain receiverDomain) {
-        if (Protocol.areProtocolsActive) {
-            switch (receiverDomain.getSyncPolicy()) {
-            case NONE:
-                return x -> {
+    private Function<I, O> getWrappedFunctionForProtocols() {
+        return Protocol.areProtocolsActive
+                ? (x -> {
                     O response = port.apply(x);
                     Protocol.onDataReceived(requestTypeName, owner, response);
                     return response;
-                };
-
-            case COMPONENT:
-                return x -> {
-                    synchronized (receiver) {
-                        O response = port.apply(x);
-                        Protocol.onDataReceived(requestTypeName, owner, response);
-                        return response;
-                    }
-                };
-
-            case DOMAIN:
-                return x -> {
-                    synchronized (receiverDomain) {
-                        O response = port.apply(x);
-                        Protocol.onDataReceived(requestTypeName, owner, response);
-                        return response;
-                    }
-                };
-
-            default:
-                throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
-            }
-        }
-
-        if (receiverDomain.getDispatchPolicy() == DispatchPolicy.ASYNCHRONOUS) {
-            return port;
-        }
-
-        switch (receiverDomain.getSyncPolicy()) {
-        case NONE:
-            return port;
-
-        case COMPONENT:
-            return x -> {
-                synchronized (receiver) {
-                    return port.apply(x);
-                }
-            };
-
-        case DOMAIN:
-            return x -> {
-                synchronized (receiverDomain) {
-                    return port.apply(x);
-                }
-            };
-
-        default:
-            throw new IllegalStateException("unhandled sync policy: " + receiverDomain.getSyncPolicy());
-        }
+                })
+                : port;
     }
 
     /**

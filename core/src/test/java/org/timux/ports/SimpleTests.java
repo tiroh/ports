@@ -18,7 +18,10 @@ package org.timux.ports;
 
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
-import org.timux.ports.types.*;
+import org.timux.ports.types.Pair;
+import org.timux.ports.types.PairX;
+import org.timux.ports.types.TripleX;
+import org.timux.ports.types.Tuple;
 
 import java.util.Random;
 
@@ -217,5 +220,45 @@ public class SimpleTests {
                 assertFalse(triple.containsDistinct(pair));
             }
         }
+    }
+
+    @Test
+    public void deadlockResolutionAsync() {
+        DeadlockA a = new DeadlockA();
+        DeadlockB b = new DeadlockB();
+
+        Ports.connect(a).and(b);
+
+        Ports.domain("test-a", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+                .addInstances(a);
+
+        Ports.domain("test-b", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+                .addInstances(b);
+
+        double response = a.doubleRequest.call(new DoubleRequest(4.0));
+        assertEquals(0.0, response);
+
+        response = a.doubleRequest.call(new DoubleRequest(8.0));
+        assertEquals(0.0, response);
+    }
+
+    @Test
+    public void deadlockResolutionParallel() {
+        DeadlockA a = new DeadlockA();
+        DeadlockB b = new DeadlockB();
+
+        Ports.connect(a).and(b);
+
+        Ports.domain("test-a", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
+                .addInstances(a);
+
+        Ports.domain("test-b", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
+                .addInstances(b);
+
+        double response = a.doubleRequest.call(new DoubleRequest(4.0));
+        assertEquals(0.0, response);
+
+        response = a.doubleRequest.call(new DoubleRequest(32.0));
+        assertEquals(0.0, response);
     }
 }

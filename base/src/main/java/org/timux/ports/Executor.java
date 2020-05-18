@@ -18,9 +18,11 @@ package org.timux.ports;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 
 class Executor {
 
@@ -33,16 +35,34 @@ class Executor {
 
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
-        public WorkerThread(ThreadGroup threadGroup) {
+        private Lock currentLock;
+        private Task currentTask;
+
+        private final boolean isDeadlockResolver;
+
+        public WorkerThread(ThreadGroup threadGroup, boolean isDeadlockResolver) {
             super(threadGroup, threadGroup.getName() + "-" + nextThreadId.getAndIncrement());
+            this.isDeadlockResolver = isDeadlockResolver;
             setDaemon(true);
             setUncaughtExceptionHandler(this);
             start();
         }
 
+        public Lock getCurrentLock() {
+            return currentLock;
+        }
+
+        public void setCurrentLock(Lock lock) {
+            currentLock = lock;
+        }
+
+        public Task getCurrentTask() {
+            return currentTask;
+        }
+
         @Override
         public void run() {
-            while (true) {
+            for (;;) {
                 boolean permitAcquired;
 
                 try {
@@ -71,10 +91,18 @@ class Executor {
                 }
 
                 // Exception handling is done within the task, so not required here.
-                dispatcher.poll().run();
+                currentTask = queue.poll();
+                currentTask.processedByThread = this;
+                currentTask.run();
+                currentTask = null;
 
                 synchronized (threadPool) {
                     numberOfBusyThreads--;
+
+                    if (isDeadlockResolver) {
+                        threadPool.remove(this);
+                        return;
+                    }
                 }
             }
         }
@@ -94,7 +122,7 @@ class Executor {
 
     private final List<WorkerThread> threadPool = new ArrayList<>();
     private final ThreadGroup threadGroup;
-    private final Dispatcher dispatcher;
+    private final Queue<Task> queue;
     private final AtomicInteger nextThreadId = new AtomicInteger();
     private final int maxThreadPoolSize;
     private final long idleLifetimeMs;
@@ -102,8 +130,8 @@ class Executor {
 
     private int numberOfBusyThreads = 0;
 
-    Executor(Dispatcher dispatcher, String threadGroupName, int maxThreadPoolSize) {
-        this.dispatcher = dispatcher;
+    Executor(Queue<Task> queue, String threadGroupName, int maxThreadPoolSize) {
+        this.queue = queue;
         this.threadGroup = new ThreadGroup(threadGroupName);
         this.maxThreadPoolSize = TEST_API_MAX_NUMBER_OF_THREADS < 0 ? maxThreadPoolSize : TEST_API_MAX_NUMBER_OF_THREADS;
         this.idleLifetimeMs = TEST_API_IDLE_LIFETIME_MS < 0 ? IDLE_LIFETIME_MS : TEST_API_IDLE_LIFETIME_MS;
@@ -111,8 +139,17 @@ class Executor {
 
     void onNewTaskAvailable(int numberOfTasksInQueue) {
         synchronized (threadPool) {
-            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads && threadPool.size() < maxThreadPoolSize) {
-                threadPool.add(new WorkerThread(threadGroup));
+            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
+                if (threadPool.size() < maxThreadPoolSize) {
+                    threadPool.add(new WorkerThread(threadGroup, false));
+                } else {
+                    Lock wantedLock = LockManager.getLock(queue.peek().mutexSubject);
+
+                    // TODO optimize this: the information this thread is deadlocked can probably be used in the task
+                    if (LockManager.isDeadlocked(Thread.currentThread(), wantedLock)) {
+                        threadPool.add(new WorkerThread(threadGroup, true));
+                    }
+                }
             }
         }
 

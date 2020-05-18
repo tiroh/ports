@@ -21,47 +21,121 @@ import java.util.Deque;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings("rawtypes")
 class Dispatcher {
 
-    private final Deque<Task> queue = new ArrayDeque<>();
-    private final Executor executor;
+//    private class DeadlockDetector extends Thread {
+//
+//        public DeadlockDetector(String name) {
+//            setDaemon(true);
+//            setName(name);
+//            start();
+//        }
+//
+//        @Override
+//        public void run() {
+//            while (true) {
+//                Task task;
+//
+//                synchronized (deadlockCheckQueue) {
+//                    while (deadlockCheckQueue.isEmpty()) {
+//                        try {
+//                            System.out.println(getName() + " waits");
+//                            deadlockCheckQueue.wait();
+//                            System.out.println(getName() + " awakes");
+//                        } catch (InterruptedException e) {
+//                            Ports.printWarning("dispatcher has been interrupted");
+//                            return;
+//                        }
+//                    }
+//
+//                    task = deadlockCheckQueue.pollFirst();
+//                }
+//
+//                RequestToken token = TokenManager.requestTokens.computeIfAbsent(task.receiverClass, key -> new RequestToken(0L));
+//
+//                if (task.requestToken == token.value.get()) {
+//                    System.out.println(getName() + ", deadlock detected " + task.requestToken);
+//                    task.isDeadlocked = true;
+//
+//                    int queueSize;
+//
+//                    synchronized (deadlockedQueue) {
+//                        deadlockedQueue.offerLast(task);
+//                        queueSize = deadlockedQueue.size();
+//                    }
+//
+//                    deadlockResolutor.onNewTaskAvailable(queueSize);
+//                } else {
+//                    System.out.println(getName() + ", no deadlock " + task.requestToken);
+//                    token.value.set(task.requestToken);
+//
+//                    int queueSize;
+//
+//                    synchronized (regularQueue) {
+//                        regularQueue.offerLast(task);
+//                        queueSize = regularQueue.size();
+//                    }
+//
+//                    workerExecutor.onNewTaskAvailable(queueSize);
+//                }
+//            }
+//        }
+//    }
+
+//    private final Deque<Task> deadlockCheckQueue = new ArrayDeque<>();
+//    private final Deque<Task> deadlockedQueue = new ArrayDeque<>();
+    private final Deque<Task> regularQueue = new ArrayDeque<>();
+//    private final DeadlockDetector deadlockDetector;
+    private final Executor workerExecutor;
+//    private final Executor deadlockResolutor;
 
     Dispatcher(String name, int maxNumberOfThreads) {
-        executor = new Executor(this, "ports-dispatcher-" + name, maxNumberOfThreads);
+//        deadlockDetector = new DeadlockDetector("ports-dispatcher-" + name);
+        workerExecutor = new Executor(regularQueue, "ports-worker-" + name, maxNumberOfThreads);
+//        deadlockResolutor = new Executor(deadlockedQueue, "ports-deadlock-" + name, Integer.MAX_VALUE);
     }
 
-    void dispatch(Consumer eventPort, Object payload) {
-        Task task = new Task(eventPort, payload);
-
-        synchronized (queue) {
-            queue.add(task);
-            executor.onNewTaskAvailable(queue.size());
-        }
-    }
-
-    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload) {
-        Task task = new Task(requestPort, payload);
+    void dispatch(Consumer eventPort, Object payload, Object mutexSubject) {
+        Task task = new Task(eventPort, payload, mutexSubject);
 
         int queueSize;
 
-        synchronized (queue) {
-            queue.addLast(task);
-            queueSize = queue.size();
+        synchronized (regularQueue) {
+            regularQueue.offerLast(task);
+            queueSize = regularQueue.size();
         }
 
-        executor.onNewTaskAvailable(queueSize);
+        workerExecutor.onNewTaskAvailable(queueSize);
+    }
+
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
+        Task task = new Task(requestPort, payload, mutexSubject);
+
+//        synchronized (deadlockCheckQueue) {
+//            deadlockCheckQueue.offerLast(task);
+//            deadlockCheckQueue.notify();
+//        }
+
+        int queueSize;
+
+        synchronized (regularQueue) {
+            regularQueue.offerLast(task);
+            queueSize = regularQueue.size();
+        }
+
+        workerExecutor.onNewTaskAvailable(queueSize);
 
         return new PortsFuture<>(task);
     }
 
     Task poll() {
-        synchronized (queue) {
-            return queue.pollFirst();
+        synchronized (regularQueue) {
+            return regularQueue.pollFirst();
         }
     }
 
     void awaitQuiescence() {
-        executor.awaitQuiescence();
+        workerExecutor.awaitQuiescence();
     }
 }

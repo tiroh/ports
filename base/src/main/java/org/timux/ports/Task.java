@@ -18,9 +18,11 @@ package org.timux.ports;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@SuppressWarnings({"unchecked", "rawtypes"})
 class Task implements Runnable {
 
     private final Consumer eventPort;
@@ -30,41 +32,114 @@ class Task implements Runnable {
     private boolean hasReturned = false;
     private Throwable throwable;
 
-    Task(Consumer eventPort, Object payload) {
+    private final Thread createdByThread;
+
+    Executor.WorkerThread processedByThread;
+
+    final Object mutexSubject;
+
+    Task(Consumer eventPort, Object payload, Object mutexSubject) {
         this.eventPort = eventPort;
         this.requestPort = null;
         this.payload = payload;
+        this.mutexSubject = mutexSubject;
+
+        createdByThread = Thread.currentThread();
     }
 
-    Task(Function requestPort, Object payload) {
+    Task(Function requestPort, Object payload, Object mutexSubject) {
         this.eventPort = null;
         this.requestPort = requestPort;
         this.payload = payload;
+        this.mutexSubject = mutexSubject;
+
+        createdByThread = Thread.currentThread();
     }
 
-    Task(Throwable throwable) {
+    Task(Throwable throwable, Object mutexSubject) {
         this.eventPort = null;
         this.requestPort = null;
         this.payload = null;
         this.throwable = throwable;
         this.hasReturned = true;
+        this.mutexSubject = mutexSubject;
+
+        createdByThread = Thread.currentThread();
+    }
+
+    Thread getCreatedByThread() {
+        return createdByThread;
     }
 
     @Override
     public void run() {
-        if (throwable == null) {
+        if (!hasReturned) {
             try {
-                if (eventPort != null) {
-                    eventPort.accept(payload);
+                if (mutexSubject == null) {
+                    if (eventPort != null) {
+                        eventPort.accept(payload);
+                    } else {
+                        response = requestPort.apply(payload);
+                    }
+
+                    hasReturned = true;
                 } else {
-                    response = requestPort.apply(payload);
+                    Lock lock = LockManager.getLock(mutexSubject);
+
+                    if (eventPort != null) {
+                        lock.lock();
+
+                        try {
+                            eventPort.accept(payload);
+                        } catch (Throwable t) {
+                            throwable = t;
+                        } finally {
+                            lock.unlock();
+                        }
+                    } else {
+                        processedByThread.setCurrentLock(lock);
+
+                        if (lock.tryLock()) {
+                            try {
+                                response = requestPort.apply(payload);
+                            } catch (Throwable t) {
+                                throwable = t;
+                            } finally {
+                                processedByThread.setCurrentLock(null);
+                                lock.unlock();
+                            }
+
+                            hasReturned = true;
+                        } else {
+                            // TODO optimize this (see Executor)
+//                            Thread.yield();
+
+                            if (LockManager.isDeadlocked(processedByThread, lock)) {
+                                processedByThread.setCurrentLock(null);
+                                response = requestPort.apply(payload);
+                                hasReturned = true;
+                            } else {
+                                lock.lock();
+
+                                try {
+                                    response = requestPort.apply(payload);
+                                } catch (Throwable t) {
+                                    throwable = t;
+                                } finally {
+                                    processedByThread.setCurrentLock(null);
+                                    lock.unlock();
+                                }
+
+                                hasReturned = true;
+                            }
+                        }
+
+                    }
                 }
             } catch (Throwable t) {
                 throwable = t;
             }
         }
-
-        hasReturned = true;
 
         synchronized (this) {
             notify();

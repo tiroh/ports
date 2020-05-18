@@ -3,11 +3,11 @@ package org.timux.ports;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.testapp.component.IntEvent;
+import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ProtocolTests {
 
@@ -25,17 +25,17 @@ public class ProtocolTests {
 
         Ports.register(a, b);
 
-        ValueContainer<Boolean> firstActionA = new ValueContainer<>(false);
-        ValueContainer<Boolean> secondActionA = new ValueContainer<>(false);
-        ValueContainer<Boolean> firstActionB = new ValueContainer<>(false);
-        ValueContainer<Boolean> secondActionB = new ValueContainer<>(false);
-        ValueContainer<Boolean> firstActionC = new ValueContainer<>(false);
-        ValueContainer<Boolean> firstActionD = new ValueContainer<>(false);
+        Container<Boolean> firstActionA = Container.of(false);
+        Container<Boolean> secondActionA = Container.of(false);
+        Container<Boolean> firstActionB = Container.of(false);
+        Container<Boolean> secondActionB = Container.of(false);
+        Container<Boolean> firstActionC = Container.of(false);
+        Container<Boolean> firstActionD = Container.of(false);
 
-        ValueContainer<Integer> doubleRequestIndex = new ValueContainer<>(0);
+        Container<Integer> doubleRequestIndex = Container.of(0);
         double[] doubleRequestValues = {50.0, 2.5, 2.0, 2.5, 4.0};
 
-        ValueContainer<Boolean> doubleRequestResponse = new ValueContainer<>(false);
+        Container<Boolean> doubleRequestResponse = Container.of(false);
 
         Ports.protocol()
                 .when(IntEvent.class)
@@ -129,7 +129,7 @@ public class ProtocolTests {
 
         Ports.register(d);
 
-        ValueContainer<Either<Double, String>> eitherValue = new ValueContainer<>(null);
+        Container<Either<Double, String>> eitherValue = Container.of(null);
 
         Ports.protocol()
                 .when(EitherRequest.class, Double.class, String.class)
@@ -153,7 +153,7 @@ public class ProtocolTests {
 
         Ports.register(d);
 
-        ValueContainer<Either3<Double, Integer, String>> eitherValue = new ValueContainer<>(null);
+        Container<Either3<Double, Integer, String>> eitherValue = Container.of(null);
 
         Ports.protocol()
                 .when(Either3Request.class, Double.class, Integer.class, String.class)
