@@ -50,7 +50,6 @@ public class Request<I, O> {
     private Object receiver;
     private String memberName;
 
-    private Domain ownerDomain;
     private Domain receiverDomain;
     private Function<I, O> wrappedFunction;
     private int domainVersion = -1;
@@ -160,7 +159,7 @@ public class Request<I, O> {
      * @since 0.5.0
      */
     @SuppressWarnings("unchecked")
-    public synchronized PortsFuture<O> submit(I payload) {
+    public PortsFuture<O> submit(I payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(requestTypeName, owner, payload);
 
@@ -177,31 +176,15 @@ public class Request<I, O> {
             throw new PortNotConnectedException(memberName, owner.getClass().getName());
         }
 
-        if (domainVersion != DomainManager.getCurrentVersion()) {
-            domainVersion = DomainManager.getCurrentVersion();
-            ownerDomain = DomainManager.getDomain(owner);
-            receiverDomain = DomainManager.getDomain(receiver);
-            wrappedFunction = getWrappedFunctionForProtocols();
-        }
-
-        switch (receiverDomain.getDispatchPolicy()) {
-        case SYNCHRONOUS:
-            // TODO add synchronization
-            return new PortsFuture<>(wrappedFunction.apply(payload));
-
-        case ASYNCHRONOUS:
-            if (ownerDomain == receiverDomain) {
-                return new PortsFuture<>(wrappedFunction.apply(payload));
-            } else {
-                return receiverDomain.dispatch(wrappedFunction, payload, receiver);
+        synchronized (this) {
+            if (domainVersion != DomainManager.getCurrentVersion()) {
+                domainVersion = DomainManager.getCurrentVersion();
+                receiverDomain = DomainManager.getDomain(receiver);
+                wrappedFunction = getWrappedFunctionForProtocols();
             }
-
-        case PARALLEL:
-            return receiverDomain.dispatch(wrappedFunction, payload, receiver);
-
-        default:
-            throw new IllegalStateException("unhandled dispatch policy: " + receiverDomain.getDispatchPolicy());
         }
+
+        return receiverDomain.dispatch(wrappedFunction, payload, receiver);
     }
 
     private Function<I, O> getWrappedFunctionForProtocols() {

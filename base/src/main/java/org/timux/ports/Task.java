@@ -34,7 +34,7 @@ class Task implements Runnable {
 
     private final Thread createdByThread;
 
-    Executor.WorkerThread processedByThread;
+    Thread processedByThread;
 
     final Object mutexSubject;
 
@@ -61,7 +61,7 @@ class Task implements Runnable {
         this.requestPort = null;
         this.payload = null;
         this.throwable = throwable;
-        this.hasReturned = true;
+        this.hasReturned = true; // FIXME race condition
         this.mutexSubject = mutexSubject;
 
         createdByThread = Thread.currentThread();
@@ -81,9 +81,11 @@ class Task implements Runnable {
                     } else {
                         response = requestPort.apply(payload);
                     }
-
-                    hasReturned = true;
                 } else {
+                    Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
+                            ? (Executor.WorkerThread) processedByThread
+                            : null;
+
                     Lock lock = LockManager.getLock(mutexSubject);
 
                     if (eventPort != null) {
@@ -97,27 +99,37 @@ class Task implements Runnable {
                             lock.unlock();
                         }
                     } else {
-                        processedByThread.setCurrentLock(lock);
-
                         if (lock.tryLock()) {
+                            if (processedByWorkerThread != null) {
+                                processedByWorkerThread.addCurrentLock(lock);
+                            } else {
+                                LockManager.addLockForPlainThread(processedByThread, lock);
+                            }
+
                             try {
                                 response = requestPort.apply(payload);
                             } catch (Throwable t) {
                                 throwable = t;
                             } finally {
-                                processedByThread.setCurrentLock(null);
+                                if (processedByWorkerThread != null) {
+                                    processedByWorkerThread.removeCurrentLock(lock);
+                                } else {
+                                    LockManager.removeLockForPlainThread(processedByThread, lock);
+                                }
+
                                 lock.unlock();
                             }
-
-                            hasReturned = true;
                         } else {
                             // TODO optimize this (see Executor)
-//                            Thread.yield();
 
                             if (LockManager.isDeadlocked(processedByThread, lock)) {
-                                processedByThread.setCurrentLock(null);
+                                if (processedByWorkerThread != null) {
+                                    processedByWorkerThread.removeCurrentLock(lock);
+                                } else {
+                                    LockManager.removeLockForPlainThread(processedByThread, lock);
+                                }
+
                                 response = requestPort.apply(payload);
-                                hasReturned = true;
                             } else {
                                 lock.lock();
 
@@ -126,11 +138,14 @@ class Task implements Runnable {
                                 } catch (Throwable t) {
                                     throwable = t;
                                 } finally {
-                                    processedByThread.setCurrentLock(null);
+                                    if (processedByWorkerThread != null) {
+                                        processedByWorkerThread.removeCurrentLock(lock);
+                                    } else {
+                                        LockManager.removeLockForPlainThread(processedByThread, lock);
+                                    }
+
                                     lock.unlock();
                                 }
-
-                                hasReturned = true;
                             }
                         }
 
@@ -141,7 +156,10 @@ class Task implements Runnable {
             }
         }
 
+        processedByThread = null;
+
         synchronized (this) {
+            hasReturned = true;
             notify();
         }
     }

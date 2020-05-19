@@ -56,7 +56,6 @@ public class Event<T> {
     private String eventTypeName;
     private Object owner;
 
-    private Domain ownerDomain;
     private int domainVersion = -1;
 
     public Event() {
@@ -241,7 +240,7 @@ public class Event<T> {
      *
      * @since 0.5.0
      */
-    public synchronized void trigger(T payload) {
+    public void trigger(T payload) {
         if (Protocol.areProtocolsActive) {
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
@@ -258,11 +257,14 @@ public class Event<T> {
             return;
         }
 
-        boolean updateDomains = domainVersion != DomainManager.getCurrentVersion();
+        boolean updateDomains;
 
-        if (updateDomains) {
-            domainVersion = DomainManager.getCurrentVersion();
-            ownerDomain = DomainManager.getDomain(owner);
+        synchronized (this) {
+            updateDomains = domainVersion != DomainManager.getCurrentVersion();
+
+            if (updateDomains) {
+                domainVersion = DomainManager.getCurrentVersion();
+            }
         }
 
         for (i--; i >= 0; i--) {
@@ -278,27 +280,7 @@ public class Event<T> {
                 portEntry.receiverDomain = DomainManager.getDomain(receiver);
             }
 
-            switch (portEntry.receiverDomain.getDispatchPolicy()) {
-            case SYNCHRONOUS:
-                // TODO add synchronization
-                portEntry.port.accept(payload);
-                break;
-
-            case ASYNCHRONOUS:
-                if (ownerDomain == portEntry.receiverDomain) {
-                    portEntry.port.accept(payload);
-                } else {
-                    portEntry.receiverDomain.dispatch(portEntry.port, payload, receiver);
-                }
-                break;
-
-            case PARALLEL:
-                portEntry.receiverDomain.dispatch(portEntry.port, payload, receiver);
-                break;
-
-            default:
-                throw new IllegalStateException("unhandled dispatch policy: " + portEntry.receiverDomain.getDispatchPolicy());
-            }
+            portEntry.receiverDomain.dispatch(portEntry.port, payload, receiver);
         }
     }
 

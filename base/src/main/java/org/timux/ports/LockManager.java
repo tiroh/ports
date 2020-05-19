@@ -16,6 +16,8 @@
 
 package org.timux.ports;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -23,25 +25,39 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class LockManager {
 
+    // TODO clean up these maps
     private static final ConcurrentMap<WeakKey, Lock> locks =
+            new ConcurrentHashMap<>(128, 0.75f, Runtime.getRuntime().availableProcessors());
+
+    private static final ConcurrentHashMap<Thread, List<Lock>> plainThreadLocks =
             new ConcurrentHashMap<>(128, 0.75f, Runtime.getRuntime().availableProcessors());
 
     static Lock getLock(Object subject) {
         return locks.computeIfAbsent(new WeakKey(subject), key -> new ReentrantLock(false));
     }
 
+    static void addLockForPlainThread(Thread thread, Lock lock) {
+        List<Lock> locks = plainThreadLocks.computeIfAbsent(thread, k -> new ArrayList<>());
+        locks.add(lock);
+    }
+
+    static void removeLockForPlainThread(Thread thread, Lock lock) {
+        plainThreadLocks.get(thread).remove(lock);
+    }
+
     static boolean isDeadlocked(Thread thread, Lock wantedLock) {
         while (thread instanceof Executor.WorkerThread) {
             Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
 
-            if (workerThread.getCurrentLock() == wantedLock) {
+            if (workerThread.containsLock(wantedLock)) {
                 return true;
             }
 
             thread = workerThread.getCurrentTask().getCreatedByThread();
         }
 
-        return false;
+        List<Lock> lock = plainThreadLocks.get(thread);
+        return lock != null && lock.contains(wantedLock);
 
         // T1(A) -> T2(B) -> T3(A?)
     }

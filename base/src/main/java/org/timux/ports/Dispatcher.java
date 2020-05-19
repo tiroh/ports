@@ -24,21 +24,29 @@ import java.util.function.Function;
 @SuppressWarnings("rawtypes")
 class Dispatcher {
 
-    private final Deque<Task> regularQueue = new ArrayDeque<>();
+    private final Deque<Task> queue = new ArrayDeque<>();
     private final Executor workerExecutor;
 
     Dispatcher(String name, int maxNumberOfThreads) {
-        workerExecutor = new Executor(regularQueue, "ports-worker-" + name, maxNumberOfThreads);
+        workerExecutor = maxNumberOfThreads > 0
+                ? new Executor(this, "ports-worker-" + name, maxNumberOfThreads)
+                : null;
     }
 
     void dispatch(Consumer eventPort, Object payload, Object mutexSubject) {
         Task task = new Task(eventPort, payload, mutexSubject);
 
+        if (workerExecutor == null) {
+            task.processedByThread = Thread.currentThread();
+            task.run();
+            return;
+        }
+
         int queueSize;
 
-        synchronized (regularQueue) {
-            regularQueue.offerLast(task);
-            queueSize = regularQueue.size();
+        synchronized (queue) {
+            queue.offerLast(task);
+            queueSize = queue.size();
         }
 
         workerExecutor.onNewTaskAvailable(queueSize);
@@ -47,11 +55,17 @@ class Dispatcher {
     <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
         Task task = new Task(requestPort, payload, mutexSubject);
 
+        if (workerExecutor == null) {
+            task.processedByThread = Thread.currentThread();
+            task.run();
+            return new PortsFuture<>(task);
+        }
+
         int queueSize;
 
-        synchronized (regularQueue) {
-            regularQueue.offerLast(task);
-            queueSize = regularQueue.size();
+        synchronized (queue) {
+            queue.offerLast(task);
+            queueSize = queue.size();
         }
 
         workerExecutor.onNewTaskAvailable(queueSize);
@@ -60,12 +74,20 @@ class Dispatcher {
     }
 
     Task poll() {
-        synchronized (regularQueue) {
-            return regularQueue.pollFirst();
+        synchronized (queue) {
+            return queue.pollFirst();
+        }
+    }
+
+    Task peek() {
+        synchronized (queue) {
+            return queue.peekFirst();
         }
     }
 
     void awaitQuiescence() {
-        workerExecutor.awaitQuiescence();
+        if (workerExecutor != null) {
+            workerExecutor.awaitQuiescence();
+        }
     }
 }

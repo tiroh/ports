@@ -17,6 +17,7 @@
 package org.timux.ports;
 
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -53,7 +54,7 @@ public class Domain {
 
         switch (dispatchPolicy) {
         case SYNCHRONOUS:
-            dispatcher = null;
+            dispatcher = new Dispatcher(name, 0);
             break;
 
         case ASYNCHRONOUS:

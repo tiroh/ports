@@ -191,7 +191,7 @@ public class SimpleTests {
 
     @Test
     public void pairTripleContainsRandomized() {
-        Random random = new Random(0);
+        Random random = new Random(0L);
 
         for (int i = 0; i < 10000; i++) {
             Integer a = random.nextInt(3) > 0 ? random.nextInt(10) : null;
@@ -220,6 +220,26 @@ public class SimpleTests {
                 assertFalse(triple.containsDistinct(pair));
             }
         }
+    }
+
+    @Test
+    public void deadlockResolutionSync() {
+        DeadlockA a = new DeadlockA();
+        DeadlockB b = new DeadlockB();
+
+        Ports.connect(a).and(b);
+
+        Ports.domain("test-a", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+                .addInstances(a);
+
+        Ports.domain("test-b", DispatchPolicy.SYNCHRONOUS, SyncPolicy.COMPONENT)
+                .addInstances(b);
+
+        double response = a.doubleRequest.call(new DoubleRequest(4.0));
+        assertEquals(0.0, response);
+
+        response = a.doubleRequest.call(new DoubleRequest(8.0));
+        assertEquals(0.0, response);
     }
 
     @Test
