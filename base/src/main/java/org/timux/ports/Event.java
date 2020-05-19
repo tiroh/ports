@@ -280,6 +280,7 @@ public class Event<T> {
 
             switch (portEntry.receiverDomain.getDispatchPolicy()) {
             case SYNCHRONOUS:
+                // TODO add synchronization
                 portEntry.port.accept(payload);
                 break;
 

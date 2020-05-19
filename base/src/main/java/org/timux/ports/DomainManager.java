@@ -16,7 +16,6 @@
 
 package org.timux.ports;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,47 +23,10 @@ import java.util.Map;
 
 class DomainManager {
 
-    private static class Key {
-
-        final WeakReference<?> componentRef;
-        final int hashCode;
-
-        Key(Object component) {
-            componentRef = new WeakReference<>(component);
-            hashCode = component.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            Key key = (Key) o;
-
-            return hashCode == key.hashCode && componentRef.get() == key.componentRef.get();
-        }
-
-        @Override
-        public int hashCode() {
-            return hashCode;
-        }
-
-        @Override
-        public String toString() {
-            Object component = componentRef.get();
-            return "Key{" + component + "}";
-        }
-    }
-
     private static final String DEFAULT_DOMAIN_NAME = "default";
     private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, DispatchPolicy.SYNCHRONOUS, SyncPolicy.COMPONENT);
 
-    private static Map<Key, Domain> instanceDomains = new HashMap<>();
+    private static Map<WeakKey, Domain> instanceDomains = new HashMap<>();
     private static Map<Class<?>, Domain> classDomains = new HashMap<>();
     private static Map<String, Domain> packageDomains = new HashMap<>();
 
@@ -97,13 +59,13 @@ class DomainManager {
             return domain;
         }
 
-        domain = instanceDomains.get(new Key(instance));
+        domain = instanceDomains.get(new WeakKey(instance));
 
         return domain != null ? domain : DEFAULT_DOMAIN;
     }
 
     static synchronized void register(Object instance, Domain domain) {
-        instanceDomains.put(new Key(instance), domain);
+        instanceDomains.put(new WeakKey(instance), domain);
         currentVersion++;
     }
 
@@ -133,9 +95,9 @@ class DomainManager {
     }
 
     static synchronized void gc() {
-        List<Key> garbageKeys = new ArrayList<>();
+        List<WeakKey> garbageKeys = new ArrayList<>();
 
-        for (Map.Entry<Key, Domain> e : instanceDomains.entrySet()) {
+        for (Map.Entry<WeakKey, Domain> e : instanceDomains.entrySet()) {
             if (e.getKey().componentRef.get() == null) {
                 garbageKeys.add(e.getKey());
             }
@@ -145,7 +107,7 @@ class DomainManager {
     }
 
     static synchronized void awaitQuiescence() {
-        for (Map.Entry<Key, Domain> e : instanceDomains.entrySet()) {
+        for (Map.Entry<WeakKey, Domain> e : instanceDomains.entrySet()) {
             e.getValue().awaitQuiescence();
         }
     }

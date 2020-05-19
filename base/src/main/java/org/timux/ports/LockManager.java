@@ -23,11 +23,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class LockManager {
 
-    private static final ConcurrentMap<Object, Lock> locks =
+    private static final ConcurrentMap<WeakKey, Lock> locks =
             new ConcurrentHashMap<>(128, 0.75f, Runtime.getRuntime().availableProcessors());
 
     static Lock getLock(Object subject) {
-        return locks.computeIfAbsent(subject, key -> new ReentrantLock(false));
+        return locks.computeIfAbsent(new WeakKey(subject), key -> new ReentrantLock(false));
     }
 
     static boolean isDeadlocked(Thread thread, Lock wantedLock) {

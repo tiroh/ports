@@ -186,6 +186,7 @@ public class Request<I, O> {
 
         switch (receiverDomain.getDispatchPolicy()) {
         case SYNCHRONOUS:
+            // TODO add synchronization
             return new PortsFuture<>(wrappedFunction.apply(payload));
 
         case ASYNCHRONOUS:

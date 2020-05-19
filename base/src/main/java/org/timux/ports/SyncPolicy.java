@@ -25,7 +25,7 @@ public enum SyncPolicy {
 
     /**
      * Specifies that messages shall be processed without any synchronization. Should there be
-     * different threads sending messages, the framework will not take any measures of synchronizing
+     * different threads accessing the domain, the framework will not take any measures of synchronizing
      * them.
      *
      * <p> Take care that the complete domain is
