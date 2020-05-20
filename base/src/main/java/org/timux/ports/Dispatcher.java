@@ -36,8 +36,8 @@ class Dispatcher {
     void dispatch(Consumer eventPort, Object payload, Object mutexSubject) {
         Task task = new Task(eventPort, payload, mutexSubject);
 
-        if (workerExecutor == null) {
-            task.processedByThread = Thread.currentThread();
+        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+            task.processedByThread = task.getCreatedByThread();
             task.run();
             return;
         }
@@ -51,8 +51,8 @@ class Dispatcher {
     <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
         Task task = new Task(requestPort, payload, mutexSubject);
 
-        if (workerExecutor == null) {
-            task.processedByThread = Thread.currentThread();
+        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+            task.processedByThread = task.getCreatedByThread();
             task.run();
             return new PortsFuture<>(task);
         }

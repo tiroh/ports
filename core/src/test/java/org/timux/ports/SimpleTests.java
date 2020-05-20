@@ -243,6 +243,23 @@ public class SimpleTests {
     }
 
     @Test
+    public void deadlockResolutionSyncSameDomain() {
+        DeadlockA a = new DeadlockA();
+        DeadlockB b = new DeadlockB();
+
+        Ports.connect(a).and(b);
+
+        Ports.domain("test", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+                .addInstances(a, b);
+
+        double response = a.doubleRequest.call(new DoubleRequest(4.0));
+        assertEquals(0.0, response);
+
+        response = a.doubleRequest.call(new DoubleRequest(8.0));
+        assertEquals(0.0, response);
+    }
+
+    @Test
     public void deadlockResolutionAsync() {
         DeadlockA a = new DeadlockA();
         DeadlockB b = new DeadlockB();

@@ -141,6 +141,10 @@ class Executor {
         this.idleLifetimeMs = TEST_API_IDLE_LIFETIME_MS < 0 ? IDLE_LIFETIME_MS : TEST_API_IDLE_LIFETIME_MS;
     }
 
+    ThreadGroup getThreadGroup() {
+        return threadGroup;
+    }
+
     void onNewTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
             if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
@@ -150,7 +154,7 @@ class Executor {
                     Lock wantedLock = LockManager.getLock(newTask.mutexSubject);
 
                     // TODO optimize this: the information this thread is deadlocked can probably be used in the task
-                    if (LockManager.isDeadlocked(Thread.currentThread(), wantedLock)) {
+                    if (LockManager.isDeadlocked(newTask.getCreatedByThread(), wantedLock)) {
                         threadPool.add(new WorkerThread(threadGroup, true));
                     }
                 }

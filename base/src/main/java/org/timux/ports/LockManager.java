@@ -25,6 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class LockManager {
 
+    // TODO optimize this for better concurrency
     private static final Map<Object, Lock> locks = new WeakHashMap<>(128);
 
     private static final Map<Thread, List<Lock>> plainThreadLocks = new WeakHashMap<>();
