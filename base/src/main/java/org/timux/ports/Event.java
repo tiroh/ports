@@ -19,10 +19,7 @@ package org.timux.ports;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -52,7 +49,8 @@ public class Event<T> {
     }
 
     private final List<PortEntry<T>> ports = new ArrayList<>(4);
-    private Map<Method, Map<WeakReference<?>, Consumer<T>>> portMethods = null;
+    private Map<Method, Map<Object, Consumer<T>>> portMethods = null;
+
     private String eventTypeName;
     private Object owner;
 
@@ -87,22 +85,20 @@ public class Event<T> {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        cleanUpGarbageCollectedConnections();
-
         if (portMethods == null) {
-            portMethods = new HashMap<>();
+            portMethods = new HashMap<>(8);
         }
 
-        Map<WeakReference<?>, Consumer<T>> portOwners = portMethods.computeIfAbsent(portMethod, k -> new HashMap<>(4));
+        Map<Object, Consumer<T>> portOwners = portMethods.computeIfAbsent(portMethod, k -> new WeakHashMap<>(4));
 
-        WeakReference<?> key = new WeakReference<>(methodOwner);
+        WeakReference<?> methodOwnerRef = new WeakReference<>(methodOwner);
 
         if (eventWrapper == null) {
             portOwners.put(
-                    key,
+                    methodOwner,
                     x -> {
                         try {
-                            Object owner = key.get();
+                            Object owner = methodOwnerRef.get();
 
                             if (owner != null) {
                                 portMethod.invoke(owner, x);
@@ -113,9 +109,9 @@ public class Event<T> {
                     });
         } else {
             portOwners.put(
-                    key,
+                    methodOwner,
                     x -> eventWrapper.execute(() -> {
-                        Object owner = key.get();
+                        Object owner = methodOwnerRef.get();
 
                         if (owner != null) {
                             try {
@@ -127,7 +123,7 @@ public class Event<T> {
                     }));
         }
 
-        connect(portOwners.get(key), methodOwner);
+        connect(portOwners.get(methodOwner), methodOwner);
     }
 
     /**
@@ -170,62 +166,20 @@ public class Event<T> {
     }
 
     synchronized void disconnect(Method portMethod, Object methodOwner) {
-        Map<WeakReference<?>, Consumer<T>> portOwners = portMethods.get(portMethod);
+        Map<Object, Consumer<T>> portOwners = portMethods.get(portMethod);
 
         if (portOwners == null) {
             return;
         }
 
-        WeakReference<?> key = getPortOwnersKeyOf(methodOwner, portOwners);
+        Consumer<T> port = portOwners.remove(methodOwner);
 
-        if (key != null) {
-            disconnect(portOwners.get(key));
+        if (port != null) {
+            disconnect(port);
         }
-
-        portOwners.remove(key);
 
         if (portOwners.isEmpty()) {
             portMethods.remove(portMethod);
-        }
-    }
-
-    private synchronized WeakReference<?> getPortOwnersKeyOf(Object portOwner, Map<WeakReference<?>, Consumer<T>> portOwners) {
-        for (Map.Entry<WeakReference<?>, Consumer<T>> e : portOwners.entrySet()) {
-            if (e.getKey().get() == portOwner) {
-                return e.getKey();
-            }
-        }
-
-        // owner has been garbage-collected.
-        return null;
-    }
-
-    private synchronized void cleanUpGarbageCollectedConnections() {
-        if (portMethods == null || portMethods.isEmpty()) {
-            return;
-        }
-
-        Map<WeakReference<?>, Method> collectedReferences = new HashMap<>();
-
-        for (Map.Entry<Method, Map<WeakReference<?>, Consumer<T>>> e : portMethods.entrySet()) {
-            for (Map.Entry<WeakReference<?>, Consumer<T>> ee : e.getValue().entrySet()) {
-                if (ee.getKey().get() == null) {
-                    collectedReferences.put(ee.getKey(), e.getKey());
-                }
-            }
-        }
-
-        for (Map.Entry<WeakReference<?>, Method> e : collectedReferences.entrySet()) {
-            WeakReference<?> reference = e.getKey();
-            Method method = e.getValue();
-
-            disconnect(portMethods.get(method).get(reference));
-
-            portMethods.get(method).remove(reference);
-
-            if (portMethods.get(method).isEmpty()) {
-                portMethods.remove(method);
-            }
         }
     }
 
@@ -282,11 +236,47 @@ public class Event<T> {
         }
     }
 
+    synchronized void cleanUp() {
+        if (portMethods != null) {
+            List<Method> garbageMethods = null;
+
+            for (Map.Entry<Method, Map<Object, Consumer<T>>> e : portMethods.entrySet()) {
+                if (e.getValue().isEmpty()) {
+                    if (garbageMethods == null) {
+                        garbageMethods = new ArrayList<>();
+                    }
+
+                    garbageMethods.add(e.getKey());
+                }
+            }
+
+            if (garbageMethods != null) {
+                garbageMethods.forEach(portMethods::remove);
+            }
+        }
+
+        List<PortEntry<T>> garbagePortEntries = null;
+
+        for (PortEntry<T> portEntry : ports) {
+            if (portEntry.receiverRef.get() == null) {
+                if (garbagePortEntries == null) {
+                    garbagePortEntries = new ArrayList<>();
+                }
+
+                garbagePortEntries.add(portEntry);
+            }
+        }
+
+        if (garbagePortEntries != null) {
+            ports.removeAll(garbagePortEntries);
+        }
+    }
+
     /**
      * Returns true if this OUT port is connected to an IN port, false otherwise.
      */
     public synchronized boolean isConnected() {
-        cleanUpGarbageCollectedConnections();
+        cleanUp();
         return !ports.isEmpty();
     }
 }
