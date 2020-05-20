@@ -236,7 +236,7 @@ public class Event<T> {
         }
     }
 
-    synchronized void cleanUp() {
+    private synchronized void cleanUp() {
         if (portMethods != null) {
             List<Method> garbageMethods = null;
 

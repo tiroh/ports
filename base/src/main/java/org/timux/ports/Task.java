@@ -56,17 +56,6 @@ class Task implements Runnable {
         createdByThread = Thread.currentThread();
     }
 
-    Task(Throwable throwable, Object mutexSubject) {
-        this.eventPort = null;
-        this.requestPort = null;
-        this.payload = null;
-        this.throwable = throwable;
-        this.hasReturned = true; // FIXME race condition
-        this.mutexSubject = mutexSubject;
-
-        createdByThread = Thread.currentThread();
-    }
-
     Thread getCreatedByThread() {
         return createdByThread;
     }

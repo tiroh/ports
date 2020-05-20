@@ -17,8 +17,8 @@ public class TimingTests {
 
     @BeforeAll
     public static void beforeAll() {
-        Executor.TEST_API_MAX_NUMBER_OF_THREADS = ExecutorBlockingQueue.TEST_API_MAX_NUMBER_OF_THREADS = 10;
-        Executor.TEST_API_IDLE_LIFETIME_MS = ExecutorBlockingQueue.TEST_API_IDLE_LIFETIME_MS = 2000;
+        Executor.TEST_API_MAX_NUMBER_OF_THREADS = 10;
+        Executor.TEST_API_IDLE_LIFETIME_MS = 2000;
     }
 
     @BeforeEach
