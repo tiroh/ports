@@ -42,14 +42,10 @@ class Dispatcher {
             return;
         }
 
-        int queueSize;
-
         synchronized (queue) {
             queue.offerLast(task);
-            queueSize = queue.size();
+            workerExecutor.onNewTaskAvailable(task, queue.size());
         }
-
-        workerExecutor.onNewTaskAvailable(queueSize);
     }
 
     <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
@@ -61,14 +57,10 @@ class Dispatcher {
             return new PortsFuture<>(task);
         }
 
-        int queueSize;
-
         synchronized (queue) {
             queue.offerLast(task);
-            queueSize = queue.size();
+            workerExecutor.onNewTaskAvailable(task, queue.size());
         }
-
-        workerExecutor.onNewTaskAvailable(queueSize);
 
         return new PortsFuture<>(task);
     }
@@ -76,12 +68,6 @@ class Dispatcher {
     Task poll() {
         synchronized (queue) {
             return queue.pollFirst();
-        }
-    }
-
-    Task peek() {
-        synchronized (queue) {
-            return queue.peekFirst();
         }
     }
 

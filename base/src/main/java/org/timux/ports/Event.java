@@ -237,8 +237,6 @@ public class Event<T> {
      *
      * @see #trigger
      * @see Domain
-     *
-     * @since 0.5.0
      */
     public void trigger(T payload) {
         if (Protocol.areProtocolsActive) {
