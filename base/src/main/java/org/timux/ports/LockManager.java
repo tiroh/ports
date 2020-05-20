@@ -18,31 +18,40 @@ package org.timux.ports;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 class LockManager {
 
-    // TODO clean up these maps
-    private static final ConcurrentMap<WeakKey, Lock> locks =
-            new ConcurrentHashMap<>(128, 0.75f, Runtime.getRuntime().availableProcessors());
+    private static final Map<Object, Lock> locks = new WeakHashMap<>(128);
 
-    private static final ConcurrentHashMap<Thread, List<Lock>> plainThreadLocks =
-            new ConcurrentHashMap<>(128, 0.75f, Runtime.getRuntime().availableProcessors());
+    private static final Map<Thread, List<Lock>> plainThreadLocks = new WeakHashMap<>();
 
     static Lock getLock(Object subject) {
-        return locks.computeIfAbsent(new WeakKey(subject), key -> new ReentrantLock(false));
+        synchronized (locks) {
+            return locks.computeIfAbsent(subject, key -> new ReentrantLock(false));
+        }
     }
 
     static void addLockForPlainThread(Thread thread, Lock lock) {
-        List<Lock> locks = plainThreadLocks.computeIfAbsent(thread, k -> new ArrayList<>());
-        locks.add(lock);
+        List<Lock> lockList;
+
+        synchronized (plainThreadLocks) {
+            lockList = plainThreadLocks.computeIfAbsent(thread, key -> new ArrayList<>());
+            lockList.add(lock);
+        }
     }
 
     static void removeLockForPlainThread(Thread thread, Lock lock) {
-        plainThreadLocks.get(thread).remove(lock);
+        synchronized (plainThreadLocks) {
+            List<Lock> lockList = plainThreadLocks.get(thread);
+
+            if (lockList != null) {
+                lockList.remove(lock);
+            }
+        }
     }
 
     static boolean isDeadlocked(Thread thread, Lock wantedLock) {
@@ -56,8 +65,10 @@ class LockManager {
             thread = workerThread.getCurrentTask().getCreatedByThread();
         }
 
-        List<Lock> lock = plainThreadLocks.get(thread);
-        return lock != null && lock.contains(wantedLock);
+        synchronized (plainThreadLocks) {
+            List<Lock> lockList = plainThreadLocks.get(thread);
+            return lockList != null && lockList.contains(wantedLock);
+        }
 
         // T1(A) -> T2(B) -> T3(A?)
     }

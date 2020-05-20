@@ -567,7 +567,6 @@ public final class Ports {
      * @since 0.5.0
      */
     public static Domain domain(String name, DispatchPolicy dispatchPolicy, SyncPolicy syncPolicy) {
-        DomainManager.gc();
         return new Domain(name, dispatchPolicy, syncPolicy);
     }
 

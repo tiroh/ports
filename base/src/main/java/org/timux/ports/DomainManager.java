@@ -16,17 +16,16 @@
 
 package org.timux.ports;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 class DomainManager {
 
     private static final String DEFAULT_DOMAIN_NAME = "default";
     private static final Domain DEFAULT_DOMAIN = new Domain(DEFAULT_DOMAIN_NAME, DispatchPolicy.SYNCHRONOUS, SyncPolicy.COMPONENT);
 
-    private static Map<WeakKey, Domain> instanceDomains = new HashMap<>();
+    private static Map<Object, Domain> instanceDomains = new WeakHashMap<>();
     private static Map<Class<?>, Domain> classDomains = new HashMap<>();
     private static Map<String, Domain> packageDomains = new HashMap<>();
 
@@ -59,13 +58,13 @@ class DomainManager {
             return domain;
         }
 
-        domain = instanceDomains.get(new WeakKey(instance));
+        domain = instanceDomains.get(instance);
 
         return domain != null ? domain : DEFAULT_DOMAIN;
     }
 
     static synchronized void register(Object instance, Domain domain) {
-        instanceDomains.put(new WeakKey(instance), domain);
+        instanceDomains.put(instance, domain);
         currentVersion++;
     }
 
@@ -94,20 +93,8 @@ class DomainManager {
         currentVersion++;
     }
 
-    static synchronized void gc() {
-        List<WeakKey> garbageKeys = new ArrayList<>();
-
-        for (Map.Entry<WeakKey, Domain> e : instanceDomains.entrySet()) {
-            if (e.getKey().componentRef.get() == null) {
-                garbageKeys.add(e.getKey());
-            }
-        }
-
-        garbageKeys.forEach(instanceDomains::remove);
-    }
-
     static synchronized void awaitQuiescence() {
-        for (Map.Entry<WeakKey, Domain> e : instanceDomains.entrySet()) {
+        for (Map.Entry<Object, Domain> e : instanceDomains.entrySet()) {
             e.getValue().awaitQuiescence();
         }
     }

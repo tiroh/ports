@@ -18,14 +18,14 @@ package org.timux.ports;
 
 import java.lang.ref.WeakReference;
 
-class WeakKey {
+class WeakKey<T> {
 
-    final WeakReference<?> componentRef;
+    final WeakReference<T> objectRef;
     final int hashCode;
 
-    WeakKey(Object component) {
-        componentRef = new WeakReference<>(component);
-        hashCode = component.hashCode();
+    WeakKey(T object) {
+        objectRef = new WeakReference<>(object);
+        hashCode = object.hashCode();
     }
 
     @Override
@@ -38,9 +38,9 @@ class WeakKey {
             return false;
         }
 
-        WeakKey key = (WeakKey) o;
+        WeakKey<?> key = (WeakKey<?>) o;
 
-        return hashCode == key.hashCode && componentRef.get() == key.componentRef.get();
+        return hashCode == key.hashCode && objectRef.get() == key.objectRef.get();
     }
 
     @Override
@@ -50,7 +50,7 @@ class WeakKey {
 
     @Override
     public String toString() {
-        Object component = componentRef.get();
-        return "WeakKey{" + component + "}";
+        T object = objectRef.get();
+        return "WeakKey{" + object + "}";
     }
 }
