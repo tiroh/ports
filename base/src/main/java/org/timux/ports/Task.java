@@ -63,86 +63,93 @@ class Task implements Runnable {
     @Override
     public void run() {
         if (!hasReturned) {
-            try {
-                if (mutexSubject == null) {
+            if (mutexSubject == null) {
+                try {
                     if (eventPort != null) {
                         eventPort.accept(payload);
                     } else {
                         response = requestPort.apply(payload);
                     }
+                } catch (Exception e) {
+                    throwable = e;
+                }
+            } else {
+                Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
+                        ? (Executor.WorkerThread) processedByThread
+                        : null;
+
+                Lock lock = LockManager.getLock(mutexSubject);
+
+                if (lock.tryLock()) {
+                    if (processedByWorkerThread != null) {
+                        processedByWorkerThread.addCurrentLock(lock);
+                    } else {
+                        LockManager.addLockForPlainThread(processedByThread, lock);
+                    }
+
+                    try {
+                        if (eventPort != null) {
+                            eventPort.accept(payload);
+                        } else {
+                            response = requestPort.apply(payload);
+                        }
+                    } catch (Exception e) {
+                        throwable = e;
+                    } finally {
+                        if (processedByWorkerThread != null) {
+                            processedByWorkerThread.removeCurrentLock(lock);
+                        } else {
+                            LockManager.removeLockForPlainThread(processedByThread, lock);
+                        }
+
+                        lock.unlock();
+                    }
                 } else {
-                    Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
-                            ? (Executor.WorkerThread) processedByThread
-                            : null;
+                    // TODO optimize this (see Executor)
 
-                    Lock lock = LockManager.getLock(mutexSubject);
+                    if (LockManager.isDeadlocked(processedByThread, processedByThread.getThreadGroup(), lock))
+//                            || LockManager.isDeadlocked(createdByThread, processedByThread.getThreadGroup(), lock))
+                    {
+//                        if (processedByWorkerThread != null) {
+//                            processedByWorkerThread.removeCurrentLock(lock);
+//                        } else {
+//                            LockManager.removeLockForPlainThread(processedByThread, lock);
+//                        }
 
-                    if (eventPort != null) {
+                        try {
+                            if (eventPort != null) {
+                                eventPort.accept(payload);
+                            } else {
+                                response = requestPort.apply(payload);
+                            }
+                        } catch (Exception e) {
+                            throwable = e;
+                        }
+                    } else {
+                        System.out.println("waiting " + payload);
                         lock.lock();
 
                         try {
-                            eventPort.accept(payload);
-                        } catch (Throwable t) {
-                            throwable = t;
+                            if (eventPort != null) {
+                                eventPort.accept(payload);
+                            } else {
+                                response = requestPort.apply(payload);
+                            }
+                        } catch (Exception e) {
+                            throwable = e;
                         } finally {
+                            if (processedByWorkerThread != null) {
+                                processedByWorkerThread.removeCurrentLock(lock);
+                            } else {
+                                LockManager.removeLockForPlainThread(processedByThread, lock);
+                            }
+
                             lock.unlock();
                         }
-                    } else {
-                        if (lock.tryLock()) {
-                            if (processedByWorkerThread != null) {
-                                processedByWorkerThread.addCurrentLock(lock);
-                            } else {
-                                LockManager.addLockForPlainThread(processedByThread, lock);
-                            }
-
-                            try {
-                                response = requestPort.apply(payload);
-                            } catch (Throwable t) {
-                                throwable = t;
-                            } finally {
-                                if (processedByWorkerThread != null) {
-                                    processedByWorkerThread.removeCurrentLock(lock);
-                                } else {
-                                    LockManager.removeLockForPlainThread(processedByThread, lock);
-                                }
-
-                                lock.unlock();
-                            }
-                        } else {
-                            // TODO optimize this (see Executor)
-
-                            if (LockManager.isDeadlocked(processedByThread, lock)) {
-                                if (processedByWorkerThread != null) {
-                                    processedByWorkerThread.removeCurrentLock(lock);
-                                } else {
-                                    LockManager.removeLockForPlainThread(processedByThread, lock);
-                                }
-
-                                response = requestPort.apply(payload);
-                            } else {
-                                lock.lock();
-
-                                try {
-                                    response = requestPort.apply(payload);
-                                } catch (Throwable t) {
-                                    throwable = t;
-                                } finally {
-                                    if (processedByWorkerThread != null) {
-                                        processedByWorkerThread.removeCurrentLock(lock);
-                                    } else {
-                                        LockManager.removeLockForPlainThread(processedByThread, lock);
-                                    }
-
-                                    lock.unlock();
-                                }
-                            }
-                        }
-
                     }
                 }
-            } catch (Throwable t) {
-                throwable = t;
             }
+
         }
 
         processedByThread = null;
@@ -159,6 +166,10 @@ class Task implements Runnable {
 
     Throwable getThrowable() {
         return throwable;
+    }
+
+    Object getResponse() {
+        return response;
     }
 
     synchronized Object waitForResponse() {

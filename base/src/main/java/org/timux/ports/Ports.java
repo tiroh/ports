@@ -47,6 +47,10 @@ public final class Ports {
      * @return An object that enables specifying the second component of the connection.
      */
     public static AndClause connect(Object a) {
+        if (a == null) {
+            throw new IllegalArgumentException("component must not be null");
+        }
+
         return new AndClause((b, portsOptions) -> connectBoth(a, b, portsOptions));
     }
 
@@ -58,6 +62,10 @@ public final class Ports {
      * @return An object that enables specifying the second component of the connection.
      */
     public static AndClause disconnect(Object a) {
+        if (a == null) {
+            throw new IllegalArgumentException("component must not be null");
+        }
+
         return new AndClause((b, portsOptions) -> disconnectBoth(a, b, portsOptions));
     }
 

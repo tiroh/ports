@@ -25,7 +25,7 @@ import java.util.concurrent.locks.Lock;
 
 class Executor {
 
-    private static final long IDLE_LIFETIME_MS = 10000;
+    private static final long IDLE_LIFETIME_MS = 10000000;
 
     // The following TEST_API fields must not be private or final because they are
     // modified by the tests to achieve deterministic behavior.
@@ -47,7 +47,7 @@ class Executor {
             start();
         }
 
-        public boolean containsLock(Lock lock) {
+        public boolean hasLock(Lock lock) {
             return currentLocks.contains(lock);
         }
 
@@ -157,17 +157,27 @@ class Executor {
         poolSemaphore.release();
     }
 
+    static boolean BREAKPOINT_ENABLE = false;
+
     void onNewRequestTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
             if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
                 if (threadPool.size() < maxThreadPoolSize) {
                     threadPool.add(new WorkerThread(threadGroup, false));
                 } else {
-                    Lock wantedLock = LockManager.getLock(newTask.mutexSubject);
+                    if (newTask.mutexSubject != null) {
+                        Lock wantedLock = LockManager.getLock(newTask.mutexSubject);
 
-                    // TODO optimize this: the information this thread is deadlocked can probably be used in the task
-                    if (LockManager.isDeadlocked(newTask.getCreatedByThread(), wantedLock)) {
-                        threadPool.add(new WorkerThread(threadGroup, true));
+                        // TODO optimize this: the information this thread is deadlocked can probably be used in the task
+                        if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
+                            System.out.println("resolver A");
+                            threadPool.add(new WorkerThread(threadGroup, true));
+                        }
+                    } else {
+                        if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, null)) {
+                            System.out.println("resolver B");
+                            threadPool.add(new WorkerThread(threadGroup, true));
+                        }
                     }
                 }
             }

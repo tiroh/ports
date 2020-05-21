@@ -48,15 +48,28 @@ class LockManager {
         }
     }
 
-    static boolean isDeadlocked(Thread thread, Lock wantedLock) {
+    static boolean isDeadlocked(Thread taskThread, ThreadGroup targetGroup, Lock wantedLock) {
+        Thread thread = taskThread;
+
         while (thread instanceof Executor.WorkerThread) {
             Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
 
-            if (workerThread.containsLock(wantedLock)) {
+            if (workerThread.hasLock(wantedLock)) {
                 return true;
             }
 
-            thread = workerThread.getCurrentTask().getCreatedByThread();
+            Task workerTask = workerThread.getCurrentTask();
+
+            // In the meantime, the workerThread could have finished working.
+            if (workerTask == null) {
+                return false;
+            }
+
+            thread = workerTask.getCreatedByThread();
+
+            if (targetGroup == thread.getThreadGroup()) {
+                return true;
+            }
         }
 
         List<Lock> lockList = plainThreadLocks.get(thread);

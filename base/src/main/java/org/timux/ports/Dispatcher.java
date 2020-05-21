@@ -43,7 +43,7 @@ class Dispatcher {
 
         synchronized (queue) {
             queue.offerLast(task);
-            workerExecutor.onNewEventTaskAvailable(task, queue.size());
+            workerExecutor.onNewRequestTaskAvailable(task, queue.size());
         }
     }
 

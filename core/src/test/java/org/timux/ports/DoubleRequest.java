@@ -19,13 +19,22 @@ package org.timux.ports;
 @Response(Double.class)
 public class DoubleRequest {
 
-    private final double data;
+    private final Double data;
 
-    public DoubleRequest(double data) {
+    public DoubleRequest(Double data) {
         this.data = data;
     }
 
-    public double getData() {
+    public DoubleRequest(int data) {
+        this.data = Double.valueOf(data);
+    }
+
+    public Double getData() {
         return data;
+    }
+
+    @Override
+    public String toString() {
+        return Double.toString(data);
     }
 }

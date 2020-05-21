@@ -239,7 +239,7 @@ public class PortsFuture<T> implements Future<T> {
     public String toString() {
         return "PortsFuture{"
                 + (isDone()
-                ? "result='" + (task != null && task.getThrowable() != null ? task.getThrowable().getMessage() : result) + "'}:"
-                : "no result available}:");
+                ? "result='" + (task != null && task.getThrowable() != null ? task.getThrowable().getMessage() : task.getResponse()) + "'}"
+                : "no result available}");
     }
 }

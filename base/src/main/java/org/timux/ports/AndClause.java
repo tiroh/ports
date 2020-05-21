@@ -40,6 +40,10 @@ public class AndClause {
      * @param b The second component of the connection.
      */
     public void and(Object b) {
+        if (b == null) {
+            throw new IllegalArgumentException("component must not be null");
+        }
+
         terminalOperation.accept(b, PortsOptions.DEFAULT);
     }
 
@@ -51,6 +55,10 @@ public class AndClause {
      * @param portsOptions A bit field specifying a set of {@link PortsOptions}.
      */
     public void and(Object b, int portsOptions) {
+        if (b == null) {
+            throw new IllegalArgumentException("component must not be null");
+        }
+
         terminalOperation.accept(b, portsOptions);
     }
 }
