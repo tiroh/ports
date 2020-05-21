@@ -21,7 +21,6 @@ import java.util.Deque;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@SuppressWarnings("rawtypes")
 class Dispatcher {
 
     private final Deque<Task> queue = new ArrayDeque<>();
@@ -33,7 +32,7 @@ class Dispatcher {
                 : null;
     }
 
-    void dispatch(Consumer eventPort, Object payload, Object mutexSubject) {
+    <T> void dispatch(Consumer<T> eventPort, T payload, Object mutexSubject) {
         Task task = new Task(eventPort, payload, mutexSubject);
 
         if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
@@ -44,7 +43,7 @@ class Dispatcher {
 
         synchronized (queue) {
             queue.offerLast(task);
-            workerExecutor.onNewTaskAvailable(task, queue.size());
+            workerExecutor.onNewEventTaskAvailable(task, queue.size());
         }
     }
 
@@ -59,7 +58,7 @@ class Dispatcher {
 
         synchronized (queue) {
             queue.offerLast(task);
-            workerExecutor.onNewTaskAvailable(task, queue.size());
+            workerExecutor.onNewRequestTaskAvailable(task, queue.size());
         }
 
         return new PortsFuture<>(task);

@@ -145,7 +145,19 @@ class Executor {
         return threadGroup;
     }
 
-    void onNewTaskAvailable(Task newTask, int numberOfTasksInQueue) {
+    void onNewEventTaskAvailable(Task newTask, int numberOfTasksInQueue) {
+        synchronized (threadPool) {
+            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads
+                    && threadPool.size() < maxThreadPoolSize)
+            {
+                threadPool.add(new WorkerThread(threadGroup, false));
+            }
+        }
+
+        poolSemaphore.release();
+    }
+
+    void onNewRequestTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
             if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
                 if (threadPool.size() < maxThreadPoolSize) {
