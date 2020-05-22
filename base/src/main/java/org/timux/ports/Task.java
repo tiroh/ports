@@ -78,6 +78,8 @@ class Task implements Runnable {
                         ? (Executor.WorkerThread) processedByThread
                         : null;
 
+                LockManager.acquisitionLock.lock();
+
                 Lock lock = LockManager.getLock(mutexSubject);
 
                 if (lock.tryLock()) {
@@ -86,6 +88,9 @@ class Task implements Runnable {
                     } else {
                         LockManager.addLockForPlainThread(processedByThread, lock);
                     }
+//                if (LockManager.tryLock(processedByThread, mutexSubject)) {
+
+                    LockManager.acquisitionLock.unlock();
 
                     try {
                         if (eventPort != null) {
@@ -107,6 +112,8 @@ class Task implements Runnable {
                 } else {
                     // TODO optimize this (see Executor)
 
+                    LockManager.acquisitionLock.unlock();
+
                     if (LockManager.isDeadlocked(processedByThread, processedByThread.getThreadGroup(), lock))
 //                            || LockManager.isDeadlocked(createdByThread, processedByThread.getThreadGroup(), lock))
                     {
@@ -115,6 +122,8 @@ class Task implements Runnable {
 //                        } else {
 //                            LockManager.removeLockForPlainThread(processedByThread, lock);
 //                        }
+
+                        System.out.println("resolver C");
 
                         try {
                             if (eventPort != null) {
@@ -126,8 +135,14 @@ class Task implements Runnable {
                             throwable = e;
                         }
                     } else {
-                        System.out.println("waiting " + payload);
+                        System.out.println("waiting " + payload + " " + LockManager.isDeadlocked(processedByThread, processedByThread.getThreadGroup(), lock));
                         lock.lock();
+
+                        if (processedByWorkerThread != null) {
+                            processedByWorkerThread.addCurrentLock(lock);
+                        } else {
+                            LockManager.addLockForPlainThread(processedByThread, lock);
+                        }
 
                         try {
                             if (eventPort != null) {
@@ -149,7 +164,6 @@ class Task implements Runnable {
                     }
                 }
             }
-
         }
 
         processedByThread = null;

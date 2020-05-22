@@ -1,11 +1,13 @@
 package org.timux.ports;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 public class AsyncTest {
@@ -21,30 +23,34 @@ public class AsyncTest {
         }
 
         @Out
-        private Request<DoubleRequest, Double> doubleRequest;
+        Request<DoubleRequest, Double> doubleRequest;
 
         @Out
-        private Event<DoubleEvent> doubleEvent;
+        Event<DoubleEvent> doubleEvent;
 
         @In
         private Double onDoubleRequest(DoubleRequest request) {
-            doubleState *= request.getData() + 0.5;
+            System.out.println("request " + this + " receives " + request.getData());
 
-//            System.out.println("request " + this + " " + request.getData());
+            doubleState *= request.getData() + 0.5;
 
             if (request.getData() > 0) {
                 PortsFuture<Double> future = doubleRequest.submit(new DoubleRequest(request.getData() - 1));
-//                doubleEvent.trigger(new DoubleEvent(doubleState));
+                System.out.println("request " + this + " sends event " + doubleState);
+                doubleEvent.trigger(new DoubleEvent(doubleState));
+                System.out.println("request " + this + " returns " + future.get());
                 return future.get();
             } else {
+                System.out.println("request " + this + " returns " + doubleState);
                 return doubleState;
             }
         }
 
         @In
         private void onDouble(DoubleEvent event) {
-//            System.out.println("event " + this + " " + event.getData());
+            double oldState = doubleState;
             doubleState /= event.getData() + 0.5;
+            System.out.println("event " + this + " receives " + event.getData() + ", old state = " + oldState + " new state = " + doubleState);
         }
 
         void reset() {
@@ -83,6 +89,47 @@ public class AsyncTest {
                 components[i].reset();
             }
         }
+    }
+
+    @BeforeEach
+    public void beforeEach() {
+        Ports.releaseDomains();
+    }
+
+    @Test
+    public void nestedDeadlock() {
+        Component a = new AsyncTest.Component();
+        Component b = new AsyncTest.Component();
+//        Component c = new AsyncTest.Component();
+
+        Ports.connect(a).and(b);
+//        Ports.connect(b).and(c, PortsOptions.FORCE_CONNECT_ALL);
+
+        double expectedA = a.doubleRequest.call(new DoubleRequest(2));
+        double expectedB = b.doubleRequest.call(new DoubleRequest(2));
+//        double expectedC = c.doubleRequest.call(new DoubleRequest(1));
+
+        Domain d0 = Ports.domain("d0", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
+        Domain d1 = Ports.domain("d1", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
+//        Domain d2 = Ports.domain("d2", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
+
+        d0.addInstances(a);
+        d1.addInstances(b);
+//        d2.addInstances(c);
+
+        a.reset();
+        b.reset();
+//        c.reset();
+
+        System.out.println();
+
+        double actualA = a.doubleRequest.call(new DoubleRequest(2));
+        double actualB = b.doubleRequest.call(new DoubleRequest(2));
+//        double actualC = c.doubleRequest.call(new DoubleRequest(1));
+
+        assertEquals(expectedA, actualA);
+        assertEquals(expectedB, actualB);
+//        assertEquals(expectedC, actualC);
     }
 
     @Test
@@ -185,7 +232,7 @@ public class AsyncTest {
 
         for (int i = 0; i < fixture.components.length; i++) {
             fixture.components[i].doubleEvent.trigger(new DoubleEvent(fixture.next()));
-            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next()));
+            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next()/2));
             results.add(result);
         }
 

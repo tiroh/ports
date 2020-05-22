@@ -16,6 +16,8 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Container;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -23,11 +25,41 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class LockManager {
 
-    private static final ConcurrentWeakHashMap<Object, Lock> locks = new ConcurrentWeakHashMap<>();
+    private static final ConcurrentWeakHashMap<Object, Lock> subjectLocks = new ConcurrentWeakHashMap<>();
     private static final ConcurrentWeakHashMap<Thread, List<Lock>> plainThreadLocks = new ConcurrentWeakHashMap<>();
 
+    static final Lock acquisitionLock = new ReentrantLock();
+
     static Lock getLock(Object subject) {
-        return locks.computeIfAbsent(subject, key -> new ReentrantLock(false));
+        return subjectLocks.computeIfAbsent(subject, key -> new ReentrantLock(false));
+    }
+
+    static boolean tryLock(Thread thread, Object subject) {
+        Container<Boolean> r = Container.of(Boolean.TRUE);
+
+        subjectLocks.compute(
+                subject,
+                (key, currentLock) -> {
+                    if (currentLock == null) {
+                        Lock newLock = new ReentrantLock(false);
+                        newLock.lock();
+                        return newLock;
+                    } else {
+                        r.value = currentLock.tryLock();
+
+                        if (r.value) {
+                            if (thread instanceof Executor.WorkerThread) {
+                                ((Executor.WorkerThread) thread).addCurrentLock(currentLock);
+                            } else {
+                                addLockForPlainThread(thread, currentLock);
+                            }
+                        }
+
+                        return currentLock;
+                    }
+                });
+
+        return r.value;
     }
 
     static void addLockForPlainThread(Thread thread, Lock lock) {
@@ -49,39 +81,45 @@ class LockManager {
     }
 
     static boolean isDeadlocked(Thread taskThread, ThreadGroup targetGroup, Lock wantedLock) {
-        Thread thread = taskThread;
+        acquisitionLock.lock();
 
-        while (thread instanceof Executor.WorkerThread) {
-            Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
+        try {
+            Thread thread = taskThread;
 
-            if (workerThread.hasLock(wantedLock)) {
-                return true;
+            while (thread instanceof Executor.WorkerThread) {
+                Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
+
+                if (workerThread.hasLock(wantedLock)) {
+                    return true;
+                }
+
+                Task workerTask = workerThread.getCurrentTask();
+
+                // In the meantime, the workerThread could have finished working.
+                if (workerTask == null) {
+                    return false;
+                }
+
+                thread = workerTask.getCreatedByThread();
+
+                if (targetGroup == thread.getThreadGroup()) {
+                    return true;
+                }
             }
 
-            Task workerTask = workerThread.getCurrentTask();
+            List<Lock> lockList = plainThreadLocks.get(thread);
 
-            // In the meantime, the workerThread could have finished working.
-            if (workerTask == null) {
-                return false;
+            if (lockList != null) {
+                synchronized (lockList) {
+                    return lockList.contains(wantedLock);
+                }
             }
 
-            thread = workerTask.getCreatedByThread();
+            return false;
 
-            if (targetGroup == thread.getThreadGroup()) {
-                return true;
-            }
+            // T1(A) -> T2(B) -> T3(A?)
+        } finally {
+            acquisitionLock.unlock();
         }
-
-        List<Lock> lockList = plainThreadLocks.get(thread);
-
-        if (lockList != null) {
-            synchronized (lockList) {
-                return lockList.contains(wantedLock);
-            }
-        }
-
-        return false;
-
-        // T1(A) -> T2(B) -> T3(A?)
     }
 }

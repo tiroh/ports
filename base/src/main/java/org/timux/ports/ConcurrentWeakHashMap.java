@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @SuppressWarnings("unchecked")
@@ -63,6 +64,20 @@ class ConcurrentWeakHashMap<K, V> {
 
         try {
             return map.get(key);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public V compute(K key, BiFunction<K, V, V> mapper) {
+        int p = key.hashCode() & HASH_MASK;
+        Map<K, V> map = maps[p];
+        Lock lock = locks[p];
+
+        lock.lock();
+
+        try {
+            return map.compute(key, mapper);
         } finally {
             lock.unlock();
         }
