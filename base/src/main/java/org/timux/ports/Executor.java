@@ -35,7 +35,7 @@ class Executor {
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
         private List<Lock> currentLocks = new ArrayList<>();
-        private Task currentTask;
+        private List<Task> currentTasks = new ArrayList<>();
 
         private final boolean isDeadlockResolver;
 
@@ -48,19 +48,37 @@ class Executor {
         }
 
         public boolean hasLock(Lock lock) {
-            return currentLocks.contains(lock);
+            synchronized (currentLocks) {
+                return currentLocks.contains(lock);
+            }
         }
 
         public void addCurrentLock(Lock lock) {
-            currentLocks.add(lock);
+            synchronized (currentLocks) {
+                currentLocks.add(lock);
+            }
         }
 
         public void removeCurrentLock(Lock lock) {
-            currentLocks.remove(lock);
+            synchronized (currentLocks) {
+                currentLocks.remove(lock);
+            }
         }
 
-        public Task getCurrentTask() {
-            return currentTask;
+        void addCurrentTask(Task task) {
+            synchronized (currentTasks) {
+                currentTasks.add(task);
+            }
+        }
+
+        void removeCurrentTask(Task task) {
+            synchronized (currentTasks) {
+                currentTasks.remove(task);
+            }
+        }
+
+        public List<Task> getCurrentTasks() {
+            return currentTasks;
         }
 
         @Override
@@ -94,10 +112,10 @@ class Executor {
                 }
 
                 // Exception handling is done within the task, so not required here.
-                currentTask = dispatcher.poll();
-                currentTask.processedByThread = this;
-                currentTask.run();
-                currentTask = null;
+                Task task = dispatcher.poll();
+
+                task.processedByThread = this;
+                task.run();
 
                 synchronized (threadPool) {
                     numberOfBusyThreads--;
@@ -161,24 +179,35 @@ class Executor {
 
     void onNewRequestTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
-            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
-                if (threadPool.size() < maxThreadPoolSize) {
-                    threadPool.add(new WorkerThread(threadGroup, false));
-                } else {
-                    if (newTask.mutexSubject != null) {
-                        Lock wantedLock = LockManager.getLock(newTask.mutexSubject);
-
-                        // TODO optimize this: the information this thread is deadlocked can probably be used in the task
-                        if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
-                            System.out.println("resolver A");
-                            threadPool.add(new WorkerThread(threadGroup, true));
-                        }
+            for (;;) {
+                if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
+                    if (threadPool.size() < maxThreadPoolSize) {
+                        threadPool.add(new WorkerThread(threadGroup, false));
+                        System.out.println("    new thread -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
                     } else {
-                        if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, null)) {
-                            System.out.println("resolver B");
-                            threadPool.add(new WorkerThread(threadGroup, true));
+                        if (newTask.mutexSubject != null) {
+                            Lock wantedLock = LockManager.getLock(newTask.mutexSubject);
+
+                            // TODO optimize this: the information this thread is deadlocked can probably be used in the task
+                            if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
+                                threadPool.add(new WorkerThread(threadGroup, true));
+                                System.out.println("    resolver A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+                            } else {
+                                System.out.println("    no deadlock detected A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+                                break;
+                            }
+                        } else {
+                            if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, null)) {
+                                threadPool.add(new WorkerThread(threadGroup, true));
+                                System.out.println("    resolver B -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+                            } else {
+                                break;
+                            }
                         }
                     }
+                } else {
+                    System.out.println("    ok -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", pool " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+                    break;
                 }
             }
         }

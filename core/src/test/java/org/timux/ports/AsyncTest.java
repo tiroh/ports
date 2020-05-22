@@ -34,7 +34,8 @@ public class AsyncTest {
 
             doubleState *= request.getData() + 0.5;
 
-            if (request.getData() > 0) {
+            if (request.getData() > 0 && doubleRequest != null && doubleEvent != null) {
+                System.out.println("request " + this + " submits request " + (request.getData() - 1));
                 PortsFuture<Double> future = doubleRequest.submit(new DoubleRequest(request.getData() - 1));
                 System.out.println("request " + this + " sends event " + doubleState);
                 doubleEvent.trigger(new DoubleEvent(doubleState));
@@ -100,34 +101,34 @@ public class AsyncTest {
     public void nestedDeadlock() {
         Component a = new AsyncTest.Component();
         Component b = new AsyncTest.Component();
-//        Component c = new AsyncTest.Component();
+        Component c = new AsyncTest.Component();
 
-        Ports.connect(a).and(b);
-//        Ports.connect(b).and(c, PortsOptions.FORCE_CONNECT_ALL);
+        Ports.connectDirected(a, b, PortsOptions.FORCE_CONNECT_ALL);
+        Ports.connectDirected(b, c, PortsOptions.FORCE_CONNECT_ALL);
 
-        double expectedA = a.doubleRequest.call(new DoubleRequest(2));
-        double expectedB = b.doubleRequest.call(new DoubleRequest(2));
+        double expectedA = a.doubleRequest.call(new DoubleRequest(40));
+        double expectedB = b.doubleRequest.call(new DoubleRequest(50));
 //        double expectedC = c.doubleRequest.call(new DoubleRequest(1));
 
         Domain d0 = Ports.domain("d0", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
         Domain d1 = Ports.domain("d1", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
-//        Domain d2 = Ports.domain("d2", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
+        Domain d2 = Ports.domain("d2", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
 
         d0.addInstances(a);
         d1.addInstances(b);
-//        d2.addInstances(c);
+        d2.addInstances(c);
 
         a.reset();
         b.reset();
-//        c.reset();
+        c.reset();
 
         System.out.println();
 
-        double actualA = a.doubleRequest.call(new DoubleRequest(2));
-        double actualB = b.doubleRequest.call(new DoubleRequest(2));
+        double actualA = a.doubleRequest.call(new DoubleRequest(40));
+        double actualB = b.doubleRequest.call(new DoubleRequest(50));
 //        double actualC = c.doubleRequest.call(new DoubleRequest(1));
 
-        assertEquals(expectedA, actualA);
+//        assertEquals(expectedA, actualA);
         assertEquals(expectedB, actualB);
 //        assertEquals(expectedC, actualC);
     }
@@ -199,6 +200,9 @@ public class AsyncTest {
 
         List<Double> expected = r(fixture);
 
+        System.out.println();
+        System.out.println();
+
         Domain d0 = Ports.domain("d0", DispatchPolicy.SYNCHRONOUS, SyncPolicy.DOMAIN);
         Domain d1 = Ports.domain("d1", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT);
         Domain d2 = Ports.domain("d2", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN);
@@ -232,7 +236,7 @@ public class AsyncTest {
 
         for (int i = 0; i < fixture.components.length; i++) {
             fixture.components[i].doubleEvent.trigger(new DoubleEvent(fixture.next()));
-            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next()/2));
+            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next()/3));
             results.add(result);
         }
 

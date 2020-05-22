@@ -249,7 +249,7 @@ public class SimpleTests {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+        Ports.domain("test", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.DOMAIN)
                 .addInstances(a, b);
 
         double response = a.doubleRequest.call(new DoubleRequest(4.0));
@@ -286,10 +286,10 @@ public class SimpleTests {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
+        Ports.domain("a", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
                 .addInstances(a);
 
-        Ports.domain("test-b", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
+        Ports.domain("b", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
                 .addInstances(b);
 
         double response = a.doubleRequest.call(new DoubleRequest(4.0));

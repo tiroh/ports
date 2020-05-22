@@ -28,8 +28,6 @@ class LockManager {
     private static final ConcurrentWeakHashMap<Object, Lock> subjectLocks = new ConcurrentWeakHashMap<>();
     private static final ConcurrentWeakHashMap<Thread, List<Lock>> plainThreadLocks = new ConcurrentWeakHashMap<>();
 
-    static final Lock acquisitionLock = new ReentrantLock();
-
     static Lock getLock(Object subject) {
         return subjectLocks.computeIfAbsent(subject, key -> new ReentrantLock(false));
     }
@@ -81,45 +79,61 @@ class LockManager {
     }
 
     static boolean isDeadlocked(Thread taskThread, ThreadGroup targetGroup, Lock wantedLock) {
-        acquisitionLock.lock();
+        return isDeadlockedInternal(taskThread, targetGroup, wantedLock);
 
-        try {
-            Thread thread = taskThread;
+        // T1(A) -> T2(B) -> T3(A?)
+    }
 
-            while (thread instanceof Executor.WorkerThread) {
-                Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
+    static boolean isDeadlockedInternal(Thread thread, ThreadGroup targetGroup, Lock wantedLock) {
+        if (thread instanceof Executor.WorkerThread) {
+            Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
 
-                if (workerThread.hasLock(wantedLock)) {
-                    return true;
-                }
+            if (workerThread.hasLock(wantedLock)) {
+                return true;
+            }
 
-                Task workerTask = workerThread.getCurrentTask();
+            List<Task> workerTasks = workerThread.getCurrentTasks();
 
-                // In the meantime, the workerThread could have finished working.
-                if (workerTask == null) {
+            synchronized (workerTasks) {
+                // In the meantime, the workerThreads could have finished working.
+                if (workerTasks.isEmpty()) {
                     return false;
                 }
 
-                thread = workerTask.getCreatedByThread();
+                Thread lastThread = null;
 
-                if (targetGroup == thread.getThreadGroup()) {
-                    return true;
+                for (Task task : workerTasks) {
+                    Thread createdByThread = task.getCreatedByThread();
+
+                    if (createdByThread == thread) {
+                        return false;
+                    }
+
+                    if (createdByThread == lastThread) {
+                        return false;
+                    }
+
+                    lastThread = createdByThread;
+
+                    if (targetGroup == createdByThread.getThreadGroup()) {
+                        return true;
+                    }
+
+                    if (isDeadlockedInternal(createdByThread, targetGroup, wantedLock)) {
+                        return true;
+                    }
                 }
             }
-
-            List<Lock> lockList = plainThreadLocks.get(thread);
-
-            if (lockList != null) {
-                synchronized (lockList) {
-                    return lockList.contains(wantedLock);
-                }
-            }
-
-            return false;
-
-            // T1(A) -> T2(B) -> T3(A?)
-        } finally {
-            acquisitionLock.unlock();
         }
+
+        List<Lock> lockList = plainThreadLocks.get(thread);
+
+        if (lockList != null) {
+            synchronized (lockList) {
+                return lockList.contains(wantedLock);
+            }
+        }
+
+        return false;
     }
 }
