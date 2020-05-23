@@ -183,7 +183,7 @@ class Executor {
                 if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
                     if (threadPool.size() < maxThreadPoolSize) {
                         threadPool.add(new WorkerThread(threadGroup, false));
-                        System.out.println("    new thread -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+//                        System.out.println("    new thread -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
                     } else {
                         if (newTask.mutexSubject != null) {
                             Lock wantedLock = LockManager.getLock(newTask.mutexSubject);
@@ -191,22 +191,22 @@ class Executor {
                             // TODO optimize this: the information this thread is deadlocked can probably be used in the task
                             if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
                                 threadPool.add(new WorkerThread(threadGroup, true));
-                                System.out.println("    resolver A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+//                                System.out.println("    resolver A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
                             } else {
-                                System.out.println("    no deadlock detected A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+//                                System.out.println("    no deadlock detected A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
                                 break;
                             }
                         } else {
                             if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, null)) {
                                 threadPool.add(new WorkerThread(threadGroup, true));
-                                System.out.println("    resolver B -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+//                                System.out.println("    resolver B -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
                             } else {
                                 break;
                             }
                         }
                     }
                 } else {
-                    System.out.println("    ok -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", pool " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
+//                    System.out.println("    ok -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", pool " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
                     break;
                 }
             }

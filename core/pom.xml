@@ -36,7 +36,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M4</version>
                 <configuration>
-                    <forkCount>3</forkCount>
+                    <forkCount>2</forkCount>
                     <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>

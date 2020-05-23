@@ -69,8 +69,8 @@ class Task implements Runnable {
     @Override
     public void run() {
         if (!hasReturned) {
-            System.out.println("    " + processedByThread + " starts -- "
-                    + (eventPort != null ? "event " + payload : "request " + payload));
+//            System.out.println("    " + processedByThread + " starts -- "
+//                    + (eventPort != null ? "event " + payload : "request " + payload));
 
             Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
                     ? (Executor.WorkerThread) processedByThread
@@ -120,16 +120,8 @@ class Task implements Runnable {
                 } else {
                     // TODO optimize this (see Executor)
 
-                    if (LockManager.isDeadlocked(processedByThread, processedByThread.getThreadGroup(), lock))
-//                            || LockManager.isDeadlocked(createdByThread, processedByThread.getThreadGroup(), lock))
-                    {
-//                        if (processedByWorkerThread != null) {
-//                            processedByWorkerThread.removeCurrentLock(lock);
-//                        } else {
-//                            LockManager.removeLockForPlainThread(processedByThread, lock);
-//                        }
-
-                        System.out.println("    resolver C -- " + processedByThread);
+                    if (LockManager.isDeadlocked(processedByThread, null, lock)) {
+//                        System.out.println("    resolver C -- " + processedByThread);
 
                         try {
                             if (eventPort != null) {
@@ -141,7 +133,7 @@ class Task implements Runnable {
                             throwable = e;
                         }
                     } else {
-                        System.out.println("waiting " + payload + " " + processedByThread);
+//                        System.out.println("waiting " + payload + " " + processedByThread);
 
                         int timeoutIdx = 0;
 
@@ -149,7 +141,7 @@ class Task implements Runnable {
                             boolean isAcquired = false;
 
                             try {
-                                System.out.println("    waiting " + TIMEOUTS_MS[timeoutIdx]);
+//                                System.out.println("    waiting " + TIMEOUTS_MS[timeoutIdx]);
                                 isAcquired = lock.tryLock(TIMEOUTS_MS[timeoutIdx], TimeUnit.MILLISECONDS);
                             } catch (InterruptedException e) {
                                 //
@@ -160,8 +152,8 @@ class Task implements Runnable {
                             }
 
                             if (!isAcquired) {
-                                if (LockManager.isDeadlocked(processedByThread, processedByThread.getThreadGroup(), lock)) {
-                                    System.out.println("resolver D");
+                                if (LockManager.isDeadlocked(processedByThread, null, lock)) {
+//                                    System.out.println("resolver D");
 
                                     try {
                                         if (eventPort != null) {
@@ -207,7 +199,7 @@ class Task implements Runnable {
                 }
             }
 
-            System.out.println("    " + processedByThread + " exits");
+//            System.out.println("    " + processedByThread + " exits");
 
             if (processedByWorkerThread != null) {
                 processedByWorkerThread.removeCurrentTask(this);
