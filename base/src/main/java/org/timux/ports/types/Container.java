@@ -37,4 +37,9 @@ public class Container<T> {
     public static <T> Container<T> of(T value) {
         return new Container<>(value);
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
+    }
 }

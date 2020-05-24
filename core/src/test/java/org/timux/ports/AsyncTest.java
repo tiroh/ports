@@ -29,8 +29,6 @@ public class AsyncTest {
 
         @In
         private Double onDoubleRequest(DoubleRequest request) {
-//            System.out.println("request " + this + " receives " + request.getData());
-
             Object sender = request.getSender();
 
             if (sender == this) {
@@ -40,17 +38,13 @@ public class AsyncTest {
             doubleState *= request.getData() + 0.5;
 
             if (request.getData() > 0 && doubleRequest != null && doubleEvent != null) {
-//                System.out.println("request " + this + " submits request " + (request.getData() - 1));
                 PortsFuture<Double> future = doubleRequest.submit(new DoubleRequest(request.getData() - 1, sender));
                 doubleEvent.trigger(new DoubleEvent(doubleState));
                 PortsFuture<Double> future2 = doubleRequest.submit(new DoubleRequest(request.getData() - 1.1, sender));
-//                System.out.println("request " + this + " sends event " + doubleState);
                 doubleEvent.trigger(new DoubleEvent(doubleState*2));
                 doubleEvent.trigger(new DoubleEvent(doubleState*3));
-//                System.out.println("request " + this + " returns " + future.get());
                 return future.get() + future2.get();
             } else {
-//                System.out.println("request " + this + " returns " + doubleState);
                 return doubleState;
             }
         }
@@ -59,7 +53,6 @@ public class AsyncTest {
         private void onDouble(DoubleEvent event) {
             double oldState = doubleState;
             doubleState /= event.getData() + 0.3;
-//            System.out.println("event " + this + " receives " + event.getData() + ", old state = " + oldState + " new state = " + doubleState);
         }
 
         void reset() {
@@ -128,8 +121,6 @@ public class AsyncTest {
         a.reset();
         b.reset();
         c.reset();
-
-//        System.out.println();
 
         double actualA = a.doubleRequest.call(new DoubleRequest(40));
         double actualB = b.doubleRequest.call(new DoubleRequest(49));
@@ -213,6 +204,31 @@ public class AsyncTest {
         f(new Fixture(14L, NUMBER_OF_COMPONENTS), false);
     }
 
+    @Test
+    public void asyncRandomized16() {
+        f(new Fixture(15L, NUMBER_OF_COMPONENTS), false);
+    }
+
+    @Test
+    public void asyncRandomized17() {
+        f(new Fixture(16L, NUMBER_OF_COMPONENTS), false);
+    }
+
+    @Test
+    public void asyncRandomized18() {
+        f(new Fixture(17L, NUMBER_OF_COMPONENTS), false);
+    }
+
+    @Test
+    public void asyncRandomized19() {
+        f(new Fixture(18L, NUMBER_OF_COMPONENTS), false);
+    }
+
+    @Test
+    public void asyncRandomized20() {
+        f(new Fixture(19L, NUMBER_OF_COMPONENTS), false);
+    }
+
     private void f(Fixture fixture, boolean checkConsistency) {
         for (int i = 0; i < fixture.components.length; i++) {
             int numberOfConnections = fixture.next() % 2 + 1;
@@ -229,9 +245,6 @@ public class AsyncTest {
         }
 
         List<Double> expected = r(fixture);
-
-//        System.out.println();
-//        System.out.println();
 
         DispatchPolicy[] dispatchPolicies = {DispatchPolicy.SYNCHRONOUS, DispatchPolicy.ASYNCHRONOUS, DispatchPolicy.PARALLEL};
         SyncPolicy[] syncPolicies = {SyncPolicy.NONE, SyncPolicy.COMPONENT, SyncPolicy.DOMAIN};
@@ -255,8 +268,6 @@ public class AsyncTest {
                 d4.addInstances(fixture.components[i]);
             }
         }
-
-        Executor.BREAKPOINT_ENABLE = true;
 
         List<Double> actual = r(fixture);
 

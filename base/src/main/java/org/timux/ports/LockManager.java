@@ -109,7 +109,7 @@ class LockManager {
 
                     lastThread = createdByThread;
 
-                    if (targetGroup == createdByThread.getThreadGroup()) {
+                    if (targetGroup != null && targetGroup == createdByThread.getThreadGroup()) {
                         return true;
                     }
 
@@ -118,13 +118,13 @@ class LockManager {
                     }
                 }
             }
-        }
+        } else {
+            List<Lock> lockList = plainThreadLocks.get(taskThread);
 
-        List<Lock> lockList = plainThreadLocks.get(taskThread);
-
-        if (lockList != null) {
-            synchronized (lockList) {
-                return lockList.contains(wantedLock);
+            if (lockList != null) {
+                synchronized (lockList) {
+                    return lockList.contains(wantedLock);
+                }
             }
         }
 

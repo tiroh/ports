@@ -24,7 +24,6 @@ import java.util.function.Function;
 class Dispatcher {
 
     private final Deque<Task> queue = new ArrayDeque<>();
-    private int numberOfRequestTasks = 0;
 
     private final Executor workerExecutor;
 
@@ -45,7 +44,7 @@ class Dispatcher {
 
         synchronized (queue) {
             queue.offerLast(task);
-            workerExecutor.onNewEventTaskAvailable(task, numberOfRequestTasks, queue.size());
+            workerExecutor.onNewEventTaskAvailable(task, queue.size());
         }
     }
 
@@ -59,12 +58,8 @@ class Dispatcher {
         }
 
         synchronized (queue) {
-            if( task.isRequestTask()) {
-                numberOfRequestTasks++;
-            }
-
             queue.offerLast(task);
-            workerExecutor.onNewRequestTaskAvailable(task, numberOfRequestTasks, queue.size());
+            workerExecutor.onNewRequestTaskAvailable(task, queue.size());
         }
 
         return new PortsFuture<>(task);
@@ -73,11 +68,6 @@ class Dispatcher {
     Task poll() {
         synchronized (queue) {
             Task task = queue.pollFirst();
-
-            if (task.isRequestTask()) {
-                numberOfRequestTasks--;
-            }
-
             return task;
         }
     }

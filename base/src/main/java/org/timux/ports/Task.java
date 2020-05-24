@@ -25,7 +25,11 @@ import java.util.function.Function;
 @SuppressWarnings({"unchecked", "rawtypes"})
 class Task implements Runnable {
 
-    private static final long[] TIMEOUTS_MS = {1, 2, 5, 10, 100, 200, 500, 1000, 1000, 1000, 2000, 2000, 2000, 3000};
+    private static final long[] TIMEOUTS_MS = {
+            1, 1, 1, 2, 2, 2, 5, 5, 5,
+            10, 10, 10, 20, 20, 20, 50, 50, 50,
+            100, 100, 100, 200, 200, 200, 500
+    };
 
     private final Consumer eventPort;
     private final Function requestPort;
@@ -77,9 +81,6 @@ class Task implements Runnable {
     @Override
     public void run() {
         if (!hasReturned) {
-//            System.out.println("    " + processedByThread + " starts -- "
-//                    + (eventPort != null ? "event " + payload : "request " + payload));
-
             Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
                     ? (Executor.WorkerThread) processedByThread
                     : null;
@@ -129,8 +130,6 @@ class Task implements Runnable {
                     // TODO optimize this (see Executor)
 
                     if (LockManager.isDeadlocked(processedByThread, null, lock)) {
-//                        System.out.println("    resolver C -- " + processedByThread);
-
                         try {
                             if (eventPort != null) {
                                 eventPort.accept(payload);
@@ -141,28 +140,21 @@ class Task implements Runnable {
                             throwable = e;
                         }
                     } else {
-//                        System.out.println("waiting for " + mutexSubject + ", " + payload + " " + processedByThread);
-
                         int timeoutIdx = 0;
 
-                        for(;;) {
+                        for (;;) {
                             boolean isAcquired = false;
 
                             try {
-//                                System.out.println("    waiting " + TIMEOUTS_MS[timeoutIdx] + ", for " + mutexSubject + ", " + payload + " " + processedByThread);
                                 isAcquired = lock.tryLock(TIMEOUTS_MS[timeoutIdx], TimeUnit.MILLISECONDS);
                             } catch (InterruptedException e) {
                                 //
                             }
 
-                            if (timeoutIdx != TIMEOUTS_MS.length - 1) {
-                                timeoutIdx++;
-                            }
+                            timeoutIdx++;
 
                             if (!isAcquired) {
                                 if (LockManager.isDeadlocked(processedByThread, null, lock)) {
-//                                    System.out.println("resolver D");
-
                                     try {
                                         if (eventPort != null) {
                                             eventPort.accept(payload);
@@ -198,16 +190,44 @@ class Task implements Runnable {
                                     }
 
                                     lock.unlock();
-
-                                    break;
                                 }
+
+                                break;
+                            }
+
+                            if (timeoutIdx >= TIMEOUTS_MS.length) {
+                                lock.lock();
+
+                                if (processedByWorkerThread != null) {
+                                    processedByWorkerThread.addCurrentLock(lock);
+                                } else {
+                                    LockManager.addLockForPlainThread(processedByThread, lock);
+                                }
+
+                                try {
+                                    if (eventPort != null) {
+                                        eventPort.accept(payload);
+                                    } else {
+                                        response = requestPort.apply(payload);
+                                    }
+                                } catch (Exception e) {
+                                    throwable = e;
+                                } finally {
+                                    if (processedByWorkerThread != null) {
+                                        processedByWorkerThread.removeCurrentLock(lock);
+                                    } else {
+                                        LockManager.removeLockForPlainThread(processedByThread, lock);
+                                    }
+
+                                    lock.unlock();
+                                }
+
+                                break;
                             }
                         }
                     }
                 }
             }
-
-//            System.out.println("    " + processedByThread + " exits");
 
             if (processedByWorkerThread != null) {
                 processedByWorkerThread.removeCurrentTask(this);

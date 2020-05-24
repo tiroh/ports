@@ -163,75 +163,38 @@ class Executor {
         return threadGroup;
     }
 
-    void onNewEventTaskAvailable(Task newTask, int numberOfRequestTasksInQueue, int numberOfTasksInQueue) {
+    void onNewEventTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
             if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads
                     && threadPool.size() < maxThreadPoolSize)
             {
                 threadPool.add(new WorkerThread(threadGroup, false));
-//                System.out.println("    new thread for event -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", requests " + numberOfRequestTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
             }
         }
 
         poolSemaphore.release();
     }
 
-    static boolean BREAKPOINT_ENABLE = false;
-
-    void onNewRequestTaskAvailable(Task newTask, int numberOfRequestTasksInQueue, int numberOfTasksInQueue) {
-//        synchronized (threadPool) {
-//            if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads
-//                    && threadPool.size() < maxThreadPoolSize)
-//            {
-//                threadPool.add(new WorkerThread(threadGroup, false));
-//            }
-//
-//            {
-//                int numberOfDeadlockedTasks = dispatcher.getNumberOfDeadlockedTasks();
-//
-//                for (int i = 0; i < numberOfDeadlockedTasks; i++) {
-//                    threadPool.add(new WorkerThread(threadGroup, true));
-//                }
-//            }
-//        }
-//
-//        poolSemaphore.release();
-
+    void onNewRequestTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
-            for (;;) {
-                if (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
-                    if (threadPool.size() < maxThreadPoolSize) {
-                        threadPool.add(new WorkerThread(threadGroup, false));
-//                        System.out.println("    new thread for request -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", requests " + numberOfRequestTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
-                    } else {
-                        if (newTask.getMutexSubject() != null) {
-                            Lock wantedLock = LockManager.getLock(newTask.getMutexSubject());
-
-                            // TODO optimize this: the information this thread is deadlocked can probably be used in the task
-                            if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
-                                threadPool.add(new WorkerThread(threadGroup, true));
-//                                System.out.println("    resolver A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", requests " + numberOfRequestTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
-                            } else {
-//                                System.out.println("    no deadlock detected A -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
-                                break;
-                            }
-                        } else {
-                            if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, null)) {
-                                threadPool.add(new WorkerThread(threadGroup, true));
-//                                System.out.println("    resolver B -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", requests " + numberOfRequestTasksInQueue + ", total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
-                            } else {
-                                break;
-                            }
-                        }
-                    }
+            while (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
+                if (threadPool.size() < maxThreadPoolSize) {
+                    threadPool.add(new WorkerThread(threadGroup, false));
                 } else {
-//                    System.out.println("    ok -- " + threadGroup + " -- queue " + numberOfTasksInQueue + ", requests " + numberOfRequestTasksInQueue + ". total " + threadPool.size() + ", busy " + numberOfBusyThreads + "  " + newTask.getCreatedByThread());
-                    break;
-                }
+                    Lock wantedLock = newTask.getMutexSubject() != null
+                            ? LockManager.getLock(newTask.getMutexSubject())
+                            : null;
 
-//                System.out.println("repeat");
+                    // TODO optimize this: the information this thread is deadlocked can probably be used in the task
+                    if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
+                        threadPool.add(new WorkerThread(threadGroup, true));
+                    } else {
+                        break;
+                    }
+                }
             }
         }
+
 
         poolSemaphore.release();
     }
