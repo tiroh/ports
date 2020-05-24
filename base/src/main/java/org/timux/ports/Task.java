@@ -38,7 +38,7 @@ class Task implements Runnable {
 
     Thread processedByThread;
 
-    final Object mutexSubject;
+    private final Object mutexSubject;
 
     Task(Consumer eventPort, Object payload, Object mutexSubject) {
         this.eventPort = eventPort;
@@ -64,6 +64,14 @@ class Task implements Runnable {
 
     public Thread getProcessedByThread() {
         return processedByThread;
+    }
+
+    boolean isRequestTask() {
+        return eventPort == null;
+    }
+
+    Object getMutexSubject() {
+        return mutexSubject;
     }
 
     @Override
@@ -133,7 +141,7 @@ class Task implements Runnable {
                             throwable = e;
                         }
                     } else {
-//                        System.out.println("waiting " + payload + " " + processedByThread);
+//                        System.out.println("waiting for " + mutexSubject + ", " + payload + " " + processedByThread);
 
                         int timeoutIdx = 0;
 
@@ -141,7 +149,7 @@ class Task implements Runnable {
                             boolean isAcquired = false;
 
                             try {
-//                                System.out.println("    waiting " + TIMEOUTS_MS[timeoutIdx]);
+//                                System.out.println("    waiting " + TIMEOUTS_MS[timeoutIdx] + ", for " + mutexSubject + ", " + payload + " " + processedByThread);
                                 isAcquired = lock.tryLock(TIMEOUTS_MS[timeoutIdx], TimeUnit.MILLISECONDS);
                             } catch (InterruptedException e) {
                                 //

@@ -16,8 +16,8 @@
  
 package org.timux.ports;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.testapp.component.IntEvent;
 import org.timux.ports.types.Pair;
 import org.timux.ports.types.PairX;
 import org.timux.ports.types.TripleX;
@@ -229,10 +229,10 @@ public class SimpleTests {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+        Ports.domain("a", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
                 .addInstances(a);
 
-        Ports.domain("test-b", DispatchPolicy.SYNCHRONOUS, SyncPolicy.COMPONENT)
+        Ports.domain("b", DispatchPolicy.SYNCHRONOUS, SyncPolicy.COMPONENT)
                 .addInstances(b);
 
         double response = a.doubleRequest.call(new DoubleRequest(4.0));
@@ -266,10 +266,10 @@ public class SimpleTests {
 
         Ports.connect(a).and(b);
 
-        Ports.domain("test-a", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+        Ports.domain("a", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
                 .addInstances(a);
 
-        Ports.domain("test-b", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
+        Ports.domain("b", DispatchPolicy.ASYNCHRONOUS, SyncPolicy.COMPONENT)
                 .addInstances(b);
 
         double response = a.doubleRequest.call(new DoubleRequest(4.0));
@@ -297,5 +297,35 @@ public class SimpleTests {
 
         response = a.doubleRequest.call(new DoubleRequest(32.0));
         assertEquals(0.0, response);
+    }
+
+    @Test
+    public void noDeadlock() {
+        A a = new A();
+        B b = new B();
+
+        Ports.connect(a).and(b);
+
+        Domain domainA = Ports.domain("a", DispatchPolicy.PARALLEL, SyncPolicy.COMPONENT)
+                .addInstances(a);
+
+        Fork<Double> fork = b.doubleRequest.fork(1000, DoubleRequest::new);
+
+        PortsFuture<Double> future1 = b.slowRequest.submit(new SlowRequest(10.0));
+        PortsFuture<Double> future2 = b.slowRequest.submit(new SlowRequest(1.0));
+
+        double response2 = future2.get();
+        double response1 = future1.get();
+
+        fork.getNowEither()
+                .forEach(either -> either.on(
+                        value -> {},
+                        nothing -> fail("result expected"),
+                        Assertions::fail));
+
+        assertEquals(15.0, response1);
+        assertEquals(1.5, response2);
+
+        assertEquals(Runtime.getRuntime().availableProcessors(), domainA.getNumberOfThreadsCreated());
     }
 }

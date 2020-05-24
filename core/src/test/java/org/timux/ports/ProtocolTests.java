@@ -2,7 +2,6 @@ package org.timux.ports;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.testapp.component.IntEvent;
 import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;

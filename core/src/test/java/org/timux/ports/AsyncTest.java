@@ -31,13 +31,19 @@ public class AsyncTest {
         private Double onDoubleRequest(DoubleRequest request) {
 //            System.out.println("request " + this + " receives " + request.getData());
 
+            Object sender = request.getSender();
+
+            if (sender == this) {
+                return doubleState;
+            }
+
             doubleState *= request.getData() + 0.5;
 
             if (request.getData() > 0 && doubleRequest != null && doubleEvent != null) {
 //                System.out.println("request " + this + " submits request " + (request.getData() - 1));
-                PortsFuture<Double> future = doubleRequest.submit(new DoubleRequest(request.getData() - 1));
+                PortsFuture<Double> future = doubleRequest.submit(new DoubleRequest(request.getData() - 1, sender));
                 doubleEvent.trigger(new DoubleEvent(doubleState));
-                PortsFuture<Double> future2 = doubleRequest.submit(new DoubleRequest(request.getData() - 1.1));
+                PortsFuture<Double> future2 = doubleRequest.submit(new DoubleRequest(request.getData() - 1.1, sender));
 //                System.out.println("request " + this + " sends event " + doubleState);
                 doubleEvent.trigger(new DoubleEvent(doubleState*2));
                 doubleEvent.trigger(new DoubleEvent(doubleState*3));
@@ -101,9 +107,9 @@ public class AsyncTest {
 
     @Test
     public void nestedDeadlock() {
-        Component a = new AsyncTest.Component();
-        Component b = new AsyncTest.Component();
-        Component c = new AsyncTest.Component();
+        Component a = new Component();
+        Component b = new Component();
+        Component c = new Component();
 
         Ports.connectDirected(a, b, PortsOptions.FORCE_CONNECT_ALL);
         Ports.connectDirected(b, c, PortsOptions.FORCE_CONNECT_ALL);
@@ -139,7 +145,7 @@ public class AsyncTest {
 
     @Test
     public void asyncRandomized02() {
-        f(new Fixture(1L, NUMBER_OF_COMPONENTS), true);
+        f(new Fixture(1L, NUMBER_OF_COMPONENTS), false);
     }
 
     @Test
@@ -154,7 +160,7 @@ public class AsyncTest {
 
     @Test
     public void asyncRandomized05() {
-        f(new Fixture(4L, NUMBER_OF_COMPONENTS), true);
+        f(new Fixture(4L, NUMBER_OF_COMPONENTS), false);
     }
 
     @Test
@@ -184,12 +190,12 @@ public class AsyncTest {
 
     @Test
     public void asyncRandomized11() {
-        f(new Fixture(10L, NUMBER_OF_COMPONENTS), true);
+        f(new Fixture(10L, NUMBER_OF_COMPONENTS), false);
     }
 
     @Test
     public void asyncRandomized12() {
-        f(new Fixture(11L, NUMBER_OF_COMPONENTS), true);
+        f(new Fixture(11L, NUMBER_OF_COMPONENTS), false);
     }
 
     @Test
@@ -241,11 +247,11 @@ public class AsyncTest {
                 d0.addInstances(fixture.components[i]);
             } else if (i < 2 * fixture.components.length / 5) {
                 d1.addInstances(fixture.components[i]);
-            } if (i < 3 * fixture.components.length / 5) {
+            } else if (i < 3 * fixture.components.length / 5) {
                 d2.addInstances(fixture.components[i]);
-            } if (i < 4 * fixture.components.length / 5) {
+            } else if (i < 4 * fixture.components.length / 5) {
                 d3.addInstances(fixture.components[i]);
-            }  else {
+            } else {
                 d4.addInstances(fixture.components[i]);
             }
         }
@@ -259,6 +265,10 @@ public class AsyncTest {
         } else {
             assertTrue(true);
         }
+
+        System.out.println(d0.getNumberOfThreadsCreated() + " " + d1.getNumberOfThreadsCreated() + " " +
+                d2.getNumberOfThreadsCreated() + " " + d3.getNumberOfThreadsCreated() + " " +
+                d4.getNumberOfThreadsCreated());
     }
 
     private List<Double> r(Fixture fixture) {
@@ -267,7 +277,7 @@ public class AsyncTest {
 
         for (int i = 0; i < fixture.components.length; i++) {
             fixture.components[i].doubleEvent.trigger(new DoubleEvent(fixture.next()));
-            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next()/3));
+            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next() / 2.0, fixture.components[i]));
             results.add(result);
         }
 

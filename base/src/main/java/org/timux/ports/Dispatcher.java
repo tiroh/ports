@@ -24,6 +24,8 @@ import java.util.function.Function;
 class Dispatcher {
 
     private final Deque<Task> queue = new ArrayDeque<>();
+    private int numberOfRequestTasks = 0;
+
     private final Executor workerExecutor;
 
     Dispatcher(String name, int maxNumberOfThreads) {
@@ -43,7 +45,7 @@ class Dispatcher {
 
         synchronized (queue) {
             queue.offerLast(task);
-            workerExecutor.onNewEventTaskAvailable(task, queue.size());
+            workerExecutor.onNewEventTaskAvailable(task, numberOfRequestTasks, queue.size());
         }
     }
 
@@ -57,8 +59,12 @@ class Dispatcher {
         }
 
         synchronized (queue) {
+            if( task.isRequestTask()) {
+                numberOfRequestTasks++;
+            }
+
             queue.offerLast(task);
-            workerExecutor.onNewRequestTaskAvailable(task, queue.size());
+            workerExecutor.onNewRequestTaskAvailable(task, numberOfRequestTasks, queue.size());
         }
 
         return new PortsFuture<>(task);
@@ -66,8 +72,18 @@ class Dispatcher {
 
     Task poll() {
         synchronized (queue) {
-            return queue.pollFirst();
+            Task task = queue.pollFirst();
+
+            if (task.isRequestTask()) {
+                numberOfRequestTasks--;
+            }
+
+            return task;
         }
+    }
+
+    int getNumberOfThreadsCreated() {
+        return workerExecutor != null ? workerExecutor.getNumberOfThreadsCreated() : 0;
     }
 
     void awaitQuiescence() {

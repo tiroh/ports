@@ -16,8 +16,6 @@
 
 package org.timux.ports;
 
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -124,6 +122,10 @@ public class Domain {
         default:
             throw new IllegalStateException("unhandled sync policy: " + syncPolicy);
         }
+    }
+
+    int getNumberOfThreadsCreated() {
+        return dispatcher.getNumberOfThreadsCreated();
     }
 
     void awaitQuiescence() {

@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+ 
 package org.timux.ports;
 
-class C {
+public class IntEvent {
 
-    public int data;
+    private final int data;
 
-    @In
-    private void onInt(IntEvent event) {
-        this.data = event.getData();
+    public IntEvent(int data) {
+        this.data = data;
+    }
+
+    public int getData() {
+        return data;
     }
 }

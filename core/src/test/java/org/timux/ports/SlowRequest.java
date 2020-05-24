@@ -28,4 +28,9 @@ public class SlowRequest {
     public double getData() {
         return data;
     }
+
+    @Override
+    public String toString() {
+        return Double.toString(data);
+    }
 }

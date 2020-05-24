@@ -20,17 +20,34 @@ package org.timux.ports;
 public class DoubleRequest {
 
     private final Double data;
+    private final Object sender;
 
     public DoubleRequest(Double data) {
         this.data = data;
+        this.sender = null;
+    }
+
+    public DoubleRequest(Double data, Object sender) {
+        this.data = data;
+        this.sender = sender;
     }
 
     public DoubleRequest(int data) {
         this.data = Double.valueOf(data);
+        this.sender = null;
+    }
+
+    public DoubleRequest(int data, Object sender) {
+        this.data = Double.valueOf(data);
+        this.sender = sender;
     }
 
     public Double getData() {
         return data;
+    }
+
+    public Object getSender() {
+        return sender;
     }
 
     @Override

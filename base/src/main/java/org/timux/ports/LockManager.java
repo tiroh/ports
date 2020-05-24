@@ -79,14 +79,8 @@ class LockManager {
     }
 
     static boolean isDeadlocked(Thread taskThread, ThreadGroup targetGroup, Lock wantedLock) {
-        return isDeadlockedInternal(taskThread, targetGroup, wantedLock);
-
-        // T1(A) -> T2(B) -> T3(A?)
-    }
-
-    static boolean isDeadlockedInternal(Thread thread, ThreadGroup targetGroup, Lock wantedLock) {
-        if (thread instanceof Executor.WorkerThread) {
-            Executor.WorkerThread workerThread = (Executor.WorkerThread) thread;
+        if (taskThread instanceof Executor.WorkerThread) {
+            Executor.WorkerThread workerThread = (Executor.WorkerThread) taskThread;
 
             if (workerThread.hasLock(wantedLock)) {
                 return true;
@@ -105,7 +99,7 @@ class LockManager {
                 for (Task task : workerTasks) {
                     Thread createdByThread = task.getCreatedByThread();
 
-                    if (createdByThread == thread) {
+                    if (createdByThread == taskThread) {
                         return false;
                     }
 
@@ -119,14 +113,14 @@ class LockManager {
                         return true;
                     }
 
-                    if (isDeadlockedInternal(createdByThread, targetGroup, wantedLock)) {
+                    if (isDeadlocked(createdByThread, targetGroup, wantedLock)) {
                         return true;
                     }
                 }
             }
         }
 
-        List<Lock> lockList = plainThreadLocks.get(thread);
+        List<Lock> lockList = plainThreadLocks.get(taskThread);
 
         if (lockList != null) {
             synchronized (lockList) {
@@ -135,5 +129,7 @@ class LockManager {
         }
 
         return false;
+
+        // T1(A) -> T2(B) -> T3(A?)
     }
 }

@@ -16,8 +16,6 @@
 
 package org.timux.ports;
 
-import org.timux.ports.testapp.component.IntEvent;
-
 class A {
 
     public double receivedData = 0;
