@@ -277,7 +277,7 @@ public class AsyncTest {
 
         for (int i = 0; i < fixture.components.length; i++) {
             fixture.components[i].doubleEvent.trigger(new DoubleEvent(fixture.next()));
-            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next() / 2.0, fixture.components[i]));
+            double result = fixture.components[i].doubleRequest.call(new DoubleRequest(fixture.next() / 2.1 + 1.0, fixture.components[i]));
             results.add(result);
         }
 

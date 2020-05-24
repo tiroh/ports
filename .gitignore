@@ -1,4 +1,5 @@
 bin/
+.run/
 
 # Maven
 target/
