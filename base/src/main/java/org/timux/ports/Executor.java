@@ -17,7 +17,9 @@
 package org.timux.ports;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,7 +27,7 @@ import java.util.concurrent.locks.Lock;
 
 class Executor {
 
-    private static final long IDLE_LIFETIME_MS = 10000000;
+    private static final long IDLE_LIFETIME_MS = 20000;
 
     // The following TEST_API fields must not be private or final because they are
     // modified by the tests to achieve deterministic behavior.
@@ -35,7 +37,11 @@ class Executor {
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
         private List<Lock> currentLocks = new ArrayList<>();
-        private List<Task> currentTasks = new ArrayList<>();
+
+        private Task currentTask;
+
+        // Optimization, this is used by the LockManager.
+        private Map<Thread, Object> seenThreads = new HashMap<>();
 
         private final boolean isDeadlockResolver;
 
@@ -65,25 +71,21 @@ class Executor {
             }
         }
 
-        void addCurrentTask(Task task) {
-            synchronized (currentTasks) {
-                currentTasks.add(task);
-            }
+        void setCurrentTask(Task currentTask) {
+            this.currentTask = currentTask;
         }
 
-        void removeCurrentTask(Task task) {
-            synchronized (currentTasks) {
-                currentTasks.remove(task);
-            }
+        Task getCurrentTask() {
+            return currentTask;
         }
 
-        public List<Task> getCurrentTasks() {
-            return currentTasks;
+        Map<Thread, Object> getSeenThreads() {
+            return seenThreads;
         }
 
         @Override
         public void run() {
-            for (;;) {
+            while (!threadsShallDie) {
                 boolean permitAcquired;
 
                 try {
@@ -95,9 +97,9 @@ class Executor {
                     }
                 }
 
-                if (!permitAcquired) {
+                if (!permitAcquired || threadsShallDie) {
                     synchronized (threadPool) {
-                        if (threadPool.size() == 1) {
+                        if (threadPool.size() == 1 && !threadsShallDie) {
                             // Do not kill this thread because it is the only one left.
                             continue;
                         }
@@ -113,9 +115,11 @@ class Executor {
 
                 // Exception handling is done within the task, so not required here.
                 Task task = dispatcher.poll();
+                currentTask = task;
 
                 task.processedByThread = this;
                 task.run();
+                currentTask = null;
 
                 synchronized (threadPool) {
                     numberOfBusyThreads--;
@@ -150,6 +154,8 @@ class Executor {
     private final long idleLifetimeMs;
     private final Semaphore poolSemaphore = new Semaphore(0);
 
+    private boolean threadsShallDie = false;
+
     private int numberOfBusyThreads = 0;
 
     Executor(Dispatcher dispatcher, String threadGroupName, int maxThreadPoolSize) {
@@ -177,6 +183,10 @@ class Executor {
 
     void onNewRequestTaskAvailable(Task newTask, int numberOfTasksInQueue) {
         synchronized (threadPool) {
+            if (threadsShallDie) {
+                return;
+            }
+
             while (numberOfTasksInQueue > threadPool.size() - numberOfBusyThreads) {
                 if (threadPool.size() < maxThreadPoolSize) {
                     threadPool.add(new WorkerThread(threadGroup, false));
@@ -218,6 +228,13 @@ class Executor {
 
     int getNumberOfThreadsCreated() {
         return nextThreadId.get();
+    }
+
+    void release() {
+        synchronized (threadPool) {
+            threadsShallDie = true;
+            poolSemaphore.release(threadPool.size());
+        }
     }
 
     boolean isQuiescent() {

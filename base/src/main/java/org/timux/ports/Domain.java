@@ -128,10 +128,12 @@ public class Domain {
         return dispatcher.getNumberOfThreadsCreated();
     }
 
+    void release() {
+        dispatcher.release();
+    }
+
     void awaitQuiescence() {
-        if (dispatcher != null) {
-            dispatcher.awaitQuiescence();
-        }
+        dispatcher.awaitQuiescence();
     }
 
     @Override

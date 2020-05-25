@@ -66,14 +66,6 @@ class Task implements Runnable {
         return createdByThread;
     }
 
-    public Thread getProcessedByThread() {
-        return processedByThread;
-    }
-
-    boolean isRequestTask() {
-        return eventPort == null;
-    }
-
     Object getMutexSubject() {
         return mutexSubject;
     }
@@ -84,10 +76,6 @@ class Task implements Runnable {
             Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
                     ? (Executor.WorkerThread) processedByThread
                     : null;
-
-            if (processedByWorkerThread != null) {
-                processedByWorkerThread.addCurrentTask(this);
-            }
 
             if (mutexSubject == null) {
                 try {
@@ -227,10 +215,6 @@ class Task implements Runnable {
                         }
                     }
                 }
-            }
-
-            if (processedByWorkerThread != null) {
-                processedByWorkerThread.removeCurrentTask(this);
             }
         }
 

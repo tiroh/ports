@@ -34,13 +34,18 @@ class Dispatcher {
     }
 
     <T> void dispatch(Consumer<T> eventPort, T payload, Object mutexSubject) {
-        Task task = new Task(eventPort, payload, mutexSubject);
-
-        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-            task.processedByThread = task.getCreatedByThread();
-            task.run();
+        if (workerExecutor == null || Thread.currentThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+            eventPort.accept(payload);
             return;
         }
+
+        Task task = new Task(eventPort, payload, mutexSubject);
+
+//        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+//            task.processedByThread = task.getCreatedByThread();
+//            task.run();
+//            return;
+//        }
 
         synchronized (queue) {
             queue.offerLast(task);
@@ -49,13 +54,17 @@ class Dispatcher {
     }
 
     <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
+        if (workerExecutor == null || Thread.currentThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+            return new PortsFuture<>(requestPort.apply(payload));
+        }
+
         Task task = new Task(requestPort, payload, mutexSubject);
 
-        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-            task.processedByThread = task.getCreatedByThread();
-            task.run();
-            return new PortsFuture<>(task);
-        }
+//        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+//            task.processedByThread = task.getCreatedByThread();
+//            task.run();
+//            return new PortsFuture<>(task);
+//        }
 
         synchronized (queue) {
             queue.offerLast(task);
@@ -67,13 +76,18 @@ class Dispatcher {
 
     Task poll() {
         synchronized (queue) {
-            Task task = queue.pollFirst();
-            return task;
+            return queue.pollFirst();
         }
     }
 
     int getNumberOfThreadsCreated() {
         return workerExecutor != null ? workerExecutor.getNumberOfThreadsCreated() : 0;
+    }
+
+    void release() {
+        if (workerExecutor != null) {
+            workerExecutor.release();
+        }
     }
 
     void awaitQuiescence() {

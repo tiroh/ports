@@ -87,6 +87,10 @@ class DomainManager {
     }
 
     static synchronized void release() {
+        instanceDomains.values().forEach(Domain::release);
+        classDomains.values().forEach(Domain::release);
+        packageDomains.values().forEach(Domain::release);
+
         instanceDomains.clear();
         classDomains.clear();
         packageDomains.clear();

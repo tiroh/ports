@@ -16,10 +16,10 @@
 
 package org.timux.ports;
 
-import org.timux.ports.types.Container;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -28,36 +28,11 @@ class LockManager {
     private static final ConcurrentWeakHashMap<Object, Lock> subjectLocks = new ConcurrentWeakHashMap<>();
     private static final ConcurrentWeakHashMap<Thread, List<Lock>> plainThreadLocks = new ConcurrentWeakHashMap<>();
 
+    private static final Map<Thread, Object> seenThreads = new HashMap<>(128);
+    private static final Object mapValue = new Object();
+
     static Lock getLock(Object subject) {
         return subjectLocks.computeIfAbsent(subject, key -> new ReentrantLock(false));
-    }
-
-    static boolean tryLock(Thread thread, Object subject) {
-        Container<Boolean> r = Container.of(Boolean.TRUE);
-
-        subjectLocks.compute(
-                subject,
-                (key, currentLock) -> {
-                    if (currentLock == null) {
-                        Lock newLock = new ReentrantLock(false);
-                        newLock.lock();
-                        return newLock;
-                    } else {
-                        r.value = currentLock.tryLock();
-
-                        if (r.value) {
-                            if (thread instanceof Executor.WorkerThread) {
-                                ((Executor.WorkerThread) thread).addCurrentLock(currentLock);
-                            } else {
-                                addLockForPlainThread(thread, currentLock);
-                            }
-                        }
-
-                        return currentLock;
-                    }
-                });
-
-        return r.value;
     }
 
     static void addLockForPlainThread(Thread thread, Lock lock) {
@@ -79,6 +54,27 @@ class LockManager {
     }
 
     static boolean isDeadlocked(Thread taskThread, ThreadGroup targetGroup, Lock wantedLock) {
+        if (Thread.currentThread() instanceof Executor.WorkerThread) {
+            Executor.WorkerThread w = ((Executor.WorkerThread) Thread.currentThread());
+            Map<Thread, Object> m = w.getSeenThreads();
+            boolean result = isDeadlocked0(taskThread, m, targetGroup, wantedLock);
+            m.clear();
+            return result;
+        }
+
+        synchronized (seenThreads) {
+            seenThreads.clear();
+            return isDeadlocked0(taskThread, seenThreads, targetGroup, wantedLock);
+        }
+    }
+
+    private static boolean isDeadlocked0(Thread taskThread, Map<Thread, Object> seenThreads, ThreadGroup targetGroup, Lock wantedLock) {
+        if (seenThreads.containsKey(taskThread)) {
+            return false;
+        }
+
+        seenThreads.put(taskThread, mapValue);
+
         if (taskThread instanceof Executor.WorkerThread) {
             Executor.WorkerThread workerThread = (Executor.WorkerThread) taskThread;
 
@@ -86,38 +82,19 @@ class LockManager {
                 return true;
             }
 
-            List<Task> workerTasks = workerThread.getCurrentTasks();
+            Task task = workerThread.getCurrentTask();
 
-            synchronized (workerTasks) {
-                // In the meantime, the workerThreads could have finished working.
-                if (workerTasks.isEmpty()) {
-                    return false;
-                }
-
-                Thread lastThread = null;
-
-                for (Task task : workerTasks) {
-                    Thread createdByThread = task.getCreatedByThread();
-
-                    if (createdByThread == taskThread) {
-                        return false;
-                    }
-
-                    if (createdByThread == lastThread) {
-                        return false;
-                    }
-
-                    lastThread = createdByThread;
-
-                    if (targetGroup != null && targetGroup == createdByThread.getThreadGroup()) {
-                        return true;
-                    }
-
-                    if (isDeadlocked(createdByThread, targetGroup, wantedLock)) {
-                        return true;
-                    }
-                }
+            if (task == null) {
+                return false;
             }
+
+            Thread createdByThread = task.getCreatedByThread();
+
+            if (targetGroup != null && targetGroup == createdByThread.getThreadGroup()) {
+                return true;
+            }
+
+            return isDeadlocked0(createdByThread, seenThreads, targetGroup, wantedLock);
         } else {
             List<Lock> lockList = plainThreadLocks.get(taskThread);
 
