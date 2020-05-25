@@ -599,4 +599,8 @@ public final class Ports {
     static void printWarning(String message) {
         System.err.println("[ports] warning: " + message);
     }
+
+    static void printError(String message) {
+        System.err.println("[ports] error: " + message);
+    }
 }

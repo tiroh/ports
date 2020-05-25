@@ -232,7 +232,7 @@ public class Event<T> {
                 portEntry.receiverDomain = DomainManager.getDomain(receiver);
             }
 
-            portEntry.receiverDomain.dispatch(portEntry.port, payload, receiver);
+            portEntry.receiverDomain.dispatch(portEntry.port, payload, owner, receiver);
         }
     }
 

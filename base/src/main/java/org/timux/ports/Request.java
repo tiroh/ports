@@ -184,7 +184,7 @@ public class Request<I, O> {
             }
         }
 
-        return receiverDomain.dispatch(wrappedFunction, payload, receiver);
+        return receiverDomain.dispatch(wrappedFunction, payload, owner, receiver);
     }
 
     private Function<I, O> getWrappedFunctionForProtocols() {

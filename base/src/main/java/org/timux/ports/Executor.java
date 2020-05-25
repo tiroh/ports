@@ -33,6 +33,7 @@ class Executor {
     // modified by the tests to achieve deterministic behavior.
     static int TEST_API_MAX_NUMBER_OF_THREADS = -1;
     static long TEST_API_IDLE_LIFETIME_MS = -1L;
+    static boolean TEST_API_DISABLE_DEADLOCK_WARNINGS = false;
 
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
@@ -114,11 +115,10 @@ class Executor {
                 }
 
                 // Exception handling is done within the task, so not required here.
-                Task task = dispatcher.poll();
-                currentTask = task;
+                currentTask = dispatcher.poll();
 
-                task.processedByThread = this;
-                task.run();
+                currentTask.setProcessedByThread(this);
+                currentTask.run();
                 currentTask = null;
 
                 synchronized (threadPool) {
@@ -141,7 +141,7 @@ class Executor {
                 threadPool.remove(thread);
             }
 
-            System.err.println("Thread [" + thread.getName() + "] died because of uncaught exception:");
+            Ports.printError("Thread [" + thread.getName() + "] died because of uncaught exception:");
             t.printStackTrace();
         }
     }
@@ -191,12 +191,9 @@ class Executor {
                 if (threadPool.size() < maxThreadPoolSize) {
                     threadPool.add(new WorkerThread(threadGroup, false));
                 } else {
-                    Lock wantedLock = newTask.getMutexSubject() != null
-                            ? LockManager.getLock(newTask.getMutexSubject())
-                            : null;
+                    Task deadlockStart = LockManager.isDeadlocked(newTask, threadGroup, newTask.getLock());
 
-                    // TODO optimize this: the information this thread is deadlocked can probably be used in the task
-                    if (LockManager.isDeadlocked(newTask.getCreatedByThread(), threadGroup, wantedLock)) {
+                    if (deadlockStart != null) {
                         threadPool.add(new WorkerThread(threadGroup, true));
                     } else {
                         break;

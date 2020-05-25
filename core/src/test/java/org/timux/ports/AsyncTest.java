@@ -1,5 +1,6 @@
 package org.timux.ports;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +92,11 @@ public class AsyncTest {
                 components[i].reset();
             }
         }
+    }
+
+    @BeforeAll
+    public static void beforeAll() {
+        Executor.TEST_API_DISABLE_DEADLOCK_WARNINGS = true;
     }
 
     @BeforeEach

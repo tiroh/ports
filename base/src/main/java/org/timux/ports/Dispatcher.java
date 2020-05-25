@@ -33,13 +33,19 @@ class Dispatcher {
                 : null;
     }
 
-    <T> void dispatch(Consumer<T> eventPort, T payload, Object mutexSubject) {
-        Task task = new Task(eventPort, payload, mutexSubject);
+    <T> void dispatch(Consumer<T> eventPort, T payload, Object mutexSubject, Object sender, Object receiver) {
+        Task task = new Task(eventPort, payload, mutexSubject, sender, receiver);
 
         if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-            // We must use the task infrastructure here (instead of direct execution) because of the
-            // synchronization policy which is handled within the task.
-            task.processedByThread = task.getCreatedByThread();
+            /*
+             * We must use the task infrastructure here (instead of a direct call to 'accept') because of the
+             * synchronization policy which is handled within the task.
+             *
+             * From the fact that events are executed as a simple method call at this point, it follows that
+             * events are able to block requests (which would, of course, not be possible if events were
+             * always be dispatched asynchronously).
+             */
+            task.setProcessedByThread(task.getCreatedByThread());
             task.run();
             return;
         }
@@ -50,13 +56,15 @@ class Dispatcher {
         }
     }
 
-    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
-        Task task = new Task(requestPort, payload, mutexSubject);
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject, Object sender, Object receiver) {
+        Task task = new Task(requestPort, payload, mutexSubject, sender, receiver);
 
         if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-            // We must use the task infrastructure here (instead of direct execution) because of the
-            // synchronization policy which is handled within the task.
-            task.processedByThread = task.getCreatedByThread();
+            /*
+             * We must use the task infrastructure here (instead of a direct call to 'apply') because of the
+             * synchronization policy which is handled within the task.
+             */
+            task.setProcessedByThread(task.getCreatedByThread());
             task.run();
             return new PortsFuture<>(task);
         }

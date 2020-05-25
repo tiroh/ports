@@ -17,6 +17,7 @@
 package org.timux.ports;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Pair;
 import org.timux.ports.types.PairX;
@@ -28,6 +29,11 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SimpleTests {
+
+    @BeforeAll
+    public static void beforeAll() {
+        Executor.TEST_API_DISABLE_DEADLOCK_WARNINGS = true;
+    }
 
     @Test
     public void smokeTest() {

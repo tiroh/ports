@@ -100,12 +100,12 @@ public class Domain {
         return dispatchPolicy;
     }
 
-    <T> void dispatch(Consumer<T> eventPort, T payload, Object receiverComponent) {
-        dispatcher.dispatch(eventPort, payload, getMutexSubject(receiverComponent));
+    <T> void dispatch(Consumer<T> eventPort, T payload, Object sender, Object receiver) {
+        dispatcher.dispatch(eventPort, payload, getMutexSubject(receiver), sender, receiver);
     }
 
-    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object receiverComponent) {
-        return dispatcher.dispatch(requestPort, payload, getMutexSubject(receiverComponent));
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object sender, Object receiver) {
+        return dispatcher.dispatch(requestPort, payload, getMutexSubject(receiver), sender, receiver);
     }
 
     private Object getMutexSubject(Object receiverComponent) {

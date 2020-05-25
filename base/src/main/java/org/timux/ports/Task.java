@@ -16,11 +16,14 @@
 
 package org.timux.ports;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 class Task implements Runnable {
@@ -38,46 +41,70 @@ class Task implements Runnable {
     private boolean hasReturned = false;
     private Throwable throwable;
 
+    private final Object sender;
+    private final Object receiver;
+
     private final Thread createdByThread;
+    private final Lock lock;
 
-    Thread processedByThread;
+    private Thread processedByThread;
 
-    private final Object mutexSubject;
-
-    Task(Consumer eventPort, Object payload, Object mutexSubject) {
+    Task(Consumer eventPort, Object payload, Object mutexSubject, Object sender, Object receiver) {
         this.eventPort = eventPort;
         this.requestPort = null;
         this.payload = payload;
-        this.mutexSubject = mutexSubject;
+
+        this.sender = sender;
+        this.receiver = receiver;
 
         createdByThread = Thread.currentThread();
+
+        lock = mutexSubject != null
+                ? LockManager.getLock(mutexSubject)
+                : null;
     }
 
-    Task(Function requestPort, Object payload, Object mutexSubject) {
+    Task(Function requestPort, Object payload, Object mutexSubject, Object sender, Object receiver) {
         this.eventPort = null;
         this.requestPort = requestPort;
         this.payload = payload;
-        this.mutexSubject = mutexSubject;
+
+        this.sender = sender;
+        this.receiver = receiver;
 
         createdByThread = Thread.currentThread();
+
+        lock = mutexSubject != null
+                ? LockManager.getLock(mutexSubject)
+                : null;
     }
 
     Thread getCreatedByThread() {
         return createdByThread;
     }
 
-    Object getMutexSubject() {
-        return mutexSubject;
+    public void setProcessedByThread(Thread processedByThread) {
+        this.processedByThread = processedByThread;
+    }
+
+    Lock getLock() {
+        return lock;
     }
 
     @Override
     public void run() {
+        /*
+         * Events are able to block requests. This happens when they are dispatched synchronously as
+         * a simple method call. Therefore, a check for deadlocks must ALWAYS be performed, regardless
+         * of whether the task handles a request or an event.
+         */
+
         if (!hasReturned) {
             Executor.WorkerThread processedByWorkerThread = (processedByThread instanceof Executor.WorkerThread)
                     ? (Executor.WorkerThread) processedByThread
                     : null;
 
-            if (mutexSubject == null) {
+            if (lock == null) {
                 try {
                     if (eventPort != null) {
                         eventPort.accept(payload);
@@ -88,8 +115,6 @@ class Task implements Runnable {
                     throwable = e;
                 }
             } else {
-                Lock lock = LockManager.getLock(mutexSubject);
-
                 if (lock.tryLock()) {
                     if (processedByWorkerThread != null) {
                         processedByWorkerThread.addCurrentLock(lock);
@@ -115,9 +140,11 @@ class Task implements Runnable {
                         lock.unlock();
                     }
                 } else {
-                    // TODO optimize this (see Executor)
+                    Task deadlockStart = LockManager.isDeadlocked(this, null, lock);
 
-                    if (LockManager.isDeadlocked(processedByThread, null, lock)) {
+                    if (deadlockStart != null) {
+                        printDeadlockWarning(deadlockStart);
+
                         try {
                             if (eventPort != null) {
                                 eventPort.accept(payload);
@@ -142,7 +169,11 @@ class Task implements Runnable {
                             timeoutIdx++;
 
                             if (!isAcquired) {
-                                if (LockManager.isDeadlocked(processedByThread, null, lock)) {
+                                deadlockStart = LockManager.isDeadlocked(this, null, lock);
+
+                                if (deadlockStart != null) {
+                                    printDeadlockWarning(deadlockStart);
+
                                     try {
                                         if (eventPort != null) {
                                             eventPort.accept(payload);
@@ -282,5 +313,42 @@ class Task implements Runnable {
         }
 
         return response;
+    }
+
+    void printDeadlockWarning(Task deadlockStart) {
+        if (Executor.TEST_API_DISABLE_DEADLOCK_WARNINGS) {
+            return;
+        }
+
+        List<Task> chain = new ArrayList<>();
+
+        Task t = this;
+
+        for (;;) {
+            chain.add(t);
+
+            if (t == deadlockStart) {
+                break;
+            }
+
+            t = ((Executor.WorkerThread) t.createdByThread).getCurrentTask();
+        }
+
+        for (int i = 0; i < chain.size() / 2; i++) {
+            t = chain.get(i);
+            int idx = chain.size() - i - 1;
+            chain.set(i, chain.get(idx));
+            chain.set(idx, t);
+        }
+
+        String message = chain.stream()
+                .map(task -> task.sender.getClass().getName() + "(" + task.payload.getClass().getName() + ")")
+                .collect(Collectors.joining(" -> "));
+
+
+        Ports.printWarning(String.format("deadlock detected: %s -> %s",
+                message,
+                receiver.getClass().getName()));
+        Ports.printWarning("    Deadlock resolution may cause a loss of data integrity. It is strongly recommended to remove the cause.");
     }
 }
