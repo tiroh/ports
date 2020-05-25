@@ -34,12 +34,15 @@ class Dispatcher {
     }
 
     <T> void dispatch(Consumer<T> eventPort, T payload, Object mutexSubject) {
-        if (workerExecutor == null || Thread.currentThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-            eventPort.accept(payload);
+        Task task = new Task(eventPort, payload, mutexSubject);
+
+        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+            // We must use the task infrastructure here (instead of direct execution) because of the
+            // synchronization policy which is handled within the task.
+            task.processedByThread = task.getCreatedByThread();
+            task.run();
             return;
         }
-
-        Task task = new Task(eventPort, payload, mutexSubject);
 
         synchronized (queue) {
             queue.offerLast(task);
@@ -48,11 +51,15 @@ class Dispatcher {
     }
 
     <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject) {
-        if (workerExecutor == null || Thread.currentThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-            return new PortsFuture<>(requestPort.apply(payload));
-        }
-
         Task task = new Task(requestPort, payload, mutexSubject);
+
+        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
+            // We must use the task infrastructure here (instead of direct execution) because of the
+            // synchronization policy which is handled within the task.
+            task.processedByThread = task.getCreatedByThread();
+            task.run();
+            return new PortsFuture<>(task);
+        }
 
         synchronized (queue) {
             queue.offerLast(task);
