@@ -582,12 +582,15 @@ public final class Ports {
      * Removes all synchronization domains from the registry. This causes all components to fall
      * back to the default domain (which uses synchronous dispatch and component-level synchronization).
      *
-     * <p> This method does NOT stop or kill any threads that might have been created by the domains.
-     * Any running threads will continue to run and process their message queues. However, because their
-     * domains will be out of order, the message queues will not receive any new messages, and because of this,
-     * most of the threads will eventually kill themselves.
+     * <p> This method instructs all threads that might have been created by the domains to shutdown.
+     * They will not shutdown immediately but try to finish their current tasks. Any further queued messages
+     * will not be processed.
      *
-     * @seince 0.5.0
+     * <p> This method is ONLY meant to be used in testing in a '@BeforeEach' method (JUnit). You should
+     * not use it in production since abandoning the message queues can leave the system in an undefined
+     * state.
+     *
+     * @since 0.5.0
      */
     public static void releaseDomains() {
         DomainManager.release();
