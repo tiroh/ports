@@ -36,12 +36,12 @@ class Executor {
 
     class WorkerThread extends Thread implements Thread.UncaughtExceptionHandler {
 
-        private List<Lock> currentLocks = new ArrayList<>();
+        private final List<Lock> currentLocks = new ArrayList<>();
 
         private Task currentTask;
 
         // Optimization, this is used by the LockManager.
-        private Map<Thread, Object> seenThreads = new HashMap<>();
+        private final Map<Thread, Object> seenThreads = new HashMap<>();
 
         private final boolean isDeadlockResolver;
 

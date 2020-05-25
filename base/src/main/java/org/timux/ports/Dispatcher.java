@@ -41,12 +41,6 @@ class Dispatcher {
 
         Task task = new Task(eventPort, payload, mutexSubject);
 
-//        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-//            task.processedByThread = task.getCreatedByThread();
-//            task.run();
-//            return;
-//        }
-
         synchronized (queue) {
             queue.offerLast(task);
             workerExecutor.onNewEventTaskAvailable(task, queue.size());
@@ -59,12 +53,6 @@ class Dispatcher {
         }
 
         Task task = new Task(requestPort, payload, mutexSubject);
-
-//        if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
-//            task.processedByThread = task.getCreatedByThread();
-//            task.run();
-//            return new PortsFuture<>(task);
-//        }
 
         synchronized (queue) {
             queue.offerLast(task);
