@@ -198,7 +198,8 @@ public class Request<I, O> {
     }
 
     /**
-     * Submits multiple requests at once that may be executed in parallel.
+     * Submits multiple requests at once. It depends on the {@link Domain} of the receiver whether
+     * the requests are dispatched synchronously, asynchronously, or in parallel.
      *
      * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
      *     received in the future.
@@ -210,7 +211,11 @@ public class Request<I, O> {
     }
 
     /**
-     * Submits multiple requests at once that may be executed in parallel.
+     * Submits multiple requests at once. It depends on the {@link Domain} of the receiver whether
+     * the requests are dispatched synchronously, asynchronously, or in parallel.
+     *
+     * <p> This method will call the given payload provider with integer arguments running from
+     * 0 to 'endIndexExclusive' (exclusive, as the name suggests).
      *
      * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
      *     received in the future.
@@ -224,7 +229,8 @@ public class Request<I, O> {
     }
 
     /**
-     * Submits multiple requests at once that may be executed in parallel.
+     * Submits multiple requests at once. It depends on the {@link Domain} of the receiver whether
+     * the requests are dispatched synchronously, asynchronously, or in parallel.
      *
      * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
      *     received in the future.
