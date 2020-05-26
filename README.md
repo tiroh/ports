@@ -1,13 +1,12 @@
 # Ports Framework
 
 The Ports Framework enables decoupling of components by employing a purely
-component-based design paradigm. Using Ports, component dependencies are
-reduced to a minimum (and thus also the need for dependency injection).
+component-based design paradigm.
+
+The Ports Framework requires at least Java 8.
 
 
 ## Maven setup for plain Ports
-
-The Ports Framework requires at least Java 8.
 
 Add the following dependency to your POM(s):
 
@@ -15,7 +14,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-core</artifactId>
-   <version>0.5.BETA.3</version>
+   <version>0.5.0</version>
 </dependency>
 ```
 
@@ -28,7 +27,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-vaadinspring</artifactId>
-   <version>0.5.BETA.3</version>
+   <version>0.5.0</version>
 </dependency>
 ```
 
