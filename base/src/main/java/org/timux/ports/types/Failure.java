@@ -34,7 +34,7 @@ public class Failure {
     public static final Failure INSTANCE = new Failure();
 
     private final String message;
-    private final Throwable throwable;
+    private final Optional<Throwable> throwable;
 
     private Failure() {
         this("", null);
@@ -50,18 +50,18 @@ public class Failure {
 
     public Failure(String message, Throwable throwable) {
         this.message = message;
-        this.throwable = throwable;
+        this.throwable = Optional.ofNullable(throwable);
     }
 
     public Optional<Throwable> getThrowable() {
-        return Optional.ofNullable(throwable);
+        return throwable;
     }
 
     @Override
     public String toString() {
         return "Failure{" +
                 (!message.isEmpty() ? "'" + message + "'" : "") +
-                (throwable != null ? (message.isEmpty() ? throwable : ", " + throwable) : "") +
+                (message.isEmpty() ? throwable : ", " + throwable) +
                 "}";
     }
 }
