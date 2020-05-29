@@ -193,20 +193,25 @@ public class Event<T> {
      * @see Domain
      */
     public void trigger(T payload) {
-        if (Protocol.areProtocolsActive) {
-            Protocol.onDataSent(eventTypeName, owner, payload);
-        }
-
         final List<PortEntry<T>> p = ports;
 
         int i = p.size();
 
         if (i == 0) {
-            Ports.printWarning(String.format(
-                    "event %s was fired by component %s but there is no receiver",
-                    eventTypeName,
-                    owner.getClass().getName()));
+            if (Protocol.areProtocolsActive) {
+                Protocol.onDataSent(eventTypeName, owner, payload);
+            } else {
+                Ports.printWarning(String.format(
+                        "event %s was fired by component %s but there is no receiver",
+                        eventTypeName,
+                        owner.getClass().getName()));
+            }
+
             return;
+        }
+
+        if (Protocol.areProtocolsActive) {
+            Protocol.onDataSent(eventTypeName, owner, payload);
         }
 
         boolean updateDomains;

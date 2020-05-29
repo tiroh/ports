@@ -1,6 +1,6 @@
 package org.timux.ports;
 
-class PortRequestClause<I, O> {
+public class PortRequestClause<I, O> {
 
     private final ProtocolParserState state;
 

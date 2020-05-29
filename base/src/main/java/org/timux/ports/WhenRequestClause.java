@@ -2,7 +2,7 @@ package org.timux.ports;
 
 import java.util.function.Predicate;
 
-class WhenRequestClause<I, O> {
+public class WhenRequestClause<I, O> {
 
     private final ProtocolParserState state;
 

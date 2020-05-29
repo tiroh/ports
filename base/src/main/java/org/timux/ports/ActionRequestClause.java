@@ -3,7 +3,7 @@ package org.timux.ports;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-class ActionRequestClause<I, O> {
+public class ActionRequestClause<I, O> {
 
     private final ProtocolParserState state;
 

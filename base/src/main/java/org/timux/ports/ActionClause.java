@@ -2,7 +2,7 @@ package org.timux.ports;
 
 import java.util.function.Consumer;
 
-class ActionClause<T> {
+public class ActionClause<T> {
 
     private final ProtocolParserState state;
 

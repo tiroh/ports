@@ -1,6 +1,6 @@
 package org.timux.ports;
 
-class PortEventClause<T> {
+public class PortEventClause<T> {
 
     private final ProtocolParserState state;
 
