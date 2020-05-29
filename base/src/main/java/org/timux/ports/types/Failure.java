@@ -31,26 +31,26 @@ import java.util.Optional;
  */
 public class Failure {
 
-    public static final Failure INSTANCE = new Failure();
+    public static final Failure INSTANCE = Failure.of("Failure");
 
     private final String message;
     private final Optional<Throwable> throwable;
 
-    private Failure() {
-        this("", null);
-    }
-
-    public Failure(String message) {
-        this(message, null);
-    }
-
-    public Failure(Throwable throwable) {
-        this("", throwable);
-    }
-
-    public Failure(String message, Throwable throwable) {
+    private Failure(String message, Throwable throwable) {
         this.message = message;
         this.throwable = Optional.ofNullable(throwable);
+    }
+
+    public static Failure of(String message) {
+        return new Failure(message, null);
+    }
+
+    public static Failure of(Throwable throwable) {
+        return new Failure("", throwable);
+    }
+
+    public static Failure of(String message, Throwable throwable) {
+        return new Failure(message, throwable);
     }
 
     public Optional<Throwable> getThrowable() {
