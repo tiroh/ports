@@ -104,7 +104,11 @@ public class Event<T> {
                                 portMethod.invoke(owner, x);
                             }
                         } catch (IllegalAccessException | InvocationTargetException e) {
-                            throw new RuntimeException(e);
+                            if (e.getCause() != null) {
+                                e.getCause().printStackTrace();
+                            } else {
+                                e.printStackTrace();
+                            }
                         }
                     });
         } else {
@@ -117,7 +121,11 @@ public class Event<T> {
                             try {
                                 portMethod.invoke(owner, x);
                             } catch (IllegalAccessException | InvocationTargetException e) {
-                                throw new RuntimeException(e);
+                                if (e.getCause() != null) {
+                                    e.getCause().printStackTrace();
+                                } else {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }));

@@ -47,11 +47,6 @@ class Dispatcher {
              */
             task.setProcessedByThread(task.getCreatedByThread());
             task.run();
-
-            if (task.getThrowable() != null) {
-                throw new ExecutionException(task.getThrowable());
-            }
-
             return;
         }
 

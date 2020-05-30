@@ -53,6 +53,23 @@ public abstract class Either3<A, B, C> {
     public abstract <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn, Function<? super C, ? extends R> cFn);
 
     /**
+     * Maps the A constituent, if it exists, to R, or to Nothing otherwise.
+     */
+    public abstract <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn);
+
+    /**
+     * Maps the B constituent, if it exists, to R, or to Nothing otherwise.
+     */
+    public abstract <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn);
+
+    /**
+     * Maps the C constituent, if it exists, to R, or to Nothing otherwise.
+     */
+    public abstract <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn);
+
+    // TODO implement the same methods as in Either
+
+    /**
      * Executes the provided actions on the constituents of this union.
      */
     public abstract Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC);
@@ -126,6 +143,21 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
+                return Either.a(aFn.apply(a));
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
             public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 aC.accept(a);
                 return this;
@@ -175,6 +207,21 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
+                return Either.a(bFn.apply(b));
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
             public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 bC.accept(b);
                 return this;
@@ -221,6 +268,21 @@ public abstract class Either3<A, B, C> {
             @Override
             public <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn, Function<? super C, ? extends R> cFn) {
                 return cFn.apply(c);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn) {
+                return Either.a(cFn.apply(c));
             }
 
             @Override

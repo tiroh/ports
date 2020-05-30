@@ -19,10 +19,7 @@ package org.timux.ports;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.types.Pair;
-import org.timux.ports.types.PairX;
-import org.timux.ports.types.TripleX;
-import org.timux.ports.types.Tuple;
+import org.timux.ports.types.*;
 
 import java.util.Random;
 
@@ -226,6 +223,21 @@ public class SimpleTests {
                 assertFalse(triple.containsDistinct(pair));
             }
         }
+    }
+
+    @Test
+    public void eitherAndThenOrElse() {
+        Either<Integer, String> either1 = Either.a(1);
+
+        either1.orElse(string -> fail("no string expected"))
+                .andThen(integer -> true)
+                .on(Assertions::assertTrue, string -> fail("no string expected"));
+
+        Either<Integer, String> either2 = Either.b("1.5");
+
+        either2.andThen(integer -> fail("no integer expected"))
+                .orElse(Double::parseDouble)
+                .on(integer -> fail("no integer expected"), value -> assertEquals(1.5, value));
     }
 
     @Test

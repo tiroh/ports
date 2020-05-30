@@ -16,6 +16,7 @@
  
 package org.timux.ports.types;
 
+import org.timux.ports.PortsFuture;
 import org.timux.ports.Response;
 
 import java.util.Optional;
@@ -52,6 +53,48 @@ public abstract class Either<A, B> {
      * Maps the constituents of this union to R.
      */
     public abstract <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn);
+
+    /**
+     * Maps the A constituent, if it exists, to R, or to Nothing otherwise.
+     */
+    public abstract <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn);
+
+    /**
+     * Maps the B constituent, if it exists, to R, or to Nothing otherwise.
+     */
+    public abstract <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn);
+
+    /**
+     * Maps the A constituent, if it exists, to R, or returns the B constituent otherwise.
+     * 
+     * @see #andThenR
+     */
+    public abstract <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn);
+
+    /**
+     * A version of {@link #andThen} that supports working with requests. With this method (and together with
+     * {@link PortsFuture#andThenR}) you can build chains of requests.
+     *
+     * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
+     * otherwise. In this context, the A constituent is the result of a preceding request.
+     *
+     * @see PortsFuture#andThenR 
+     * @see #andThen
+     * @see #orElse
+     * @see #orElseDo
+     * @see #finallyDo
+     */
+    public abstract <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
+
+    /**
+     * Maps the B constituent, if it exists, to R, or returns the A constituent otherwise.
+     */
+    public abstract <R> Either<A, R> orElse(Function<B, R> bFn);
+
+    /**
+     * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
+     */
+    public abstract Either<A, B> orElseDo(Consumer<B> bC);
 
     /**
      * Executes the provided actions on the constituents of this union.
@@ -94,6 +137,11 @@ public abstract class Either<A, B> {
         return map(a -> Optional.empty(), Optional::ofNullable);
     }
 
+    public Either<A, B> finallyDo(Runnable runnable) {
+        runnable.run();
+        return this;
+    }
+
     @Override
     public String toString() {
         return map(String::valueOf, String::valueOf);
@@ -112,6 +160,36 @@ public abstract class Either<A, B> {
             @Override
             public <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn) {
                 return aFn.apply(a);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
+                return Either.a(aFn.apply(a));
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
+            public <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn) {
+                return Either.a(aFn.apply(a));
+            }
+
+            @Override
+            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+                return aFn.apply(a).getEither();
+            }
+
+            @Override
+            public <R> Either<A, R> orElse(Function<B, R> bFn) {
+                return Either.a(a);
+            }
+
+            @Override
+            public Either<A, B> orElseDo(Consumer<B> bC) {
+                return this;
             }
 
             @Override
@@ -156,6 +234,39 @@ public abstract class Either<A, B> {
             @Override
             public <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn) {
                 return bFn.apply(b);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
+                return Either.b(Nothing.INSTANCE);
+            }
+
+            @Override
+            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
+                return Either.a(bFn.apply(b));
+            }
+
+            @Override
+            public <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn) {
+                return Either.b(b);
+            }
+
+            @Override
+            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+                return b instanceof Throwable
+                        ? Either.b((Throwable) b)
+                        : Either.b(new IllegalStateException("this Either does not store the result of a request"));
+            }
+
+            @Override
+            public <R> Either<A, R> orElse(Function<B, R> bFn) {
+                return Either.b(bFn.apply(b));
+            }
+
+            @Override
+            public Either<A, B> orElseDo(Consumer<B> bC) {
+                bC.accept(b);
+                return this;
             }
 
             @Override

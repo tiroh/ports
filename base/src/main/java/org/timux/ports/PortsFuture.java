@@ -23,6 +23,7 @@ import org.timux.ports.types.Nothing;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -107,8 +108,8 @@ public class PortsFuture<T> implements Future<T> {
     public Either<T, Throwable> getEither() {
         try {
             return Either.a(get());
-        } catch (Throwable throwable) {
-            return Either.b(throwable);
+        } catch (Exception e) {
+            return Either.b(e);
         }
     }
 
@@ -123,8 +124,8 @@ public class PortsFuture<T> implements Future<T> {
             return Either3.a(get(timeout, timeUnit));
         } catch (TimeoutException e) {
             return Either3.b(Nothing.INSTANCE);
-        } catch (Throwable throwable) {
-            return Either3.c(throwable);
+        } catch (Exception e) {
+            return Either3.c(e);
         }
     }
 
@@ -165,8 +166,8 @@ public class PortsFuture<T> implements Future<T> {
                 result = (T) task.waitForResponse();
                 hasReturned = true;
                 return Either3.a(result);
-            } catch (Throwable throwable) {
-                return Either3.c(throwable);
+            } catch (Exception e) {
+                return Either3.c(e);
             }
         }
 
@@ -209,9 +210,48 @@ public class PortsFuture<T> implements Future<T> {
     public <R> Either<R, Throwable> mapEither(Function<T, R> mapper, R elseValue) {
         try {
             return Either.a(map(mapper, elseValue));
-        } catch (Throwable throwable) {
-            return Either.b(throwable);
+        } catch (Exception e) {
+            return Either.b(e);
         }
+    }
+
+    /**
+     * A method that makes handling chains of requests easier. It works in conjunction with
+     * {@link Either#andThenR}.
+     *
+     * <p> It maps the result, if it exists, to another {@link PortsFuture}, or returns a {@link Throwable}
+     * if the receiver terminated with an exception.
+     *
+     * <p> <em>This call is blocking.</em>
+     *
+     * @see Either#andThenR
+     */
+    public <O, R extends PortsFuture<O>> Either<O, Throwable> andThenR(Function<T, R> fn) {
+        return getEither().andThenR(fn);
+    }
+
+    /**
+     * If the receiver terminated with an exception, this method maps this exception to R. Otherwise, the result
+     * is returned.
+     *
+     * <p> <em>This call is blocking.</em>
+     * 
+     * @see #orElseDo
+     */
+    public <R> Either<T, R> orElse(Function<Throwable, R> fn) {
+        return getEither().orElse(fn);
+    }
+
+    /**
+     * If the receiver terminated with an exception, this method executes the provided consumer. Otherwise,
+     * nothing happens.
+     *
+     * <p> <em>This call is blocking.</em>
+     *
+     * @see #orElse
+     */
+    public Either<T, Throwable> orElseDo(Consumer<Throwable> consumer) {
+        return getEither().orElseDo(consumer);
     }
 
     /**

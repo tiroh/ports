@@ -115,8 +115,8 @@ public class Fork<T> implements Future<List<T>> {
                 results.add(Either3.a(result));
             } catch (TimeoutException e) {
                 results.add(Either3.b(Nothing.INSTANCE));
-            } catch (Throwable throwable) {
-                results.add(Either3.c(throwable));
+            } catch (Exception e) {
+                results.add(Either3.c(e));
             }
         }
 
@@ -136,8 +136,8 @@ public class Fork<T> implements Future<List<T>> {
             try {
                 T result = future.get();
                 results.add(Either.a(result));
-            } catch (Throwable throwable) {
-                results.add(Either.b(throwable));
+            } catch (Exception e) {
+                results.add(Either.b(e));
             }
         }
 
@@ -159,8 +159,8 @@ public class Fork<T> implements Future<List<T>> {
                 try {
                     T result = future.get();
                     results.add(Either3.a(result));
-                } catch (Throwable throwable) {
-                    results.add(Either3.c(throwable));
+                } catch (Exception e) {
+                    results.add(Either3.c(e));
                 }
             } else {
                 results.add(Either3.b(Nothing.INSTANCE));
