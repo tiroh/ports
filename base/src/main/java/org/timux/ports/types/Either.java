@@ -65,7 +65,7 @@ public abstract class Either<A, B> {
     public abstract <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn);
 
     /**
-     * Maps the A constituent, if it exists, to R, or returns the B constituent otherwise.
+     * Maps the A constituent, if it exists, to R.
      * 
      * @see #andThenR
      */
@@ -87,7 +87,7 @@ public abstract class Either<A, B> {
     public abstract <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
 
     /**
-     * Maps the B constituent, if it exists, to R, or returns the A constituent otherwise.
+     * Maps the B constituent, if it exists, to R.
      */
     public abstract <R> Either<A, R> orElse(Function<B, R> bFn);
 
@@ -137,6 +137,9 @@ public abstract class Either<A, B> {
         return map(a -> Optional.empty(), Optional::ofNullable);
     }
 
+    /**
+     * Executes the provided runnable and returns this union.
+     */
     public Either<A, B> finallyDo(Runnable runnable) {
         runnable.run();
         return this;

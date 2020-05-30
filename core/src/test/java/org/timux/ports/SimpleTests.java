@@ -241,6 +241,21 @@ public class SimpleTests {
     }
 
     @Test
+    public void either3AndThenOrElse() {
+        Either3<Integer, Boolean, String> either1 = Either3.a(1);
+
+        either1.orElse(string -> fail("no string expected"))
+                .andThen(integer -> true)
+                .on(Assertions::assertTrue, bool -> fail("no boolean expected"), string -> fail("no string expected"));
+
+        Either3<Integer, Boolean, String> either2 = Either3.c("1.5");
+
+        either2.andThen(integer -> fail("no integer expected"))
+                .orElse(Double::parseDouble)
+                .on(integer -> fail("no integer expected"), bool -> fail("no boolean expected"), value -> assertEquals(1.5, value));
+    }
+
+    @Test
     public void deadlockResolutionSync() {
         DeadlockA a = new DeadlockA();
         DeadlockB b = new DeadlockB();
