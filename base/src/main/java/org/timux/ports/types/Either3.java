@@ -76,6 +76,11 @@ public abstract class Either3<A, B, C> {
     public abstract <R> Either3<R, B, C> andThen(Function<? super A, ? extends R> aFn);
 
     /**
+     * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
+     */
+    public abstract Either3<A, B, C> andThenDo(Consumer<? super A> aC);
+
+    /**
      * A version of {@link #andThen} that supports working with requests. With this method (and together with
      * {@link PortsFuture#andThenR}) you can build chains of requests.
      *
@@ -93,12 +98,12 @@ public abstract class Either3<A, B, C> {
     /**
      * Maps the C constituent, if it exists, to R.
      */
-    public abstract <R> Either3<A, B, R> orElse(Function<C, R> cFn);
+    public abstract <R> Either3<A, B, R> orElse(Function<? super C, R> cFn);
 
     /**
      * Applies the provided consumer to the C constituent, if it exists, or does nothing otherwise.
      */
-    public abstract Either3<A, B, C> orElseDo(Consumer<C> bC);
+    public abstract Either3<A, B, C> orElseDo(Consumer<? super C> bC);
 
     /**
      * Executes the provided actions on the constituents of this union.
@@ -202,17 +207,23 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public Either3<A, B, C> andThenDo(Consumer<? super A> aC) {
+                aC.accept(a);
+                return this;
+            }
+
+            @Override
             public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return aFn.apply(a).getEither();
             }
 
             @Override
-            public <R> Either3<A, B, R> orElse(Function<C, R> cFn) {
+            public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
                 return Either3.a(a);
             }
 
             @Override
-            public Either3<A, B, C> orElseDo(Consumer<C> bC) {
+            public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
                 return this;
             }
 
@@ -286,17 +297,22 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public Either3<A, B, C> andThenDo(Consumer<? super A> aC) {
+                return this;
+            }
+
+            @Override
             public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return Either.b(new IllegalStateException("this Either3 does not store the result of a request"));
             }
 
             @Override
-            public <R> Either3<A, B, R> orElse(Function<C, R> cFn) {
+            public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
                 return Either3.b(b);
             }
 
             @Override
-            public Either3<A, B, C> orElseDo(Consumer<C> bC) {
+            public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
                 return this;
             }
 
@@ -370,6 +386,11 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public Either3<A, B, C> andThenDo(Consumer<? super A> aC) {
+                return this;
+            }
+
+            @Override
             public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return c instanceof Throwable
                         ? Either.b((Throwable) c)
@@ -377,12 +398,12 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<A, B, R> orElse(Function<C, R> cFn) {
+            public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
                 return Either3.c(cFn.apply(c));
             }
 
             @Override
-            public Either3<A, B, C> orElseDo(Consumer<C> bC) {
+            public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
                 bC.accept(c);
                 return this;
             }

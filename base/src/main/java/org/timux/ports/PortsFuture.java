@@ -89,12 +89,10 @@ public class PortsFuture<T> implements Future<T> {
      */
     @Override
     public T get(long timeout, TimeUnit unit) throws TimeoutException {
-        if (hasReturned) {
-            return result;
+        if (!hasReturned) {
+            result = (T) task.waitForResponse(timeout, unit);
+            hasReturned = true;
         }
-
-        result = (T) task.waitForResponse(timeout, unit);
-        hasReturned = true;
 
         return result;
     }

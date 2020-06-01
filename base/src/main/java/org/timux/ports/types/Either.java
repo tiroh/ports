@@ -72,6 +72,11 @@ public abstract class Either<A, B> {
     public abstract <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn);
 
     /**
+     * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
+     */
+    public abstract Either<A, B> andThenDo(Consumer<? super A> aC);
+
+    /**
      * A version of {@link #andThen} that supports working with requests. With this method (and together with
      * {@link PortsFuture#andThenR}) you can build chains of requests.
      *
@@ -89,12 +94,12 @@ public abstract class Either<A, B> {
     /**
      * Maps the B constituent, if it exists, to R.
      */
-    public abstract <R> Either<A, R> orElse(Function<B, R> bFn);
+    public abstract <R> Either<A, R> orElse(Function<? super B, R> bFn);
 
     /**
      * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
      */
-    public abstract Either<A, B> orElseDo(Consumer<B> bC);
+    public abstract Either<A, B> orElseDo(Consumer<? super B> bC);
 
     /**
      * Executes the provided actions on the constituents of this union.
@@ -181,17 +186,23 @@ public abstract class Either<A, B> {
             }
 
             @Override
+            public Either<A, B> andThenDo(Consumer<? super A> aC) {
+                aC.accept(a);
+                return this;
+            }
+
+            @Override
             public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return aFn.apply(a).getEither();
             }
 
             @Override
-            public <R> Either<A, R> orElse(Function<B, R> bFn) {
+            public <R> Either<A, R> orElse(Function<? super B, R> bFn) {
                 return Either.a(a);
             }
 
             @Override
-            public Either<A, B> orElseDo(Consumer<B> bC) {
+            public Either<A, B> orElseDo(Consumer<? super B> bC) {
                 return this;
             }
 
@@ -255,6 +266,11 @@ public abstract class Either<A, B> {
             }
 
             @Override
+            public Either<A, B> andThenDo(Consumer<? super A> aC) {
+                return this;
+            }
+
+            @Override
             public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return b instanceof Throwable
                         ? Either.b((Throwable) b)
@@ -262,12 +278,12 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<A, R> orElse(Function<B, R> bFn) {
+            public <R> Either<A, R> orElse(Function<? super B, R> bFn) {
                 return Either.b(bFn.apply(b));
             }
 
             @Override
-            public Either<A, B> orElseDo(Consumer<B> bC) {
+            public Either<A, B> orElseDo(Consumer<? super B> bC) {
                 bC.accept(b);
                 return this;
             }
