@@ -17,9 +17,12 @@
 package org.timux.ports;
 
 import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -49,6 +52,8 @@ public class Request<I, O> {
     private Object owner;
     private Object receiver;
     private String memberName;
+
+    private PortsFutureResponseTypeInfo responseTypeInfo;
 
     private Domain receiverDomain;
     private Function<I, O> wrappedFunction;
@@ -85,6 +90,8 @@ public class Request<I, O> {
             throw new IllegalArgumentException("port must not be null");
         }
 
+        responseTypeInfo = getResponseTypeInfo(portMethod);
+
         Function<I, O> portFunction = x -> {
             try {
                 return (O) portMethod.invoke(methodOwner, x);
@@ -94,6 +101,32 @@ public class Request<I, O> {
         };
 
         connect(portFunction, methodOwner);
+    }
+
+    private PortsFutureResponseTypeInfo getResponseTypeInfo(Method portMethod) {
+        if (portMethod.getReturnType() != Either.class && portMethod.getReturnType() != Either3.class) {
+            return PortsFutureResponseTypeInfo.OTHER;
+        }
+
+        if (!(portMethod.getGenericReturnType() instanceof ParameterizedType)) {
+            return PortsFutureResponseTypeInfo.OTHER;
+        }
+
+        ParameterizedType parameterizedType = (ParameterizedType) portMethod.getGenericReturnType();
+
+        if (parameterizedType.getActualTypeArguments().length == 2) {
+            if (parameterizedType.getActualTypeArguments()[1].getTypeName().equals(Failure.class.getName())) {
+                return PortsFutureResponseTypeInfo.EITHER_X_FAILURE;
+            } else {
+                return PortsFutureResponseTypeInfo.OTHER;
+            }
+        }
+
+        if (parameterizedType.getActualTypeArguments()[2].getTypeName().equals(Failure.class.getName())) {
+            return PortsFutureResponseTypeInfo.EITHER3_X_Y_FAILURE;
+        } else {
+            return PortsFutureResponseTypeInfo.OTHER;
+        }
     }
 
     /**
@@ -135,9 +168,9 @@ public class Request<I, O> {
      * @throws PortNotConnectedException If this port is not connected.
      *
      * @return An {@link Either} containing either the response of the receiver or a
-     *   {@link Throwable} in case the receiver terminated with an exception.
+     *   {@link Failure} in case the receiver terminated with an exception.
      */
-    public Either<O, Throwable> callEither(I payload) {
+    public Either<O, Failure> callEither(I payload) {
         return submit(payload).getEither();
     }
 
@@ -184,7 +217,7 @@ public class Request<I, O> {
             }
         }
 
-        return receiverDomain.dispatch(wrappedFunction, payload, owner, receiver);
+        return receiverDomain.dispatch(wrappedFunction, payload, owner, receiver, responseTypeInfo);
     }
 
     private Function<I, O> getWrappedFunctionForProtocols() {

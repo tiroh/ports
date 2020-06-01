@@ -256,6 +256,81 @@ public class SimpleTests {
     }
 
     @Test
+    public void eitherXFailureResponse() {
+        EitherA a = new EitherA();
+        EitherB b = new EitherB();
+
+        Ports.connect(a).and(b);
+
+        Either<Integer, Failure> response = a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure"));
+
+        response.on(
+                integer -> fail("no integer expected"),
+                failure -> {
+                    Throwable throwable = failure.getThrowable().get().getCause().getCause().getCause();
+                    assertEquals(MySpecialTestException.class, throwable.getClass());
+                    assertEquals("xfailure", throwable.getMessage());
+                }
+        );
+    }
+
+    @Test
+    public void eitherXYResponse() {
+        EitherA a = new EitherA();
+        EitherB b = new EitherB();
+
+        Ports.connect(a).and(b);
+
+        Exception exception = assertThrows(
+                ExecutionException.class,
+                () -> a.eitherXYRequest.call(new EitherXYRequest("xy"))
+        );
+
+        Throwable throwable = exception.getCause().getCause().getCause();
+
+        assertEquals(MySpecialTestException.class, throwable.getClass());
+        assertEquals("xy", throwable.getMessage());
+    }
+
+    @Test
+    public void either3XFailureResponse() {
+        EitherA a = new EitherA();
+        EitherB b = new EitherB();
+
+        Ports.connect(a).and(b);
+
+        Either3<Integer, Nothing, Failure> response = a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure"));
+
+        response.on(
+                integer -> fail("no integer expected"),
+                nothing -> fail("no nothing expected"),
+                failure -> {
+                    Throwable throwable = failure.getThrowable().get().getCause().getCause().getCause();
+                    assertEquals(MySpecialTestException.class, throwable.getClass());
+                    assertEquals("xyfailure", throwable.getMessage());
+                }
+        );
+    }
+
+    @Test
+    public void either3XYResponse() {
+        EitherA a = new EitherA();
+        EitherB b = new EitherB();
+
+        Ports.connect(a).and(b);
+
+        Exception exception = assertThrows(
+                ExecutionException.class,
+                () -> a.either3XYZRequest.call(new Either3XYZRequest("xyz"))
+        );
+
+        Throwable throwable = exception.getCause().getCause().getCause();
+
+        assertEquals(MySpecialTestException.class, throwable.getClass());
+        assertEquals("xyz", throwable.getMessage());
+    }
+
+    @Test
     public void deadlockResolutionSync() {
         DeadlockA a = new DeadlockA();
         DeadlockB b = new DeadlockB();

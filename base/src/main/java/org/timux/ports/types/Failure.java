@@ -37,20 +37,44 @@ public class Failure {
     private final Optional<Throwable> throwable;
 
     private Failure(String message, Throwable throwable) {
+        if (message == null) {
+            throw new IllegalArgumentException("message must not be null");
+        }
+
         this.message = message;
         this.throwable = Optional.ofNullable(throwable);
     }
 
+    /**
+     * Creates a new Failure instance.
+     *
+     * @param message Must not be null.
+     */
     public static Failure of(String message) {
         return new Failure(message, null);
     }
 
+    /**
+     * Creates a new Failure instance.
+     *
+     * @param throwable May be null.
+     */
     public static Failure of(Throwable throwable) {
         return new Failure("", throwable);
     }
 
+    /**
+     * Creates a new Failure instance.
+     *
+     * @param message Must not be null.
+     * @param throwable May be null.
+     */
     public static Failure of(String message, Throwable throwable) {
         return new Failure(message, throwable);
+    }
+
+    public String getMessage() {
+        return message;
     }
 
     public Optional<Throwable> getThrowable() {
@@ -61,7 +85,7 @@ public class Failure {
     public String toString() {
         return "Failure{" +
                 (!message.isEmpty() ? "'" + message + "'" : "") +
-                (message.isEmpty() ? throwable : ", " + throwable) +
+                (throwable.isPresent() ? (message.isEmpty() ? throwable : ", " + throwable) : "") +
                 "}";
     }
 }

@@ -56,7 +56,7 @@ class Dispatcher {
         }
     }
 
-    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject, Object sender, Object receiver) {
+    <I, O> PortsFuture<O> dispatch(Function<I, O> requestPort, I payload, Object mutexSubject, Object sender, Object receiver, PortsFutureResponseTypeInfo responseTypeInfo) {
         Task task = new Task(requestPort, payload, mutexSubject, sender, receiver);
 
         if (workerExecutor == null || task.getCreatedByThread().getThreadGroup() == workerExecutor.getThreadGroup()) {
@@ -66,7 +66,7 @@ class Dispatcher {
              */
             task.setProcessedByThread(task.getCreatedByThread());
             task.run();
-            return new PortsFuture<>(task);
+            return new PortsFuture<>(task, responseTypeInfo);
         }
 
         synchronized (queue) {
@@ -74,7 +74,7 @@ class Dispatcher {
             workerExecutor.onNewRequestTaskAvailable(task, queue.size());
         }
 
-        return new PortsFuture<>(task);
+        return new PortsFuture<>(task, responseTypeInfo);
     }
 
     Task poll() {

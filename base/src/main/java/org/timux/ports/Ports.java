@@ -255,8 +255,8 @@ public final class Ports {
     static void ensurePortInstantiation(Field outPortField, Object owner) throws IllegalAccessException {
         if (outPortField.get(owner) == null) {
             String genericTypeName = outPortField.getGenericType().getTypeName();
-            String extractedMessageTypeName = extractTypeParameter(genericTypeName, genericTypeName);
-            String requestTypeName = extractRequestTypeName(extractedMessageTypeName);
+            String extractedMessageTypeName = TypeUtils.extractTypeParameter(genericTypeName, genericTypeName);
+            String requestTypeName = TypeUtils.extractRequestTypeName(extractedMessageTypeName);
 
             if (outPortField.getType() == Event.class) {
                 Event event = new Event(requestTypeName, owner);
@@ -329,7 +329,7 @@ public final class Ports {
                 continue;
             }
 
-            String typeParameter = extractTypeParameter(field.getGenericType().getTypeName(), "");
+            String typeParameter = TypeUtils.extractTypeParameter(field.getGenericType().getTypeName(), "");
 
             if (typeParameter.isEmpty()) {
                 typeParameter = (field.getType() == Request.class ? "java.lang.Object, java.lang.Object" : "java.lang.Object");
@@ -476,27 +476,6 @@ public final class Ports {
         }
 
         return methods;
-    }
-
-    private static String extractTypeParameter(String type, String _default) {
-        int genericStart = type.indexOf('<');
-        int genericEnd = type.lastIndexOf('>');
-
-        return genericStart < 0
-                ? _default
-                : type.substring(genericStart + 1, genericEnd);
-    }
-
-    private static String extractRequestTypeName(String type) {
-        return type.split(",")[0].trim();
-    }
-
-    private static String extractResponseTypeName(String type) {
-        try {
-            return type.split(",")[1].trim();
-        } catch (IndexOutOfBoundsException e) {
-            return void.class.getName();
-        }
     }
 
     /**

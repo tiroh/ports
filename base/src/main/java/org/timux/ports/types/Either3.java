@@ -93,7 +93,7 @@ public abstract class Either3<A, B, C> {
      * @see #orElseDo
      * @see #finallyDo
      */
-    public abstract <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
+    public abstract <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
 
     /**
      * Maps the C constituent, if it exists, to R.
@@ -213,7 +213,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return aFn.apply(a).getEither();
             }
 
@@ -302,8 +302,8 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return Either.b(new IllegalStateException("this Either3 does not store the result of a request"));
+            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+                return Either.b(Failure.of(new IllegalStateException("this Either3 does not store the result of a request")));
             }
 
             @Override
@@ -391,10 +391,10 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return c instanceof Throwable
-                        ? Either.b((Throwable) c)
-                        : Either.b(new IllegalStateException("this Either3 does not store the result of a request"));
+            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+                return c instanceof Failure
+                        ? Either.b((Failure) c)
+                        : Either.b(Failure.of(new IllegalStateException("this Either3 does not store the result of a request")));
             }
 
             @Override

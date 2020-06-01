@@ -16,13 +16,17 @@
  
 package org.timux.ports.testapp.component;
 
-import org.timux.ports.*;
+import org.timux.ports.Event;
+import org.timux.ports.In;
+import org.timux.ports.Out;
+import org.timux.ports.Request;
 import org.timux.ports.types.Either;
+import org.timux.ports.types.Failure;
 
 public class B {
 
     @Out Event<IntEvent> intEvent;
-    @Out Request<FragileRequest, Either<Integer, String>> fragileRequest;
+    @Out Request<FragileRequest, Either<Integer, Failure>> fragileRequest;
     @Out Event<RuntimeException> runtimeExceptionEvent;
 
     public B() {

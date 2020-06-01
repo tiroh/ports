@@ -18,6 +18,7 @@ package org.timux.ports;
 
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
 import org.timux.ports.types.Nothing;
 
 import java.util.concurrent.Future;
@@ -48,13 +49,16 @@ public class PortsFuture<T> implements Future<T> {
     private T result;
     private boolean hasReturned;
 
+    private PortsFutureResponseTypeInfo responseTypeInfo;
+
     PortsFuture(T result) {
         this.result = result;
         hasReturned = true;
     }
 
-    PortsFuture(Task task) {
+    PortsFuture(Task task, PortsFutureResponseTypeInfo responseTypeInfo) {
         this.task = task;
+        this.responseTypeInfo = responseTypeInfo;
     }
 
     /**
@@ -68,14 +72,25 @@ public class PortsFuture<T> implements Future<T> {
      */
     @Override
     public T get() {
-        if (hasReturned) {
+        try {
+            if (!hasReturned) {
+                result = (T) task.waitForResponse();
+                hasReturned = true;
+            }
+
             return result;
+        } catch (Exception e) {
+            switch (responseTypeInfo) {
+            case EITHER_X_FAILURE:
+                return (T) Either.b(Failure.of(e));
+            case EITHER3_X_Y_FAILURE:
+                return (T) Either3.c(Failure.of(e));
+            case OTHER:
+                throw e;
+            default:
+                throw new IllegalStateException("unhandled response type info: " + responseTypeInfo, e);
+            }
         }
-
-        result = (T) task.waitForResponse();
-        hasReturned = true;
-
-        return result;
     }
 
     /**
@@ -89,12 +104,25 @@ public class PortsFuture<T> implements Future<T> {
      */
     @Override
     public T get(long timeout, TimeUnit unit) throws TimeoutException {
-        if (!hasReturned) {
-            result = (T) task.waitForResponse(timeout, unit);
-            hasReturned = true;
-        }
+        try {
+            if (!hasReturned) {
+                result = (T) task.waitForResponse(timeout, unit);
+                hasReturned = true;
+            }
 
-        return result;
+            return result;
+        } catch (Exception e) {
+            switch (responseTypeInfo) {
+            case EITHER_X_FAILURE:
+                return (T) Either.b(Failure.of(e));
+            case EITHER3_X_Y_FAILURE:
+                return (T) Either3.c(Failure.of(e));
+            case OTHER:
+                throw e;
+            default:
+                throw new IllegalStateException("unhandled response type info: " + responseTypeInfo, e);
+            }
+        }
     }
 
     /**
@@ -103,11 +131,11 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is blocking.</em>
      */
-    public Either<T, Throwable> getEither() {
+    public Either<T, Failure> getEither() {
         try {
             return Either.a(get());
         } catch (Exception e) {
-            return Either.b(e);
+            return Either.b(Failure.of(e));
         }
     }
 
@@ -117,13 +145,13 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is blocking.</em>
      */
-    public Either3<T, Nothing, Throwable> getEither(long timeout, TimeUnit timeUnit) {
+    public Either3<T, Nothing, Failure> getEither(long timeout, TimeUnit timeUnit) {
         try {
             return Either3.a(get(timeout, timeUnit));
         } catch (TimeoutException e) {
             return Either3.b(Nothing.INSTANCE);
         } catch (Exception e) {
-            return Either3.c(e);
+            return Either3.c(Failure.of(e));
         }
     }
 
@@ -150,11 +178,11 @@ public class PortsFuture<T> implements Future<T> {
 
     /**
      * Returns an {@link Either3} representing either the result (if available), the provided 'elseValue', or
-     * a {@link Throwable} (if the respective receiver terminated with an exception).
+     * a {@link Failure} (if the respective receiver terminated with an exception).
      *
      * <p> <em>This call is non-blocking.</em>
      */
-    public <E> Either3<T, E, Throwable> getEither(E elseValue) {
+    public <E> Either3<T, E, Failure> getEither(E elseValue) {
         if (hasReturned) {
             return Either3.a(result);
         }
@@ -165,7 +193,7 @@ public class PortsFuture<T> implements Future<T> {
                 hasReturned = true;
                 return Either3.a(result);
             } catch (Exception e) {
-                return Either3.c(e);
+                return Either3.c(Failure.of(e));
             }
         }
 
@@ -180,7 +208,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
-    public <R> R map(Function<T, R> mapper, R elseValue) {
+    public <R> R map(Function<T, R> mapper, R elseValue) { // TODO make this exception-safe
         if (hasReturned) {
             return mapper.apply(result);
         }
@@ -200,16 +228,16 @@ public class PortsFuture<T> implements Future<T> {
      * <ol>
      * <li>the result transformed by the provided 'mapper' function (if the result is available),</li>
      * <li>the provided 'elseValue' (if no result is available),</li>
-     * <li>a {@link Throwable} (if the receiver terminated with an exception).</li>
+     * <li>a {@link Failure} (if the receiver terminated with an exception).</li>
      * </ol>
      *
      * <p> <em>This call is non-blocking.</em>
      */
-    public <R> Either<R, Throwable> mapEither(Function<T, R> mapper, R elseValue) {
+    public <R> Either<R, Failure> mapEither(Function<T, R> mapper, R elseValue) { // TODO make this exception-safe
         try {
             return Either.a(map(mapper, elseValue));
         } catch (Exception e) {
-            return Either.b(e);
+            return Either.b(Failure.of(e));
         }
     }
 
@@ -224,7 +252,8 @@ public class PortsFuture<T> implements Future<T> {
      *
      * @see Either#andThenR
      */
-    public <O, R extends PortsFuture<O>> Either<O, Throwable> andThenR(Function<T, R> fn) {
+    public <O, R extends PortsFuture<O>> Either<O, Failure> andThenR(Function<T, R> fn) {
+        // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
         return getEither().andThenR(fn);
     }
 
@@ -236,7 +265,7 @@ public class PortsFuture<T> implements Future<T> {
      * 
      * @see #orElseDo
      */
-    public <R> Either<T, R> orElse(Function<Throwable, R> fn) {
+    public <R> Either<T, R> orElse(Function<Failure, R> fn) {
         return getEither().orElse(fn);
     }
 
@@ -248,7 +277,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * @see #orElse
      */
-    public Either<T, Throwable> orElseDo(Consumer<Throwable> consumer) {
+    public Either<T, Failure> orElseDo(Consumer<Failure> consumer) {
         return getEither().orElseDo(consumer);
     }
 

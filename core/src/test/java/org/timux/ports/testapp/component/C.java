@@ -18,6 +18,7 @@ package org.timux.ports.testapp.component;
 
 import org.timux.ports.*;
 import org.timux.ports.types.Either;
+import org.timux.ports.types.Failure;
 
 public class C {
 
@@ -33,10 +34,10 @@ public class C {
     }
 
     @In
-    private Either<Integer, String> onFragileRequest(FragileRequest request) {
+    private Either<Integer, Failure> onFragileRequest(FragileRequest request) {
         System.out.println("C received FragileRequest");
         return request.isOk()
                 ? Either.a(37)
-                : Either.b("an error message");
+                : Either.b(Failure.of("an error message"));
     }
 }

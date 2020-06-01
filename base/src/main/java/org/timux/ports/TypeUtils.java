@@ -21,6 +21,27 @@ import org.timux.ports.types.Either3;
 
 class TypeUtils {
 
+    static String extractTypeParameter(String type, String _default) {
+        int genericStart = type.indexOf('<');
+        int genericEnd = type.lastIndexOf('>');
+
+        return genericStart < 0
+                ? _default
+                : type.substring(genericStart + 1, genericEnd);
+    }
+
+    static String extractRequestTypeName(String type) {
+        return type.split(",")[0].trim();
+    }
+
+    static String extractResponseTypeName(String type) {
+        try {
+            return type.split(",")[1].trim();
+        } catch (IndexOutOfBoundsException e) {
+            return void.class.getName();
+        }
+    }
+
     public static void verifyResponseType(Class<?> requestType, Class<?> responseType) {
         verifyResponseType(requestType, responseType, null, null, null);
     }

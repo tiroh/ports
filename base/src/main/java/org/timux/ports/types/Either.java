@@ -83,13 +83,13 @@ public abstract class Either<A, B> {
      * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
      * otherwise. In this context, the A constituent is the result of a preceding request.
      *
-     * @see PortsFuture#andThenR 
+     * @see PortsFuture#andThenR
      * @see #andThen
      * @see #orElse
      * @see #orElseDo
      * @see #finallyDo
      */
-    public abstract <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
+    public abstract <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
 
     /**
      * Maps the B constituent, if it exists, to R.
@@ -192,7 +192,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
                 return aFn.apply(a).getEither();
             }
 
@@ -271,10 +271,10 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, Throwable> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return b instanceof Throwable
-                        ? Either.b((Throwable) b)
-                        : Either.b(new IllegalStateException("this Either does not store the result of a request"));
+            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
+                return b instanceof Failure
+                        ? Either.b((Failure) b)
+                        : Either.b(Failure.of(new IllegalStateException("this Either does not store the result of a request")));
             }
 
             @Override

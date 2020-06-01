@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-package org.timux.ports.testapp.component;
 
-import org.timux.ports.FailureResponse;
-import org.timux.ports.SuccessResponse;
-import org.timux.ports.types.Failure;
+package org.timux.ports;
 
-@SuccessResponse(Integer.class)
-@FailureResponse(Failure.class)
-public class FragileRequest {
+enum PortsFutureResponseTypeInfo {
 
-    private final boolean ok;
-
-    public FragileRequest(boolean ok) {
-        this.ok = ok;
-    }
-
-    public boolean isOk() {
-        return ok;
-    }
+    EITHER_X_FAILURE,
+    EITHER3_X_Y_FAILURE,
+    OTHER
 }
