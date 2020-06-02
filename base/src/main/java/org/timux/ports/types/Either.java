@@ -78,12 +78,12 @@ public abstract class Either<A, B> {
 
     /**
      * A version of {@link #andThen} that supports working with requests. With this method (and together with
-     * {@link PortsFuture#andThenR}) you can build chains of requests.
+     * {@link PortsFuture#andThenE}) you can build chains of requests.
      *
      * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
      * otherwise. In this context, the A constituent is the result of a preceding request.
      *
-     * @see PortsFuture#andThenR
+     * @see PortsFuture#andThenE
      * @see #andThen
      * @see #orElse
      * @see #orElseDo

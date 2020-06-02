@@ -207,6 +207,7 @@ public class Event<T> {
 
         if (i == 0) {
             if (Protocol.areProtocolsActive) {
+                // FIXME: handle exceptions thrown in the metaevent handler
                 Protocol.onDataSent(eventTypeName, owner, payload);
             } else {
                 Ports.printWarning(String.format(
@@ -219,6 +220,7 @@ public class Event<T> {
         }
 
         if (Protocol.areProtocolsActive) {
+            // FIXME: handle exceptions thrown in the metaevent handler
             Protocol.onDataSent(eventTypeName, owner, payload);
         }
 

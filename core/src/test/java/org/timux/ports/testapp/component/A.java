@@ -73,9 +73,9 @@ public class A {
 
         System.out.println("--- done sending int events --- ");
 
-        objectRequest.submit(new ObjectRequest(1))
-                .andThenR(r -> shortRequest.submit(new ShortRequest((short) 32000)))
-                .andThenR(r -> testCommand.submit(new TestCommand()))
+        objectRequest.callF(new ObjectRequest(1))
+                .andThenE(r -> shortRequest.callF(new ShortRequest((short) 32000)))
+                .andThenR(r -> testCommand.callF(new TestCommand()))
                 .orElseDo(throwable -> {
                     System.out.println("OrElse: " + throwable);
                 })
@@ -85,7 +85,7 @@ public class A {
 
         objectEvent.trigger(new ObjectEvent(3700));
         System.out.println(testCommand.call(new TestCommand()).toString());
-        PortsFuture<Double> d = shortRequest.submit(new ShortRequest((short) 2));
+        PortsFuture<Double> d = shortRequest.callF(new ShortRequest((short) 2));
         Object o = objectRequest.call(new ObjectRequest(9));
         Object o2 = objectRequest.call(new ObjectRequest(null));
 

@@ -28,6 +28,6 @@ class B {
 
     @In
     private void onInt(IntEvent event) {
-        receivedData = doubleRequest.submit(new DoubleRequest(event.getData())).get();
+        receivedData = doubleRequest.callF(new DoubleRequest(event.getData())).get();
     }
 }

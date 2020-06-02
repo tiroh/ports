@@ -39,9 +39,9 @@ public class AsyncTest {
             doubleState *= request.getData() + 0.5;
 
             if (request.getData() > 0 && doubleRequest != null && doubleEvent != null) {
-                PortsFuture<Double> future = doubleRequest.submit(new DoubleRequest(request.getData() - 1, sender));
+                PortsFuture<Double> future = doubleRequest.callF(new DoubleRequest(request.getData() - 1, sender));
                 doubleEvent.trigger(new DoubleEvent(doubleState));
-                PortsFuture<Double> future2 = doubleRequest.submit(new DoubleRequest(request.getData() - 1.1, sender));
+                PortsFuture<Double> future2 = doubleRequest.callF(new DoubleRequest(request.getData() - 1.1, sender));
                 doubleEvent.trigger(new DoubleEvent(doubleState*2));
                 doubleEvent.trigger(new DoubleEvent(doubleState*3));
                 return future.get() + future2.get();

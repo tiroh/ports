@@ -19,11 +19,23 @@ package org.timux.ports;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.types.*;
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
+import org.timux.ports.types.Nothing;
+import org.timux.ports.types.Pair;
+import org.timux.ports.types.PairX;
+import org.timux.ports.types.TripleX;
+import org.timux.ports.types.Tuple;
 
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SimpleTests {
 
@@ -231,13 +243,19 @@ public class SimpleTests {
 
         either1.orElse(string -> fail("no string expected"))
                 .andThen(integer -> true)
-                .on(Assertions::assertTrue, string -> fail("no string expected"));
+                .on(
+                        Assertions::assertTrue,
+                        string -> fail("no string expected")
+                );
 
         Either<Integer, String> either2 = Either.b("1.5");
 
         either2.andThen(integer -> fail("no integer expected"))
                 .orElse(Double::parseDouble)
-                .on(integer -> fail("no integer expected"), value -> assertEquals(1.5, value));
+                .on(
+                        integer -> fail("no integer expected"),
+                        value -> assertEquals(1.5, value)
+                );
     }
 
     @Test
@@ -246,13 +264,21 @@ public class SimpleTests {
 
         either1.orElse(string -> fail("no string expected"))
                 .andThen(integer -> true)
-                .on(Assertions::assertTrue, bool -> fail("no boolean expected"), string -> fail("no string expected"));
+                .on(
+                        Assertions::assertTrue,
+                        bool -> fail("no boolean expected"),
+                        string -> fail("no string expected")
+                );
 
         Either3<Integer, Boolean, String> either2 = Either3.c("1.5");
 
         either2.andThen(integer -> fail("no integer expected"))
                 .orElse(Double::parseDouble)
-                .on(integer -> fail("no integer expected"), bool -> fail("no boolean expected"), value -> assertEquals(1.5, value));
+                .on(
+                        integer -> fail("no integer expected"),
+                        bool -> fail("no boolean expected"),
+                        value -> assertEquals(1.5, value)
+                );
     }
 
     @Test
@@ -419,8 +445,8 @@ public class SimpleTests {
 
         Fork<Double> fork = b.doubleRequest.fork(1000, DoubleRequest::new);
 
-        PortsFuture<Double> future1 = b.slowRequest.submit(new SlowRequest(10.0));
-        PortsFuture<Double> future2 = b.slowRequest.submit(new SlowRequest(1.0));
+        PortsFuture<Double> future1 = b.slowRequest.callF(new SlowRequest(10.0));
+        PortsFuture<Double> future2 = b.slowRequest.callF(new SlowRequest(1.0));
 
         double response2 = future2.get();
         double response1 = future1.get();

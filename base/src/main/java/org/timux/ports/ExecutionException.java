@@ -27,7 +27,7 @@ import java.util.List;
  * {@link Exception}.
  *
  * @see Request#call
- * @see Request#submit
+ * @see Request#callF
  * @see Request#fork(List)
  *
  * @since 0.5.0

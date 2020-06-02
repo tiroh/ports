@@ -143,7 +143,7 @@ public class Request<I, O> {
      *
      * @param payload The payload to be sent.
      *
-     * @see #submit
+     * @see #callF
      * @see Domain
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
@@ -153,7 +153,7 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
-        return submit(payload).get();
+        return callF(payload).get();
     }
 
     /**
@@ -162,7 +162,7 @@ public class Request<I, O> {
      *
      * @param payload The payload to be sent.
      *
-     * @see #submit
+     * @see #callF
      * @see Domain
      *
      * @throws PortNotConnectedException If this port is not connected.
@@ -170,8 +170,8 @@ public class Request<I, O> {
      * @return An {@link Either} containing either the response of the receiver or a
      *   {@link Failure} in case the receiver terminated with an exception.
      */
-    public Either<O, Failure> callEither(I payload) {
-        return submit(payload).getEither();
+    public Either<O, Failure> callE(I payload) {
+        return callF(payload).getEither();
     }
 
     /**
@@ -186,20 +186,22 @@ public class Request<I, O> {
      * @return A future of the response of the receiver. Use its {@link PortsFuture#get},
      *   {@link PortsFuture#getNow}, or {@link PortsFuture#getEither} methods to access the response object.
      *
-     * @throws ExecutionException If the receiver terminated with an exception.
      * @throws PortNotConnectedException If this port is not connected.
      *
      * @since 0.5.0
      */
     @SuppressWarnings("unchecked")
-    public PortsFuture<O> submit(I payload) {
+    public PortsFuture<O> callF(I payload) {
         if (Protocol.areProtocolsActive) {
+            // FIXME: handle exceptions thrown in the metaevent handler
             Protocol.onDataSent(requestTypeName, owner, payload);
 
             Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
 
             if (responseProvider != null) {
+                // FIXME: handle exceptions thrown in the response provider
                 O protocolResponse = responseProvider.apply(payload);
+                // FIXME: handle exceptions thrown in the metaevent handler
                 Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
                 return new PortsFuture<>(protocolResponse);
             }
@@ -224,6 +226,7 @@ public class Request<I, O> {
         return Protocol.areProtocolsActive
                 ? (x -> {
                     O response = port.apply(x);
+                    // FIXME: handle exceptions thrown in the metaevent handler
                     Protocol.onDataReceived(requestTypeName, owner, response);
                     return response;
                 })
@@ -274,7 +277,7 @@ public class Request<I, O> {
         Fork<O> fork = new Fork<>();
 
         for (I payload : payloads) {
-            fork.add(submit(payload));
+            fork.add(callF(payload));
         }
 
         return fork;

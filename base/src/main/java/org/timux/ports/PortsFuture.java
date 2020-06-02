@@ -30,7 +30,7 @@ import java.util.function.Function;
 /**
  * Represents the future response of a potentially asynchronous request.
  *
- * <p> Whenever you issue an asynchronous request via {@link Request#submit}, you will retrieve
+ * <p> Whenever you issue an asynchronous request via {@link Request#callF}, you will retrieve
  * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},
  * {@link #getNow}, or {@link #getEither}.
  *
@@ -126,7 +126,7 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
-     * Returns an {@link Either} providing either the result or a {@link Throwable} in case the
+     * Returns an {@link Either} providing either the result or a {@link Failure} in case the
      * respective receiver terminated with an exception.
      *
      * <p> <em>This call is blocking.</em>
@@ -141,7 +141,7 @@ public class PortsFuture<T> implements Future<T> {
 
     /**
      * Returns an {@link Either3} providing either the result, a {@link Nothing} (if a timeout occurs),
-     * or a {@link Throwable} (if the respective receiver terminated with an exception).
+     * or a {@link Failure} (if the respective receiver terminated with an exception).
      *
      * <p> <em>This call is blocking.</em>
      */
@@ -242,17 +242,45 @@ public class PortsFuture<T> implements Future<T> {
     }
 
     /**
+     * Applies the provided consumer to the result.
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
+     */
+    public PortsFuture<T> do_(Consumer<T> consumer) {
+        consumer.accept(get());
+        return this;
+    }
+
+    /**
+     * A method that makes handling chains of requests easier.
+     *
+     * <p> It maps the result, if it exists, to another {@link PortsFuture}.
+     *
+     * <p> <em>This call is blocking.</em>
+     *
+     * @see #andThenE 
+     * @see Either#andThenR
+     *
+     * @throws ExecutionException If the receiver terminated unexpectedly.
+     */
+    public <O, R extends PortsFuture<O>> R andThen(Function<T, R> fn) {
+        // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
+        return fn.apply(get());
+    }
+
+    /**
      * A method that makes handling chains of requests easier. It works in conjunction with
      * {@link Either#andThenR}.
      *
-     * <p> It maps the result, if it exists, to another {@link PortsFuture}, or returns a {@link Throwable}
+     * <p> It maps the result, if it exists, to another {@link PortsFuture}, or returns a {@link Failure}
      * if the receiver terminated with an exception.
      *
      * <p> <em>This call is blocking.</em>
      *
+     * @see #andThen 
      * @see Either#andThenR
      */
-    public <O, R extends PortsFuture<O>> Either<O, Failure> andThenR(Function<T, R> fn) {
+    public <O, R extends PortsFuture<O>> Either<O, Failure> andThenE(Function<T, R> fn) {
         // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
         return getEither().andThenR(fn);
     }
@@ -265,7 +293,7 @@ public class PortsFuture<T> implements Future<T> {
      * 
      * @see #orElseDo
      */
-    public <R> Either<T, R> orElse(Function<Failure, R> fn) {
+    public <R> Either<T, R> orElseE(Function<Failure, R> fn) {
         return getEither().orElse(fn);
     }
 
@@ -275,7 +303,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is blocking.</em>
      *
-     * @see #orElse
+     * @see #orElseE
      */
     public Either<T, Failure> orElseDo(Consumer<Failure> consumer) {
         return getEither().orElseDo(consumer);
