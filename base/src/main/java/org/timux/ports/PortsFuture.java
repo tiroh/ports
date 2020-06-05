@@ -304,9 +304,21 @@ public class PortsFuture<T> implements Future<T> {
      * <p> <em>This call is blocking.</em>
      *
      * @see #orElseE
+     * @see #orElseOnce
      */
     public Either<T, Failure> orElseDo(Consumer<Failure> consumer) {
         return getEither().orElseDo(consumer);
+    }
+
+    /**
+     * If the receiver terminated with an exception, this method applies the provided
+     * consumer to the according failure only if it has not already been handled by
+     * another call of {@link Either#orElseOnce}, {@link Either#orElse}, or
+     * {@link Either#orElseDo}.
+     * Otherwise, this method behaves exactly like {@link #orElseDo}.
+     */
+    public Either<T, Failure> orElseOnce(Consumer<Failure> consumer) {
+        return getEither().orElseOnce(consumer);
     }
 
     /**

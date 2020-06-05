@@ -36,6 +36,8 @@ public class Failure {
     private final String message;
     private final Optional<Throwable> throwable;
 
+    private boolean hasAlreadyBeenHandled = false;
+
     private Failure(String message, Throwable throwable) {
         if (message == null) {
             throw new IllegalArgumentException("message must not be null");
@@ -71,6 +73,14 @@ public class Failure {
      */
     public static Failure of(String message, Throwable throwable) {
         return new Failure(message, throwable);
+    }
+
+    boolean hasAlreadyBeenHandled() {
+        return hasAlreadyBeenHandled;
+    }
+
+    void setHasAlreadyBeenHandled() {
+        hasAlreadyBeenHandled = true;
     }
 
     public String getMessage() {

@@ -19,14 +19,7 @@ package org.timux.ports;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.types.Either;
-import org.timux.ports.types.Either3;
-import org.timux.ports.types.Failure;
-import org.timux.ports.types.Nothing;
-import org.timux.ports.types.Pair;
-import org.timux.ports.types.PairX;
-import org.timux.ports.types.TripleX;
-import org.timux.ports.types.Tuple;
+import org.timux.ports.types.*;
 
 import java.util.Random;
 
@@ -354,6 +347,50 @@ public class SimpleTests {
 
         assertEquals(MySpecialTestException.class, throwable.getClass());
         assertEquals("xyz", throwable.getMessage());
+    }
+
+    @Test
+    public void eitherOrElseOnce() {
+        EitherA a = new EitherA();
+        EitherB b = new EitherB();
+
+        Ports.connect(a).and(b);
+
+        Container<Failure> failure1 = Container.of(null);
+        Container<Failure> failure2 = Container.of(null);
+
+        a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure"))
+                .orElseDo(f -> failure1.value = f)
+                .orElseOnce(f -> fail("no orElse call expected (1)"))
+                .andThen(r -> a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure")))
+                .orElseDo(f -> failure2.value = f)
+                .orElseOnce(f -> fail("no orElse call expected (2)"))
+                .andThenDo(r -> fail("no andThen call expected"));
+
+        assertEquals("xfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
+        assertEquals(failure1.value, failure2.value);
+    }
+
+    @Test
+    public void either3OrElseOnce() {
+        EitherA a = new EitherA();
+        EitherB b = new EitherB();
+
+        Ports.connect(a).and(b);
+
+        Container<Failure> failure1 = Container.of(null);
+        Container<Failure> failure2 = Container.of(null);
+
+        a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure"))
+                .orElseDo(f -> failure1.value = f)
+                .orElseOnce(f -> fail("no orElse call expected (1)"))
+                .andThen(r -> a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure")))
+                .orElseDo(f -> failure2.value = f)
+                .orElseOnce(f -> fail("no orElse call expected (2)"))
+                .andThenDo(r -> fail("no andThen call expected"));
+
+        assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
+        assertEquals(failure1.value, failure2.value);
     }
 
     @Test

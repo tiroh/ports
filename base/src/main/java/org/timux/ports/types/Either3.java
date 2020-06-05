@@ -106,6 +106,14 @@ public abstract class Either3<A, B, C> {
     public abstract Either3<A, B, C> orElseDo(Consumer<? super C> bC);
 
     /**
+     * If the C constituent is a {@link Failure}, this method applies the provided
+     * consumer to that failure only if it has not already been handled by
+     * another call of {@link #orElseOnce}, {@link #orElse}, or {@link #orElseDo}.
+     * Otherwise, this method behaves exactly like {@link #orElseDo}.
+     */
+    public abstract Either3<A, B, C> orElseOnce(Consumer<? super C> bC);
+
+    /**
      * Executes the provided actions on the constituents of this union.
      */
     public abstract Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC);
@@ -228,6 +236,11 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public Either3<A, B, C> orElseOnce(Consumer<? super C> bC) {
+                return this;
+            }
+
+            @Override
             public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 aC.accept(a);
                 return this;
@@ -317,6 +330,11 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public Either3<A, B, C> orElseOnce(Consumer<? super C> bC) {
+                return this;
+            }
+
+            @Override
             public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 bC.accept(b);
                 return this;
@@ -399,11 +417,35 @@ public abstract class Either3<A, B, C> {
 
             @Override
             public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
+                if (c instanceof Failure) {
+                    ((Failure) c).setHasAlreadyBeenHandled();
+                }
+
                 return Either3.c(cFn.apply(c));
             }
 
             @Override
             public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
+                if (c instanceof Failure) {
+                    ((Failure) c).setHasAlreadyBeenHandled();
+                }
+
+                bC.accept(c);
+                return this;
+            }
+
+            @Override
+            public Either3<A, B, C> orElseOnce(Consumer<? super C> bC) {
+                if (c instanceof Failure) {
+                    Failure failure = (Failure) c;
+
+                    if (failure.hasAlreadyBeenHandled()) {
+                        return this;
+                    }
+
+                    failure.setHasAlreadyBeenHandled();
+                }
+
                 bC.accept(c);
                 return this;
             }
