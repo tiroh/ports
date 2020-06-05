@@ -103,15 +103,15 @@ public abstract class Either3<A, B, C> {
     /**
      * Applies the provided consumer to the C constituent, if it exists, or does nothing otherwise.
      */
-    public abstract Either3<A, B, C> orElseDo(Consumer<? super C> bC);
+    public abstract Either3<A, B, C> orElseDo(Consumer<? super C> cC);
 
     /**
      * If the C constituent is a {@link Failure}, this method applies the provided
      * consumer to that failure only if it has not already been handled by
-     * another call of {@link #orElseOnce}, {@link #orElse}, or {@link #orElseDo}.
+     * another call of {@link #orElseDoOnce}, {@link #orElse}, or {@link #orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
-    public abstract Either3<A, B, C> orElseOnce(Consumer<? super C> bC);
+    public abstract Either3<A, B, C> orElseDoOnce(Consumer<? super C> cC);
 
     /**
      * Executes the provided actions on the constituents of this union.
@@ -222,7 +222,7 @@ public abstract class Either3<A, B, C> {
 
             @Override
             public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return aFn.apply(a).getEither();
+                return aFn.apply(a).getE();
             }
 
             @Override
@@ -231,12 +231,12 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
+            public Either3<A, B, C> orElseDo(Consumer<? super C> cC) {
                 return this;
             }
 
             @Override
-            public Either3<A, B, C> orElseOnce(Consumer<? super C> bC) {
+            public Either3<A, B, C> orElseDoOnce(Consumer<? super C> cC) {
                 return this;
             }
 
@@ -325,12 +325,12 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
+            public Either3<A, B, C> orElseDo(Consumer<? super C> cC) {
                 return this;
             }
 
             @Override
-            public Either3<A, B, C> orElseOnce(Consumer<? super C> bC) {
+            public Either3<A, B, C> orElseDoOnce(Consumer<? super C> cC) {
                 return this;
             }
 
@@ -425,17 +425,17 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public Either3<A, B, C> orElseDo(Consumer<? super C> bC) {
+            public Either3<A, B, C> orElseDo(Consumer<? super C> cC) {
                 if (c instanceof Failure) {
                     ((Failure) c).setHasAlreadyBeenHandled();
                 }
 
-                bC.accept(c);
+                cC.accept(c);
                 return this;
             }
 
             @Override
-            public Either3<A, B, C> orElseOnce(Consumer<? super C> bC) {
+            public Either3<A, B, C> orElseDoOnce(Consumer<? super C> cC) {
                 if (c instanceof Failure) {
                     Failure failure = (Failure) c;
 
@@ -446,7 +446,7 @@ public abstract class Either3<A, B, C> {
                     failure.setHasAlreadyBeenHandled();
                 }
 
-                bC.accept(c);
+                cC.accept(c);
                 return this;
             }
 

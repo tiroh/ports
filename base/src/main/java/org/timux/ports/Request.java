@@ -171,7 +171,7 @@ public class Request<I, O> {
      *   {@link Failure} in case the receiver terminated with an exception.
      */
     public Either<O, Failure> callE(I payload) {
-        return callF(payload).getEither();
+        return callF(payload).getE();
     }
 
     /**
@@ -184,7 +184,7 @@ public class Request<I, O> {
      * @see Domain
      *
      * @return A future of the response of the receiver. Use its {@link PortsFuture#get},
-     *   {@link PortsFuture#getNow}, or {@link PortsFuture#getEither} methods to access the response object.
+     *   {@link PortsFuture#getNow}, or {@link PortsFuture#getE} methods to access the response object.
      *
      * @throws PortNotConnectedException If this port is not connected.
      *

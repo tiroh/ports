@@ -100,17 +100,17 @@ public abstract class Either<A, B> {
     /**
      * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
      * 
-     * @see #orElseOnce
+     * @see #orElseDoOnce
      */
     public abstract Either<A, B> orElseDo(Consumer<? super B> bC);
 
     /**
      * If the B constituent is a {@link Failure}, this method applies the provided
      * consumer to that failure only if it has not already been handled by
-     * another call of {@link #orElseOnce}, {@link #orElse}, or {@link #orElseDo}.
+     * another call of {@link #orElseDoOnce}, {@link #orElse}, or {@link #orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
-    public abstract Either<A, B> orElseOnce(Consumer<? super B> bB);
+    public abstract Either<A, B> orElseDoOnce(Consumer<? super B> bC);
 
     /**
      * Executes the provided actions on the constituents of this union.
@@ -204,7 +204,7 @@ public abstract class Either<A, B> {
 
             @Override
             public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return aFn.apply(a).getEither();
+                return aFn.apply(a).getE();
             }
 
             @Override
@@ -218,7 +218,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public Either<A, B> orElseOnce(Consumer<? super B> bB) {
+            public Either<A, B> orElseDoOnce(Consumer<? super B> bC) {
                 return this;
             }
 
@@ -313,7 +313,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public Either<A, B> orElseOnce(Consumer<? super B> bB) {
+            public Either<A, B> orElseDoOnce(Consumer<? super B> bC) {
                 if (b instanceof Failure) {
                     Failure failure = (Failure) b;
 
@@ -324,7 +324,7 @@ public abstract class Either<A, B> {
                     failure.setHasAlreadyBeenHandled();
                 }
 
-                bB.accept(b);
+                bC.accept(b);
                 return this;
             }
 

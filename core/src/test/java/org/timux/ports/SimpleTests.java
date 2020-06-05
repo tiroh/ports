@@ -361,10 +361,10 @@ public class SimpleTests {
 
         a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure"))
                 .orElseDo(f -> failure1.value = f)
-                .orElseOnce(f -> fail("no orElse call expected (1)"))
+                .orElseDoOnce(f -> fail("no orElse call expected (1)"))
                 .andThen(r -> a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure")))
                 .orElseDo(f -> failure2.value = f)
-                .orElseOnce(f -> fail("no orElse call expected (2)"))
+                .orElseDoOnce(f -> fail("no orElse call expected (2)"))
                 .andThenDo(r -> fail("no andThen call expected"));
 
         assertEquals("xfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
@@ -383,10 +383,10 @@ public class SimpleTests {
 
         a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure"))
                 .orElseDo(f -> failure1.value = f)
-                .orElseOnce(f -> fail("no orElse call expected (1)"))
+                .orElseDoOnce(f -> fail("no orElse call expected (1)"))
                 .andThen(r -> a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure")))
                 .orElseDo(f -> failure2.value = f)
-                .orElseOnce(f -> fail("no orElse call expected (2)"))
+                .orElseDoOnce(f -> fail("no orElse call expected (2)"))
                 .andThenDo(r -> fail("no andThen call expected"));
 
         assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());

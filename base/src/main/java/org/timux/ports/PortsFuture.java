@@ -32,7 +32,7 @@ import java.util.function.Function;
  *
  * <p> Whenever you issue an asynchronous request via {@link Request#callF}, you will retrieve
  * an instance of this class. You can access the response via {@link #get()}, {@link #get(long, TimeUnit)},
- * {@link #getNow}, or {@link #getEither}.
+ * {@link #getNow}, or {@link #getE}.
  *
  * <p> <em>Instances of PortsFuture are not cancellable.</em> Accordingly, both {@link #cancel} and
  * {@link #isCancelled} always return false.
@@ -131,7 +131,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is blocking.</em>
      */
-    public Either<T, Failure> getEither() {
+    public Either<T, Failure> getE() {
         try {
             return Either.a(get());
         } catch (Exception e) {
@@ -145,7 +145,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is blocking.</em>
      */
-    public Either3<T, Nothing, Failure> getEither(long timeout, TimeUnit timeUnit) {
+    public Either3<T, Nothing, Failure> getE(long timeout, TimeUnit timeUnit) {
         try {
             return Either3.a(get(timeout, timeUnit));
         } catch (TimeoutException e) {
@@ -182,7 +182,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      */
-    public <E> Either3<T, E, Failure> getEither(E elseValue) {
+    public <E> Either3<T, E, Failure> getE(E elseValue) {
         if (hasReturned) {
             return Either3.a(result);
         }
@@ -233,7 +233,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      */
-    public <R> Either<R, Failure> mapEither(Function<T, R> mapper, R elseValue) { // TODO make this exception-safe
+    public <R> Either<R, Failure> mapE(Function<T, R> mapper, R elseValue) { // TODO make this exception-safe
         try {
             return Either.a(map(mapper, elseValue));
         } catch (Exception e) {
@@ -282,7 +282,7 @@ public class PortsFuture<T> implements Future<T> {
      */
     public <O, R extends PortsFuture<O>> Either<O, Failure> andThenE(Function<T, R> fn) {
         // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
-        return getEither().andThenR(fn);
+        return getE().andThenR(fn);
     }
 
     /**
@@ -294,7 +294,7 @@ public class PortsFuture<T> implements Future<T> {
      * @see #orElseDo
      */
     public <R> Either<T, R> orElseE(Function<Failure, R> fn) {
-        return getEither().orElse(fn);
+        return getE().orElse(fn);
     }
 
     /**
@@ -307,18 +307,18 @@ public class PortsFuture<T> implements Future<T> {
      * @see #orElseOnce
      */
     public Either<T, Failure> orElseDo(Consumer<Failure> consumer) {
-        return getEither().orElseDo(consumer);
+        return getE().orElseDo(consumer);
     }
 
     /**
      * If the receiver terminated with an exception, this method applies the provided
      * consumer to the according failure only if it has not already been handled by
-     * another call of {@link Either#orElseOnce}, {@link Either#orElse}, or
+     * another call of {@link Either#orElseDoOnce}, {@link Either#orElse}, or
      * {@link Either#orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
     public Either<T, Failure> orElseOnce(Consumer<Failure> consumer) {
-        return getEither().orElseOnce(consumer);
+        return getE().orElseDoOnce(consumer);
     }
 
     /**
