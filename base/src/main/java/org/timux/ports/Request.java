@@ -193,17 +193,18 @@ public class Request<I, O> {
     @SuppressWarnings("unchecked")
     public PortsFuture<O> callF(I payload) {
         if (Protocol.areProtocolsActive) {
-            // FIXME: handle exceptions thrown in the metaevent handler
-            Protocol.onDataSent(requestTypeName, owner, payload);
+            try {
+                Protocol.onDataSent(requestTypeName, owner, payload);
 
-            Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
+                Function<I, O> responseProvider = (Function<I, O>) Protocol.getResponseProviderIfAvailable(requestTypeName, owner);
 
-            if (responseProvider != null) {
-                // FIXME: handle exceptions thrown in the response provider
-                O protocolResponse = responseProvider.apply(payload);
-                // FIXME: handle exceptions thrown in the metaevent handler
-                Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
-                return new PortsFuture<>(protocolResponse);
+                if (responseProvider != null) {
+                    O protocolResponse = responseProvider.apply(payload);
+                    Protocol.onDataReceived(requestTypeName, owner, protocolResponse);
+                    return new PortsFuture<>(protocolResponse);
+                }
+            } catch (Exception e) {
+                return new PortsFuture<>(e, PortsFutureResponseTypeInfo.OTHER);
             }
         }
 
@@ -226,7 +227,6 @@ public class Request<I, O> {
         return Protocol.areProtocolsActive
                 ? (x -> {
                     O response = port.apply(x);
-                    // FIXME: handle exceptions thrown in the metaevent handler
                     Protocol.onDataReceived(requestTypeName, owner, response);
                     return response;
                 })

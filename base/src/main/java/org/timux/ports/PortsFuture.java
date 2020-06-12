@@ -61,6 +61,11 @@ public class PortsFuture<T> implements Future<T> {
         this.responseTypeInfo = responseTypeInfo;
     }
 
+    PortsFuture(Throwable throwable, PortsFutureResponseTypeInfo responseTypeInfo) {
+        this.task = new Task(throwable);
+        this.responseTypeInfo = responseTypeInfo;
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -208,7 +213,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * @throws ExecutionException If the receiver terminated unexpectedly.
      */
-    public <R> R map(Function<T, R> mapper, R elseValue) { // TODO make this exception-safe
+    public <R> R map(Function<T, R> mapper, R elseValue) {
         if (hasReturned) {
             return mapper.apply(result);
         }
@@ -233,7 +238,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      */
-    public <R> Either<R, Failure> mapE(Function<T, R> mapper, R elseValue) { // TODO make this exception-safe
+    public <R> Either<R, Failure> mapE(Function<T, R> mapper, R elseValue) {
         try {
             return Either.a(map(mapper, elseValue));
         } catch (Exception e) {

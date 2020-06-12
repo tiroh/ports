@@ -1,6 +1,6 @@
 package org.timux.ports;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ProtocolTests {
 
-    @BeforeEach
-    public void beforeEach() {
+    @AfterEach
+    public void afterEach() {
         Ports.releaseProtocols();
     }
 
@@ -168,5 +168,55 @@ public class ProtocolTests {
 
         assertNotNull(eitherValue.value);
         assertEquals(1.0, eitherValue.value.map(x -> x, x -> (double) x, Double::parseDouble), 0.0);
+    }
+
+    @Test
+    public void protocolEventException() {
+        A a = new A();
+
+        Ports.register(a);
+
+        Container<Boolean> exceptionTriggered = Container.of(Boolean.FALSE);
+
+        Ports.protocol()
+                .when(IntEvent.class)
+                .triggers()
+                .do_(() -> {
+                    exceptionTriggered.value = Boolean.TRUE;
+                    throw new MySpecialTestException("?");
+                });
+
+        assertDoesNotThrow(() -> {
+            Ports.protocol()
+                    .with(IntEvent.class)
+                    .trigger(new IntEvent(1));
+        });
+
+        assertTrue(exceptionTriggered.value);
+    }
+
+    @Test
+    public void protocolRequestException() {
+        D d = new D();
+
+        Ports.register(d);
+
+        Container<Boolean> exceptionTriggered = Container.of(Boolean.FALSE);
+
+        Ports.protocol()
+                .when(EitherRequest.class, Double.class, String.class)
+                .requests()
+                .respond(request -> {
+                    exceptionTriggered.value = Boolean.TRUE;
+                    throw new MySpecialTestException("?");
+                });
+
+        assertThrows(ExecutionException.class, () -> {
+            Ports.protocol()
+                    .with(EitherRequest.class, Double.class, String.class)
+                    .call(new EitherRequest(1.0));
+        });
+
+        assertTrue(exceptionTriggered.value);
     }
 }

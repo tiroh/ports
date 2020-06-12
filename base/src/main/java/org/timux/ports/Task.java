@@ -79,6 +79,22 @@ class Task implements Runnable {
                 : null;
     }
 
+    Task(Throwable throwable) {
+        this.throwable = throwable;
+
+        hasReturned = true;
+
+        eventPort = null;
+        requestPort = null;
+        payload = null;
+        sender = null;
+        receiver = null;
+
+        createdByThread = Thread.currentThread();
+
+        lock = null;
+    }
+
     Thread getCreatedByThread() {
         return createdByThread;
     }

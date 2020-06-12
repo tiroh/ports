@@ -121,6 +121,7 @@ public class Event<T> {
                             try {
                                 portMethod.invoke(owner, x);
                             } catch (IllegalAccessException | InvocationTargetException e) {
+                                // TODO: feed this into an error port
                                 if (e.getCause() != null) {
                                     e.getCause().printStackTrace();
                                 } else {
@@ -207,8 +208,12 @@ public class Event<T> {
 
         if (i == 0) {
             if (Protocol.areProtocolsActive) {
-                // FIXME: handle exceptions thrown in the metaevent handler
-                Protocol.onDataSent(eventTypeName, owner, payload);
+                try {
+                    Protocol.onDataSent(eventTypeName, owner, payload);
+                } catch (Exception e) {
+                    // TODO: feed this into an error port
+                    e.printStackTrace();
+                }
             } else {
                 Ports.printWarning(String.format(
                         "event %s was fired by component %s but there is no receiver",
@@ -220,8 +225,12 @@ public class Event<T> {
         }
 
         if (Protocol.areProtocolsActive) {
-            // FIXME: handle exceptions thrown in the metaevent handler
-            Protocol.onDataSent(eventTypeName, owner, payload);
+            try {
+                Protocol.onDataSent(eventTypeName, owner, payload);
+            } catch (Exception e) {
+                // TODO: feed this into an error port
+                e.printStackTrace();
+            }
         }
 
         boolean updateDomains;
