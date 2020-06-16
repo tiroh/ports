@@ -16,10 +16,16 @@
 
 package org.timux.ports;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -32,8 +38,8 @@ import java.util.function.Consumer;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public final class Ports {
 
-    private static final Map<Class<?>, Field[]> fieldCache = new HashMap<>();
-    private static final Map<Class<?>, Method[]> methodCache = new HashMap<>();
+    private static final Map<Class<?>, WeakReference<Field[]>> fieldCache = new WeakHashMap<>();
+    private static final Map<Class<?>, WeakReference<Method[]>> methodCache = new WeakHashMap<>();
 
     private Ports() {
         // Don't you instantiate this class!!
@@ -446,7 +452,8 @@ public final class Ports {
 
     private synchronized static Field[] getFields(Object o) {
         Class<?> clazz = o.getClass();
-        Field[] fields = fieldCache.get(clazz);
+        WeakReference<Field[]> fieldsRef = fieldCache.get(clazz);
+        Field[] fields = fieldsRef != null ? fieldsRef.get() : null;
 
         if (fields == null) {
             fields = clazz.getDeclaredFields();
@@ -455,7 +462,7 @@ public final class Ports {
                 field.setAccessible(true);
             }
 
-            fieldCache.put(clazz, fields);
+            fieldCache.put(clazz, new WeakReference<>(fields));
         }
 
         return fields;
@@ -463,7 +470,8 @@ public final class Ports {
 
     private synchronized static Method[] getMethods(Object o) {
         Class<?> clazz = o.getClass();
-        Method[] methods = methodCache.get(clazz);
+        WeakReference<Method[]> methodsRef = methodCache.get(clazz);
+        Method[] methods = methodsRef != null ?  methodsRef.get() : null;
 
         if (methods == null) {
             methods = clazz.getDeclaredMethods();
@@ -472,7 +480,7 @@ public final class Ports {
                 method.setAccessible(true);
             }
 
-            methodCache.put(clazz, methods);
+            methodCache.put(clazz, new WeakReference<>(methods));
         }
 
         return methods;
