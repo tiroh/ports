@@ -19,7 +19,15 @@ package org.timux.ports;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.types.*;
+import org.timux.ports.types.Container;
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
+import org.timux.ports.types.Nothing;
+import org.timux.ports.types.Pair;
+import org.timux.ports.types.PairX;
+import org.timux.ports.types.TripleX;
+import org.timux.ports.types.Tuple;
 
 import java.util.Random;
 
@@ -228,6 +236,37 @@ public class SimpleTests {
                 assertFalse(triple.containsDistinct(pair));
             }
         }
+    }
+
+    @Test
+    public void eitherMap() {
+        Either<Integer, Double> e = Either.b(1.5);
+
+        Either<String, Double> x = e.mapA(i -> "Integer toString " + i);
+        Either<Integer, String> y = e.mapB(d -> "Double toString " + d);
+
+        String resultX = x.map(string -> "wrong", dbl -> "correct " + dbl);
+        String resultY = y.map(integer -> "wrong", string -> string);
+
+        assertEquals("correct 1.5", resultX);
+        assertEquals("Double toString 1.5", resultY);
+    }
+
+    @Test
+    public void either3Map() {
+        Either3<Integer, Float, Double> e = Either3.b(1.5f);
+
+        Either3<String, Float, Double> x = e.mapA(i -> "Integer toString " + i);
+        Either3<Integer, String, Double> y = e.mapB(f -> "Float toString " + f);
+        Either3<Integer, Float, String> z = e.mapC(d -> "Double toString " + d);
+
+        String resultX = x.map(string -> "wrong string", flt -> "correct " + flt, dbl -> "wrong double");
+        String resultY = y.map(integer -> "wrong integer", string -> string, dbl -> "wrong double");
+        String resultZ = z.map(integer -> "wrong integer", flt -> "correct " + flt, string -> "wrong string");
+
+        assertEquals("correct 1.5", resultX);
+        assertEquals("Float toString 1.5", resultY);
+        assertEquals("correct 1.5", resultZ);
     }
 
     @Test

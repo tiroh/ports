@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.timux.ports</groupId>
         <artifactId>ports</artifactId>
-        <version>0.5.2</version>
+        <version>0.5.3</version>
     </parent>
 
     <artifactId>ports-base</artifactId>
@@ -15,6 +15,13 @@
     <packaging>jar</packaging>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

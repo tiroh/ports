@@ -16,6 +16,7 @@
 
 package org.timux.ports;
 
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
 
@@ -589,5 +591,17 @@ public final class Ports {
 
     static void printError(String message) {
         System.err.println("[ports] error: " + message);
+    }
+
+    public static String getVersionString() {
+        Properties properties = new Properties();
+
+        try {
+            properties.load(Ports.class.getClassLoader().getResourceAsStream("version.properties"));
+            return properties.getProperty("version", "?");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "?";
+        }
     }
 }

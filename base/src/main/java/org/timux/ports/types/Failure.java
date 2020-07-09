@@ -24,6 +24,7 @@ import java.util.Optional;
  *
  * @see Success
  * @see Nothing
+ * @see Unknown
  * @see Either
  * @see Either3
  *

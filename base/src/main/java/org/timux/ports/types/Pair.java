@@ -21,7 +21,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A convenience class representing an ordered collection of two values of different types.
+ * A type representing an ordered collection of two values of different types.
+ *
+ * <p> Use the {@link Tuple} interface to create instances of this type.
  *
  * @see PairX
  * @see Triple

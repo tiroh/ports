@@ -16,10 +16,17 @@
 
 package org.timux.ports.vaadinspring;
 
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
+import org.timux.ports.Ports;
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Unknown;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.annotation.WebListener;
 
 /**
  * A utility class for functionality specific for the Vaadin/Spring tandem.
@@ -27,11 +34,14 @@ import javax.annotation.PostConstruct;
  * @since 0.4.0
  */
 @Component
-public final class PortsVaadinSpring {
+@WebListener
+public final class PortsVaadinSpring implements ApplicationListener<ApplicationReadyEvent> {
 
     private final ApplicationContext applicationContext;
 
     private static PortsVaadinSpring self;
+
+    private boolean greetingHasBeenDisplayed = false;
 
     public PortsVaadinSpring(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
@@ -42,6 +52,14 @@ public final class PortsVaadinSpring {
         self = this;
     }
 
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) {
+        if (!greetingHasBeenDisplayed) {
+            greetingHasBeenDisplayed = true;
+            LoggerFactory.getLogger(PortsVaadinSpring.class).info("Running with Ports {}", Ports.getVersionString());
+        }
+    }
+
     /**
      * Checks whether all {@link org.timux.ports.Request} ports of all instantiated components are connected.
      *
@@ -50,5 +68,28 @@ public final class PortsVaadinSpring {
     public static void verify() {
         PortConnector portConnector = self.applicationContext.getBean(PortConnector.class);
         portConnector.verify();
+    }
+
+    /**
+     * Returns the username of the user (w.r.t. Spring Security) that "owns" the provided component.
+     *
+     * <p> A user "owns" a component if it was created by a thread that runs in that user's security context.
+     */
+    public static Either<String, Unknown> ownerOf(Object component) {
+        String owner = self.applicationContext.getBean(ComponentOwnershipRegistry.class).getOwner(component);
+        return owner != null ? Either.a(owner) : Either.b(Unknown.INSTANCE);
+    }
+
+    /**
+     * Returns true if and only if the provided component is "owned" by the user with the provided
+     * username (w.r.t. Spring Security).
+     *
+     * <p> A user "owns" a component if it was created by a thread that runs in that user's security context.
+     */
+    public static boolean isComponentOwnedBy(Object component, String username) {
+        return ownerOf(component).map(
+                username::equals,
+                unknown -> false
+        );
     }
 }

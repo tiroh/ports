@@ -33,6 +33,7 @@ import java.util.function.Function;
  *
  * @see Either
  * @see Nothing
+ * @see Unknown
  * @see Pair
  * @see Triple
  *
@@ -54,19 +55,19 @@ public abstract class Either3<A, B, C> {
     public abstract <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn, Function<? super C, ? extends R> cFn);
 
     /**
-     * Maps the A constituent, if it exists, to R, or to Nothing otherwise.
+     * Maps the A constituent, if it exists, to R.
      */
-    public abstract <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn);
+    public abstract <R> Either3<R, B, C> mapA(Function<? super A, ? extends R> aFn);
 
     /**
-     * Maps the B constituent, if it exists, to R, or to Nothing otherwise.
+     * Maps the B constituent, if it exists, to R.
      */
-    public abstract <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn);
+    public abstract <R> Either3<A, R, C> mapB(Function<? super B, ? extends R> bFn);
 
     /**
-     * Maps the C constituent, if it exists, to R, or to Nothing otherwise.
+     * Maps the C constituent, if it exists, to R.
      */
-    public abstract <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn);
+    public abstract <R> Either3<A, B, R> mapC(Function<? super C, ? extends R> cFn);
 
     /**
      * Maps the A constituent, if it exists, to R.
@@ -195,18 +196,20 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
-                return Either.a(aFn.apply(a));
+            public <R> Either3<R, B, C> mapA(Function<? super A, ? extends R> aFn) {
+                return Either3.a(aFn.apply(a));
             }
 
             @Override
-            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
-                return Either.b(Nothing.INSTANCE);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<A, R, C> mapB(Function<? super B, ? extends R> bFn) {
+                return (Either3<A, R, C>) this;
             }
 
             @Override
-            public <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn) {
-                return Either.b(Nothing.INSTANCE);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<A, B, R> mapC(Function<? super C, ? extends R> cFn) {
+                return (Either3<A, B, R>) this;
             }
 
             @Override
@@ -290,18 +293,20 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
-                return Either.b(Nothing.INSTANCE);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<R, B, C> mapA(Function<? super A, ? extends R> aFn) {
+                return (Either3<R, B, C>) this;
             }
 
             @Override
-            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
-                return Either.a(bFn.apply(b));
+            public <R> Either3<A, R, C> mapB(Function<? super B, ? extends R> bFn) {
+                return Either3.b(bFn.apply(b));
             }
 
             @Override
-            public <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn) {
-                return Either.b(Nothing.INSTANCE);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<A, B, R> mapC(Function<? super C, ? extends R> cFn) {
+                return (Either3<A, B, R>) this;
             }
 
             @Override
@@ -384,18 +389,20 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Nothing> mapA(Function<? super A, ? extends R> aFn) {
-                return Either.b(Nothing.INSTANCE);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<R, B, C> mapA(Function<? super A, ? extends R> aFn) {
+                return (Either3<R, B, C>) this;
             }
 
             @Override
-            public <R> Either<R, Nothing> mapB(Function<? super B, ? extends R> bFn) {
-                return Either.b(Nothing.INSTANCE);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<A, R, C> mapB(Function<? super B, ? extends R> bFn) {
+                return (Either3<A, R, C>) this;
             }
 
             @Override
-            public <R> Either<R, Nothing> mapC(Function<? super C, ? extends R> cFn) {
-                return Either.a(cFn.apply(c));
+            public <R> Either3<A, B, R> mapC(Function<? super C, ? extends R> cFn) {
+                return Either3.c(cFn.apply(c));
             }
 
             @Override

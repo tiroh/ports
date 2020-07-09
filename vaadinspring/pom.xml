@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.timux.ports</groupId>
         <artifactId>ports</artifactId>
-        <version>0.5.2</version>
+        <version>0.5.3</version>
     </parent>
 
     <artifactId>ports-vaadinspring</artifactId>
@@ -43,6 +43,14 @@
             </dependency>
 
             <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>5.1.3.RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-bom</artifactId>
                 <version>${vaadin.version}</version>
@@ -67,6 +75,21 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
         </dependency>
 
         <dependency>

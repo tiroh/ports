@@ -23,7 +23,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A convenience class representing an ordered collection of two values of the same type.
+ * A type representing an ordered collection of two values of the same type.
+ *
+ * <p> Use the {@link Tuple} interface to create instances of this type.
  *
  * @see Pair
  * @see Triple
