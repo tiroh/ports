@@ -20,7 +20,9 @@ public class ComponentOwnershipRegistry implements DestructionAwareBeanPostProce
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
-            componentOwners.put(bean, authentication.getName());
+            synchronized (componentOwners) {
+                componentOwners.put(bean, authentication.getName());
+            }
         }
 
         return bean;
@@ -28,10 +30,14 @@ public class ComponentOwnershipRegistry implements DestructionAwareBeanPostProce
 
     @Override
     public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
-        componentOwners.remove(bean);
+        synchronized (componentOwners) {
+            componentOwners.remove(bean);
+        }
     }
 
     String getOwner(Object component) {
-        return componentOwners.get(component);
+        synchronized (componentOwners) {
+            return componentOwners.get(component);
+        }
     }
 }
