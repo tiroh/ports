@@ -26,7 +26,6 @@ import org.timux.ports.types.Either;
 import org.timux.ports.types.Unknown;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.annotation.WebListener;
 
 /**
  * A utility class for functionality specific for the Vaadin/Spring tandem.
@@ -34,7 +33,6 @@ import javax.servlet.annotation.WebListener;
  * @since 0.4.0
  */
 @Component
-@WebListener
 public final class PortsVaadinSpring implements ApplicationListener<ApplicationReadyEvent> {
 
     private final ApplicationContext applicationContext;
