@@ -24,7 +24,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-core</artifactId>
-   <version>0.5.3</version>
+   <version>0.5.4</version>
 </dependency>
 ```
 
@@ -37,7 +37,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-vaadinspring</artifactId>
-   <version>0.5.3</version>
+   <version>0.5.4</version>
 </dependency>
 ```
 
