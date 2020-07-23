@@ -183,7 +183,7 @@ public class ProtocolTests {
                 .triggers()
                 .do_(() -> {
                     exceptionTriggered.value = Boolean.TRUE;
-                    throw new MySpecialTestException("?");
+                    throw new MySpecialTestException("this is expected");
                 });
 
         assertDoesNotThrow(() -> {

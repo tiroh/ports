@@ -70,11 +70,18 @@ public abstract class Either3<A, B, C> {
     public abstract <R> Either3<A, B, R> mapC(Function<? super C, ? extends R> cFn);
 
     /**
-     * Maps the A constituent, if it exists, to R.
+     * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either3}.
      *
+     * @see #andThen
      * @see #andThenR
      */
-    public abstract <R> Either3<R, B, C> andThen(Function<? super A, ? extends R> aFn);
+    public abstract <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn);
+
+    /**
+     * Maps the A constituent, if it exists, to R, which must be an {@link Either3} that has the
+     * same B and C types like this {@link Either3}.
+     */
+    public abstract <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn);
 
     /**
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
@@ -90,6 +97,7 @@ public abstract class Either3<A, B, C> {
      *
      * @see PortsFuture#andThenE
      * @see #andThen
+     * @see #andThenE
      * @see #orElse
      * @see #orElseDo
      * @see #finallyDo
@@ -213,8 +221,13 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<R, B, C> andThen(Function<? super A, ? extends R> aFn) {
+            public <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn) {
                 return Either3.a(aFn.apply(a));
+            }
+
+            @Override
+            public <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn) {
+                return aFn.apply(a);
             }
 
             @Override
@@ -310,8 +323,15 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<R, B, C> andThen(Function<? super A, ? extends R> aFn) {
-                return Either3.b(b);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn) {
+                return (Either3<R, B, C>) this;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn) {
+                return (R) this;
             }
 
             @Override
@@ -406,8 +426,15 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<R, B, C> andThen(Function<? super A, ? extends R> aFn) {
-                return Either3.c(c);
+            @SuppressWarnings("unchecked")
+            public <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn) {
+                return (Either3<R, B, C>) this;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn) {
+                return (R) this;
             }
 
             @Override

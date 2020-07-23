@@ -66,11 +66,18 @@ public abstract class Either<A, B> {
     public abstract <R> Either<A, R> mapB(Function<? super B, ? extends R> bFn);
 
     /**
-     * Maps the A constituent, if it exists, to R.
+     * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either}.
      * 
+     * @see #andThen
      * @see #andThenR
      */
-    public abstract <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn);
+    public abstract <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn);
+
+    /**
+     * Maps the A constituent, if it exists, to R, which must be an {@link Either} that has the
+     * same B type like this {@link Either}.
+     */
+    public abstract <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn);
 
     /**
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
@@ -86,6 +93,7 @@ public abstract class Either<A, B> {
      *
      * @see PortsFuture#andThenE
      * @see #andThen
+     * @see #andThenE
      * @see #orElse
      * @see #orElseDo
      * @see #finallyDo
@@ -194,8 +202,13 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn) {
+            public <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn) {
                 return Either.a(aFn.apply(a));
+            }
+
+            @Override
+            public <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn) {
+                return aFn.apply(a);
             }
 
             @Override
@@ -280,8 +293,15 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, B> andThen(Function<? super A, ? extends R> aFn) {
-                return Either.b(b);
+            @SuppressWarnings("unchecked")
+            public <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn) {
+                return (Either<R, B>) this;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn) {
+                return (R) this;
             }
 
             @Override
