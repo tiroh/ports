@@ -50,6 +50,14 @@ public abstract class Either<A, B> {
         return t == null ? Either.b(Nothing.INSTANCE) : Either.a(t);
     }
 
+    public static <T> Either<T, Nothing> ofOptional(Optional<T> optional) {
+        return Either.ofNullable(optional.orElse(null));
+    }
+
+    public static <T, U> Either<T, U> ofOptional(Optional<T> optional, U orElse) {
+        return optional.isPresent() ? Either.a(optional.get()) : Either.b(orElse);
+    }
+
     /**
      * Maps the constituents of this union to R.
      */
