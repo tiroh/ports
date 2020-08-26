@@ -243,6 +243,10 @@ public class Triple<A, B, C> implements Tuple {
         return new Pair<>(b, c);
     }
 
+    public <R> R reduce(TriFunction<A, B, C, R> reducer) {
+        return reducer.apply(a, b, c);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

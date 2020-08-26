@@ -6,7 +6,7 @@
 
     <groupId>org.timux.ports</groupId>
     <artifactId>ports</artifactId>
-    <version>0.5.4</version>
+    <version>0.5.5</version>
 
     <packaging>pom</packaging>
 
@@ -30,8 +30,7 @@
     </licenses>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>A framework that enables decoupling of components by employing a purely
-        component-based design paradigm.</description>
+    <description>Ports is a Java framework for inter-component communication within a JVM process.</description>
     <url>http://www.timux.org/ports/</url>
 
     <developers>

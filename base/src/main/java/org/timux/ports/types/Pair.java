@@ -17,6 +17,7 @@
 package org.timux.ports.types;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -147,6 +148,10 @@ public class Pair<A, B> implements Tuple {
 
     public <X> PairX<X> mapX(Function<A, X> mapperA, Function<B, X> mapperB) {
         return new PairX<>(mapperA.apply(a), mapperB.apply(b));
+    }
+
+    public <R> R reduce(BiFunction<A, B, R> reducer) {
+        return reducer.apply(a, b);
     }
 
     @Override
