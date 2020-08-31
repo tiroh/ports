@@ -148,6 +148,22 @@ public class PairTests {
     }
 
     @Test
+    public void reverse() {
+        Pair<Integer, Double> pair = Tuple.of(1, 2.5);
+        Triple<Integer, Float, Double> triple = Tuple.of(1, 2.5f, 3.5);
+
+        Pair<Double, Integer> pairRev = pair.reverse();
+        Triple<Double, Float, Integer> tripleRev = triple.reverse();
+
+        assertEquals(2.5, pairRev.getA());
+        assertEquals(1, pairRev.getB());
+
+        assertEquals(3.5, tripleRev.getA());
+        assertEquals(2.5f, tripleRev.getB());
+        assertEquals(1, tripleRev.getC());
+    }
+
+    @Test
     public void reduce() {
         Pair<Integer, Double> pair = Tuple.of(1, 2.5);
         String result1 = pair.reduce((i, d) -> Integer.toString(i) + d);
