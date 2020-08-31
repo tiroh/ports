@@ -148,19 +148,66 @@ public class PairTests {
     }
 
     @Test
+    public void forEachX() {
+        PairX<Integer> pair = Tuple.ofX(1, 2);
+        TripleX<Integer> triple = Tuple.ofX(1, 2, 3);
+
+        List<String> results = new ArrayList<>();
+
+        pair.forEachX(s -> results.add(s + "p"));
+        triple.forEachX(s -> results.add(s + "t"));
+
+        assertArrayEquals(new String[] {"1p", "2p", "1t", "2t", "3t"}, results.toArray());
+    }
+
+    @Test
+    public void forEachXNotNull() {
+        PairX<Integer> pair = Tuple.ofX(1, 2);
+        TripleX<Integer> triple = Tuple.ofX(1, 2, 3);
+
+        PairX<Integer> pairWithNull = Tuple.ofX(1, null);
+        TripleX<Integer> tripleWithNull = Tuple.ofX(1, null, 3);
+
+        List<String> results = new ArrayList<>();
+        List<String> resultsWithNull = new ArrayList<>();
+
+        pair.forEachXNotNull(s -> results.add(s + "p"));
+        triple.forEachXNotNull(s -> results.add(s + "t"));
+
+        pairWithNull.forEachXNotNull(s -> resultsWithNull.add(s + "p"));
+        tripleWithNull.forEachXNotNull(s -> resultsWithNull.add(s + "t"));
+
+        assertArrayEquals(new String[] {"1p", "2p", "1t", "2t", "3t"}, results.toArray());
+        assertArrayEquals(new String[] {"1p", "1t", "3t"}, resultsWithNull.toArray());
+    }
+
+    @Test
     public void reverse() {
         Pair<Integer, Double> pair = Tuple.of(1, 2.5);
         Triple<Integer, Float, Double> triple = Tuple.of(1, 2.5f, 3.5);
 
+        PairX<Integer> pairX = Tuple.ofX(1, 2);
+        TripleX<Integer> tripleX = Tuple.ofX(1, 2, 3);
+
         Pair<Double, Integer> pairRev = pair.reverse();
         Triple<Double, Float, Integer> tripleRev = triple.reverse();
 
-        assertEquals(2.5, pairRev.getA());
-        assertEquals(1, pairRev.getB());
+        PairX<Integer> pairXRev = pairX.reverse();
+        TripleX<Integer> tripleXRev = tripleX.reverse();
 
-        assertEquals(3.5, tripleRev.getA());
-        assertEquals(2.5f, tripleRev.getB());
-        assertEquals(1, tripleRev.getC());
+        assertEquals(pair.getB(), pairRev.getA());
+        assertEquals(pair.getA(), pairRev.getB());
+
+        assertEquals(triple.getC(), tripleRev.getA());
+        assertEquals(triple.getB(), tripleRev.getB());
+        assertEquals(triple.getA(), tripleRev.getC());
+
+        assertEquals(pairX.getB(), pairXRev.getA());
+        assertEquals(pairX.getA(), pairXRev.getB());
+
+        assertEquals(tripleX.getC(), tripleXRev.getA());
+        assertEquals(tripleX.getB(), tripleXRev.getB());
+        assertEquals(tripleX.getA(), tripleXRev.getC());
     }
 
     @Test
