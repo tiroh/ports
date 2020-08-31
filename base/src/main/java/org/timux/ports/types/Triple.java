@@ -184,7 +184,7 @@ public class Triple<A, B, C> implements Tuple {
         }
 
         if (c != null) {
-            action.accept(b);
+            action.accept(c);
         }
     }
 

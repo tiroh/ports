@@ -7,8 +7,12 @@ import org.timux.ports.types.Triple;
 import org.timux.ports.types.TripleX;
 import org.timux.ports.types.Tuple;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -107,6 +111,40 @@ public class PairTests {
                 assertFalse(triple.containsDistinct(pair));
             }
         }
+    }
+
+    @Test
+    public void forEach() {
+        Pair<Integer, Double> pair = Tuple.of(1, 2.5);
+        Triple<Integer, Float, Double> triple = Tuple.of(1, 2.5f, 3.5);
+
+        List<String> results = new ArrayList<>();
+
+        pair.forEach(s -> results.add(s + "p"));
+        triple.forEach(s -> results.add(s + "t"));
+
+        assertArrayEquals(new String[] {"1p", "2.5p", "1t", "2.5t", "3.5t"}, results.toArray());
+    }
+
+    @Test
+    public void forEachNotNull() {
+        Pair<Integer, Double> pair = Tuple.of(1, 2.5);
+        Triple<Integer, Float, Double> triple = Tuple.of(1, 2.5f, 3.5);
+
+        Pair<Integer, Double> pairWithNull = Tuple.of(1, null);
+        Triple<Integer, Float, Double> tripleWithNull = Tuple.of(1, null, 3.5);
+
+        List<String> results = new ArrayList<>();
+        List<String> resultsWithNull = new ArrayList<>();
+
+        pair.forEachNotNull(s -> results.add(s + "p"));
+        triple.forEachNotNull(s -> results.add(s + "t"));
+
+        pairWithNull.forEachNotNull(s -> resultsWithNull.add(s + "p"));
+        tripleWithNull.forEachNotNull(s -> resultsWithNull.add(s + "t"));
+
+        assertArrayEquals(new String[] {"1p", "2.5p", "1t", "2.5t", "3.5t"}, results.toArray());
+        assertArrayEquals(new String[] {"1p", "1t", "3.5t"}, resultsWithNull.toArray());
     }
 
     @Test
