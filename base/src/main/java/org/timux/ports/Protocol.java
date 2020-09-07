@@ -17,10 +17,7 @@
 package org.timux.ports;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -58,7 +55,7 @@ final class Protocol {
 
     private static final Map<Object, ResponseRegistry> responseRegistries = new HashMap<>();
 
-    private static final List<Object> componentRegistry = new ArrayList<>();
+    private static final WeakHashMap<Object, Void> componentRegistry = new WeakHashMap<>();
 
     private static final AtomicInteger nextProtocolId = new AtomicInteger();
 
@@ -81,7 +78,9 @@ final class Protocol {
     }
 
     static void registerComponent(Object component) {
-        componentRegistry.add(component);
+        if (!componentRegistry.containsKey(component)) {
+            componentRegistry.put(component, null);
+        }
     }
 
     static <T> void registerConditionOnSent(Predicate<T> predicate, ProtocolParserState state) {
@@ -201,11 +200,13 @@ final class Protocol {
 
         outPortField.setAccessible(true);
 
-        for (Object component : componentRegistry) {
-            try {
-                Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component, PortsOptions.FORCE_CONNECT_ALL);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+        for (Object component : componentRegistry.keySet()) {
+            if (component != null) {
+                try {
+                    Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component, PortsOptions.FORCE_CONNECT_ALL);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
