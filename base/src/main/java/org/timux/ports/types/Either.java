@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package org.timux.ports.types;
 
 import org.timux.ports.PortsFuture;
@@ -29,15 +29,13 @@ import java.util.function.Function;
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
  *
+ * @param <A> The first type.
+ * @param <B> The second type.
  * @see Either3
  * @see Nothing
  * @see Unknown
  * @see Pair
  * @see Triple
- *
- * @param <A> The first type.
- * @param <B> The second type.
- *
  * @since 0.4.1
  */
 public abstract class Either<A, B> {
@@ -58,6 +56,34 @@ public abstract class Either<A, B> {
         return optional.isPresent() ? Either.a(optional.get()) : Either.b(orElse);
     }
 
+    public static <T> Either<Success, T> success() {
+        return Either.a(Success.INSTANCE);
+    }
+
+    public static <T> Either<T, Failure> failure() {
+        return Either.b(Failure.INSTANCE);
+    }
+
+    public static <T> Either<T, Failure> failure(String message) {
+        return Either.b(Failure.of(message));
+    }
+
+    public static <T> Either<T, Failure> failure(Throwable throwable) {
+        return Either.b(Failure.of(throwable));
+    }
+
+    public static <T> Either<T, Failure> failure(String message, Throwable throwable) {
+        return Either.b(Failure.of(message, throwable));
+    }
+    
+    public static <T> Either<T, Nothing> nothing() {
+        return Either.b(Nothing.INSTANCE);
+    }
+    
+    public static <T> Either<T, Unknown> unknown() {
+        return Either.b(Unknown.INSTANCE);
+    }
+
     /**
      * Maps the constituents of this union to R.
      */
@@ -75,7 +101,7 @@ public abstract class Either<A, B> {
 
     /**
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either}.
-     * 
+     *
      * @see #andThen
      * @see #andThenR
      */
@@ -116,7 +142,7 @@ public abstract class Either<A, B> {
 
     /**
      * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
-     * 
+     *
      * @see #orElseDoOnce
      */
     public abstract Either<A, B> orElseDo(Consumer<? super B> bC);
@@ -168,6 +194,38 @@ public abstract class Either<A, B> {
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Success},
+     * and false otherwise.
+     */
+    public boolean isSuccess() {
+        return map(a -> a.getClass() == Success.class, b -> b.getClass() == Success.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Failure},
+     * and false otherwise.
+     */
+    public boolean isFailure() {
+        return map(a -> a.getClass() == Failure.class, b -> b.getClass() == Failure.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Nothing},
+     * and false otherwise.
+     */
+    public boolean isNothing() {
+        return map(a -> a.getClass() == Nothing.class, b -> b.getClass() == Nothing.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Unknown},
+     * and false otherwise.
+     */
+    public boolean isUnknown() {
+        return map(a -> a.getClass() == Unknown.class, b -> b.getClass() == Unknown.class);
     }
 
     /**
@@ -385,6 +443,6 @@ public abstract class Either<A, B> {
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.empty(), Optional.of(b));
             }
-        };
+       };
     }
 }
