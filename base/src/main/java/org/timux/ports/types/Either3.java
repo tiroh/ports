@@ -49,6 +49,34 @@ public abstract class Either3<A, B, C> {
         //
     }
 
+    public static <T, U> Either3<Success, T, U> success() {
+        return Either3.a(Success.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure() {
+        return Either3.c(Failure.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure(String message) {
+        return Either3.c(Failure.of(message));
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure(Throwable throwable) {
+        return Either3.c(Failure.of(throwable));
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure(String message, Throwable throwable) {
+        return Either3.c(Failure.of(message, throwable));
+    }
+
+    public static <T, U> Either3<T, Nothing, U> nothing() {
+        return Either3.b(Nothing.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, Unknown, U> unknown() {
+        return Either3.b(Unknown.INSTANCE);
+    }
+
     /**
      * Maps the constituents of this union to R.
      */
@@ -173,6 +201,50 @@ public abstract class Either3<A, B, C> {
      */
     public Optional<C> getC() {
         return map(a -> Optional.empty(), b -> Optional.empty(), Optional::ofNullable);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Success},
+     * and false otherwise.
+     */
+    public boolean isSuccess() {
+        return map(
+                a -> a.getClass() == Success.class,
+                b -> b.getClass() == Success.class,
+                c -> c.getClass() == Success.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Failure},
+     * and false otherwise.
+     */
+    public boolean isFailure() {
+        return map(
+                a -> a.getClass() == Failure.class,
+                b -> b.getClass() == Failure.class,
+                c -> c.getClass() == Failure.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Nothing},
+     * and false otherwise.
+     */
+    public boolean isNothing() {
+        return map(
+                a -> a.getClass() == Nothing.class,
+                b -> b.getClass() == Nothing.class,
+                c -> c.getClass() == Nothing.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Unknown},
+     * and false otherwise.
+     */
+    public boolean isUnknown() {
+        return map(
+                a -> a.getClass() == Unknown.class,
+                b -> b.getClass() == Unknown.class,
+                c -> c.getClass() == Unknown.class);
     }
 
     /**
