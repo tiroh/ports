@@ -75,11 +75,19 @@ public abstract class Either<A, B> {
     public static <T> Either<T, Failure> failure(String message, Throwable throwable) {
         return Either.b(Failure.of(message, throwable));
     }
-    
+
+    public static <T, U> Either<T, Failure> failure(Either<U, Failure> either) {
+        return either.map(u -> Either.b(Failure.INSTANCE), Either::b);
+    }
+
+    public static <T, U, V> Either<T, Failure> failure(Either3<U, V, Failure> either) {
+        return either.map(u -> Either.b(Failure.INSTANCE), v -> Either.b(Failure.INSTANCE), Either::b);
+    }
+
     public static <T> Either<T, Nothing> nothing() {
         return Either.b(Nothing.INSTANCE);
     }
-    
+
     public static <T> Either<T, Unknown> unknown() {
         return Either.b(Unknown.INSTANCE);
     }
@@ -443,6 +451,6 @@ public abstract class Either<A, B> {
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.empty(), Optional.of(b));
             }
-       };
+        };
     }
 }

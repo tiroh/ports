@@ -69,6 +69,14 @@ public abstract class Either3<A, B, C> {
         return Either3.c(Failure.of(message, throwable));
     }
 
+    public static <T, U, V> Either3<T, U, Failure> failure(Either<V, Failure> either) {
+        return either.map(v -> Either3.c(Failure.INSTANCE), Either3::c);
+    }
+
+    public static <T, U, V, W> Either3<T, U, Failure> failure(Either3<V, W, Failure> either) {
+        return either.map(v -> Either3.c(Failure.INSTANCE), w -> Either3.c(Failure.INSTANCE), Either3::c);
+    }
+
     public static <T, U> Either3<T, Nothing, U> nothing() {
         return Either3.b(Nothing.INSTANCE);
     }
