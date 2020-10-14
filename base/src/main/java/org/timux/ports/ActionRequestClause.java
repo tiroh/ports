@@ -36,7 +36,7 @@ public class ActionRequestClause<I, O> {
         return new ConditionOrAction<>(state);
     }
 
-    public <U> PortEventClause<U> with(Class<U> messageType, Object owner) {
+    <U> PortEventClause<U> with(Class<U> messageType, Object owner) {
         state.registerWithMessageTypeAndOwner(messageType.getName(), void.class.getName(), owner);
         return new PortEventClause<>(state);
     }
@@ -45,7 +45,7 @@ public class ActionRequestClause<I, O> {
         return with(messageType, (Object) null);
     }
 
-    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+    <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
         state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>(state);
     }

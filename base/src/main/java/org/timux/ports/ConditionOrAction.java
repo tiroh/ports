@@ -84,7 +84,7 @@ public class ConditionOrAction<T> {
         return with(messageType, (Object) null);
     }
 
-    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+    <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
         TypeUtils.verifyResponseType(requestType, responseType);
         state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>(state);
@@ -92,13 +92,13 @@ public class ConditionOrAction<T> {
 
     public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        state.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), null);
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseTypeA.getName(), responseTypeB.getName(), null);
         return new PortRequestClause<>(state);
     }
 
-    public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Object owner) {
+    <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Object owner) {
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        state.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), owner);
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseTypeA.getName(), responseTypeB.getName(), owner);
         return new PortRequestClause<>(state);
     }
 
@@ -106,7 +106,7 @@ public class ConditionOrAction<T> {
             Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Class<O3> responseTypeC)
     {
         TypeUtils.verifyResponseType(requestType, Either3.class, responseTypeA, responseTypeB, responseTypeC);
-        state.registerWithMessageTypeAndOwner(requestType.getName(), Either3.class.getName(), null);
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseTypeA.getName(), responseTypeB.getName(), responseTypeC.getName(), null);
         return new PortRequestClause<>(state);
     }
 
