@@ -10,6 +10,8 @@ import org.timux.ports.types.Nothing;
 import org.timux.ports.types.Success;
 import org.timux.ports.types.Unknown;
 
+import java.util.function.Supplier;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -447,5 +449,98 @@ public class EitherTests {
         assertFalse(unknownEither.getA().isPresent());
         assertTrue(unknownEither.getB().isPresent());
         assertFalse(unknownEither.getC().isPresent());
+    }
+
+    @Test
+    public void eitherSuccessOrFailureMethods() {
+        Container<Boolean> runnableStatus = Container.of(Boolean.FALSE);
+
+        Supplier<Integer> okSupplier = () -> 1;
+        Runnable okRunnable = () -> runnableStatus.value = Boolean.TRUE;
+
+        Supplier<Integer> nullSupplier = () -> null;
+
+        Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
+        Runnable failureRunnable = () -> { throw new RuntimeException("B"); };
+
+        Either<Integer, Failure> okSupplierEither = Either.valueOrFailure(okSupplier);
+        Either<Success, Failure> okSupplierSFEither = Either.successOrFailure(okSupplier);
+        Either<Success, Failure> okRunnableEither = Either.successOrFailure(okRunnable);
+
+        Either<Integer, Failure> failureSupplierEither = Either.valueOrFailure(failureSupplier);
+        Either<Success, Failure> failureSupplierSFEither = Either.successOrFailure(failureSupplier);
+        Either<Success, Failure> failureRunnableEither = Either.successOrFailure(failureRunnable);
+
+        Either<Success, Failure> okSFEither = Either.successOrFailure(okSupplierEither);
+        Either<Success, Failure> failureSFEither = Either.successOrFailure(failureSupplierEither);
+
+        okSupplierEither.on(
+                integer -> assertEquals(1, integer),
+                failure -> fail("no failure expected")
+        );
+
+        okSupplierSFEither.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        okRunnableEither.on(
+                success -> assertTrue(runnableStatus.value),
+                failure -> fail("no failure expected")
+        );
+
+        failureSupplierEither.on(
+                integer -> fail("no integer expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+
+        failureSupplierSFEither.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+
+        failureRunnableEither.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("B", failure.getThrowable().get().getMessage())
+        );
+
+        okSFEither.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        failureSFEither.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+    }
+
+    @Test
+    public void either3ValueOrNothingOrFailure() {
+        Supplier<Integer> okSupplier = () -> 1;
+        Supplier<Integer> nullSupplier = () -> null;
+        Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
+
+        Either3<Integer, Nothing, Failure> either3Integer = Either3.valueOrNothingOrFailure(okSupplier);
+        Either3<Integer, Nothing, Failure> either3Nothing = Either3.valueOrNothingOrFailure(nullSupplier);
+        Either3<Integer, Nothing, Failure> either3failure = Either3.valueOrNothingOrFailure(failureSupplier);
+
+        either3Integer.on(
+                integer -> assertEquals(1, integer),
+                nothing -> fail("no nothing expected"),
+                failure -> fail("no failure expected")
+        );
+
+        either3Nothing.on(
+                integer -> fail("no integer expected"),
+                nothing -> {},
+                failure -> fail("no failure expected")
+        );
+
+        either3failure.on(
+                integer -> fail("no integer expected"),
+                nothing -> fail("no nothing expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
     }
 }

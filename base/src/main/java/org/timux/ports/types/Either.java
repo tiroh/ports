@@ -22,6 +22,7 @@ import org.timux.ports.Response;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A union type for two types A and B.
@@ -80,8 +81,8 @@ public abstract class Either<A, B> {
         return either.map(u -> Either.b(Failure.INSTANCE), Either::b);
     }
 
-    public static <T, U, V> Either<T, Failure> failure(Either3<U, V, Failure> either) {
-        return either.map(u -> Either.b(Failure.INSTANCE), v -> Either.b(Failure.INSTANCE), Either::b);
+    public static <T, U, V> Either<T, Failure> failure(Either3<U, V, Failure> either3) {
+        return either3.map(u -> Either.b(Failure.INSTANCE), v -> Either.b(Failure.INSTANCE), Either::b);
     }
 
     public static <T> Either<T, Nothing> nothing() {
@@ -90,6 +91,53 @@ public abstract class Either<A, B> {
 
     public static <T> Either<T, Unknown> unknown() {
         return Either.b(Unknown.INSTANCE);
+    }
+
+    /**
+     * Returns an {@link Either} containing either the return value of the supplier or
+     * a {@link Failure} in case the supplier returns null or throws an exception.
+     *
+     * <p>If you want to handle the case that the supplier returns null separately from the exception case, use
+     * {@link Either3#valueOrNothingOrFailure} instead.
+     */
+    public static <T> Either<T, Failure> valueOrFailure(Supplier<T> supplier) {
+        try {
+            T t = supplier.get();
+
+            if (t == null) {
+                return Either.b(Failure.of("supplier has returned null"));
+            } else {
+                return Either.a(t);
+            }
+        } catch (Exception e) {
+            return Either.b(Failure.of(e));
+        }
+    }
+
+    public static <T> Either<Success, Failure> successOrFailure(Either<T, Failure> either) {
+        return either.map(t -> Either.a(Success.INSTANCE), Either::b);
+    }
+
+    public static <T, U> Either<Success, Failure> successOrFailure(Either3<T, U, Failure> either3) {
+        return either3.map(t -> Either.a(Success.INSTANCE), u -> Either.a(Success.INSTANCE), Either::b);
+    }
+
+    public static <T> Either<Success, Failure> successOrFailure(Supplier<T> supplier) {
+        try {
+            supplier.get();
+            return Either.a(Success.INSTANCE);
+        } catch (Exception e) {
+            return Either.b(Failure.of(e));
+        }
+    }
+
+    public static <T> Either<Success, Failure> successOrFailure(Runnable action) {
+        try {
+            action.run();
+            return Either.a(Success.INSTANCE);
+        } catch (Exception e) {
+            return Either.b(Failure.of(e));
+        }
     }
 
     /**

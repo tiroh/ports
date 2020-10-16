@@ -23,6 +23,7 @@ import org.timux.ports.Response;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A union type for three types A, B, and C. The primary use case is as a response type for a
@@ -73,8 +74,8 @@ public abstract class Either3<A, B, C> {
         return either.map(v -> Either3.c(Failure.INSTANCE), Either3::c);
     }
 
-    public static <T, U, V, W> Either3<T, U, Failure> failure(Either3<V, W, Failure> either) {
-        return either.map(v -> Either3.c(Failure.INSTANCE), w -> Either3.c(Failure.INSTANCE), Either3::c);
+    public static <T, U, V, W> Either3<T, U, Failure> failure(Either3<V, W, Failure> either3) {
+        return either3.map(v -> Either3.c(Failure.INSTANCE), w -> Either3.c(Failure.INSTANCE), Either3::c);
     }
 
     public static <T, U> Either3<T, Nothing, U> nothing() {
@@ -83,6 +84,28 @@ public abstract class Either3<A, B, C> {
 
     public static <T, U> Either3<T, Unknown, U> unknown() {
         return Either3.b(Unknown.INSTANCE);
+    }
+
+    /**
+     * Returns an {@link Either3} containing either the return value of the supplier,
+     * {@link Nothing} in case the supplier returns null,
+     * or {@link Failure} in case the supplier throws an exception.
+     *
+     * <p>If you want to handle the case that the supplier returns null in combination with
+     * the exception case, use {@link Either#valueOrFailure} instead.
+     */
+    public static <T> Either3<T, Nothing, Failure> valueOrNothingOrFailure(Supplier<T> supplier) {
+        try {
+            T t = supplier.get();
+
+            if (t == null) {
+                return Either3.b(Nothing.INSTANCE);
+            } else {
+                return Either3.a(t);
+            }
+        } catch (Exception e) {
+            return Either3.c(Failure.of(e));
+        }
     }
 
     /**
