@@ -516,14 +516,18 @@ public class EitherTests {
     }
 
     @Test
-    public void either3ValueOrNothingOrFailure() {
+    public void either3SuccessOrFailureMethods() {
         Supplier<Integer> okSupplier = () -> 1;
         Supplier<Integer> nullSupplier = () -> null;
         Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
 
         Either3<Integer, Nothing, Failure> either3Integer = Either3.valueOrNothingOrFailure(okSupplier);
         Either3<Integer, Nothing, Failure> either3Nothing = Either3.valueOrNothingOrFailure(nullSupplier);
-        Either3<Integer, Nothing, Failure> either3failure = Either3.valueOrNothingOrFailure(failureSupplier);
+        Either3<Integer, Nothing, Failure> either3Failure = Either3.valueOrNothingOrFailure(failureSupplier);
+
+        Either<Success, Failure> eitherIntegerSuccess = Either.successOrFailure(either3Integer);
+        Either<Success, Failure> eitherNothingFailure = Either.successOrFailure(either3Nothing);
+        Either<Success, Failure> eitherFailureFailure = Either.successOrFailure(either3Failure);
 
         either3Integer.on(
                 integer -> assertEquals(1, integer),
@@ -537,9 +541,24 @@ public class EitherTests {
                 failure -> fail("no failure expected")
         );
 
-        either3failure.on(
+        either3Failure.on(
                 integer -> fail("no integer expected"),
                 nothing -> fail("no nothing expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+
+        eitherIntegerSuccess.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        eitherNothingFailure.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        eitherFailureFailure.on(
+                success -> fail("no success expected"),
                 failure -> assertEquals("A", failure.getThrowable().get().getMessage())
         );
     }

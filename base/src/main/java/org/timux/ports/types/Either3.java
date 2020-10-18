@@ -87,12 +87,15 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
-     * Returns an {@link Either3} containing either the return value of the supplier,
-     * {@link Nothing} in case the supplier returns null,
-     * or {@link Failure} in case the supplier throws an exception.
+     * Returns an {@link Either3} containing either the return value of the {@code supplier},
+     * {@link Nothing} in case the {@code supplier} returns null,
+     * or {@link Failure} in case the {@code supplier} throws an exception.
      *
-     * <p>If you want to handle the case that the supplier returns null in combination with
+     * <p>If you want to handle the case that the {@code supplier} returns null in combination with
      * the exception case, use {@link Either#valueOrFailure} instead.
+     *
+     * <p>If you want to ignore the return value of the {@code supplier}, use {@link Either#successOrFailure(Supplier)}
+     * instead.
      */
     public static <T> Either3<T, Nothing, Failure> valueOrNothingOrFailure(Supplier<T> supplier) {
         try {

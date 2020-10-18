@@ -1,5 +1,7 @@
 package org.timux.ports;
 
+import org.timux.ports.types.Container;
+
 import java.util.function.Consumer;
 
 public class ActionClause<T> {
@@ -22,6 +24,11 @@ public class ActionClause<T> {
 
     public ConditionOrAction<T> do_(Runnable action) {
         state.registerAction((Action<T>) (payload, owner) -> action.run());
+        return new ConditionOrAction<>(state);
+    }
+
+    public ConditionOrAction<T> storeIn(Container<T> container) {
+        state.registerAction((Action<T>) (payload, owner) -> container.value = payload);
         return new ConditionOrAction<>(state);
     }
 

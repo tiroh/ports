@@ -136,7 +136,7 @@ public class ProtocolTests {
                 .respond(request -> Either.a(request.getValue()))
                 .when(EitherRequest.class, Double.class, String.class)
                 .responds()
-                .do_(response -> eitherValue.value = response);
+                .storeIn(eitherValue);
 
         Ports.protocol()
                 .with(EitherRequest.class, Double.class, String.class)
@@ -160,7 +160,7 @@ public class ProtocolTests {
                 .respond(request -> Either3.b(request.getValue()))
                 .when(Either3Request.class, Double.class, Integer.class, String.class)
                 .responds()
-                .do_(response -> eitherValue.value = response);
+                .storeIn(eitherValue);
 
         Ports.protocol()
                 .with(Either3Request.class, Double.class, Integer.class, String.class)

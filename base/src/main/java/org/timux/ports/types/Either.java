@@ -94,11 +94,14 @@ public abstract class Either<A, B> {
     }
 
     /**
-     * Returns an {@link Either} containing either the return value of the supplier or
-     * a {@link Failure} in case the supplier returns null or throws an exception.
+     * Returns an {@link Either} containing either the return value of the {@code  supplier} or
+     * a {@link Failure} in case the {@code  supplier} returns null or throws an exception.
      *
-     * <p>If you want to handle the case that the supplier returns null separately from the exception case, use
+     * <p>If you want to handle the case that the {@code supplier} returns null separately from the exception case, use
      * {@link Either3#valueOrNothingOrFailure} instead.
+     *
+     * <p>If you want to ignore the return value of the {@code supplier}, use {@link #successOrFailure(Supplier)}
+     * instead.
      */
     public static <T> Either<T, Failure> valueOrFailure(Supplier<T> supplier) {
         try {
@@ -114,14 +117,32 @@ public abstract class Either<A, B> {
         }
     }
 
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the supplied {@code either}
+     * contains a {@code T}, or a {@link Failure}, in case the {@code either} contains a {@link Failure}.
+     */
     public static <T> Either<Success, Failure> successOrFailure(Either<T, Failure> either) {
         return either.map(t -> Either.a(Success.INSTANCE), Either::b);
     }
 
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the supplied {@code either3} contains
+     * a {@code T} or an {@code U}, or a {@link Failure}, in case the {@code either3} contains a {@link Failure}.
+     */
     public static <T, U> Either<Success, Failure> successOrFailure(Either3<T, U, Failure> either3) {
         return either3.map(t -> Either.a(Success.INSTANCE), u -> Either.a(Success.INSTANCE), Either::b);
     }
 
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the {@code supplier} terminates
+     * normally, or a {@link Failure}, in case the {@code supplier} throws an exception. The return value of the
+     * {@code supplier} is ignored.
+     *
+     * <p>If you don't want to ignore the return value of the {@code supplier}, use {@link #valueOrFailure} or
+     * {@link Either3#valueOrNothingOrFailure} instead.
+     * 
+     * @see #successOrFailure(Runnable)
+     */
     public static <T> Either<Success, Failure> successOrFailure(Supplier<T> supplier) {
         try {
             supplier.get();
@@ -131,6 +152,10 @@ public abstract class Either<A, B> {
         }
     }
 
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the {@code action} terminates
+     * normally, or a {@link Failure}, in case the {@code action} throws an exception.
+     */
     public static <T> Either<Success, Failure> successOrFailure(Runnable action) {
         try {
             action.run();
