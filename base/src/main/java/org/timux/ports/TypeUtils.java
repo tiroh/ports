@@ -70,6 +70,10 @@ class TypeUtils {
             return;
         }
 
+        if (responseType == void.class) {
+            throw new IllegalArgumentException("response type must not be void");
+        }
+
         Response responseAnno = messageType.getDeclaredAnnotation(Response.class);
         Responses responsesAnno = messageType.getDeclaredAnnotation(Responses.class);
         SuccessResponse successResponseAnno = messageType.getDeclaredAnnotation(SuccessResponse.class);
@@ -82,6 +86,21 @@ class TypeUtils {
         }
 
         if (responsesAnno != null) {
+            if (responseType == Either.class && eitherTypeA == null) {
+                throw new RawUnionTypeException(
+                        messageType.getName(),
+                        responsesAnno.value()[0].value().getName(),
+                        responsesAnno.value()[1].value().getName());
+            }
+
+            if (responseType == Either3.class && eitherTypeA == null) {
+                throw new RawUnionTypeException(
+                        messageType.getName(),
+                        responsesAnno.value()[0].value().getName(),
+                        responsesAnno.value()[1].value().getName(),
+                        responsesAnno.value()[2].value().getName());
+            }
+
             if (responsesAnno.value().length < 2 || responsesAnno.value().length > 3) {
                 throw new InvalidResponseDeclarationException(messageType.getName());
             }
@@ -102,11 +121,12 @@ class TypeUtils {
                 if (responsesAnno.value()[1].value() != eitherTypeB) {
                     throw new InvalidResponseTypeException(eitherTypeB.getName(), messageType.getName());
                 }
-            } else if (responseType == Either.class) {
-                throw new RawUnionTypeException(
-                        messageType.getName(),
-                        responsesAnno.value()[0].value().getName(),
-                        responsesAnno.value()[1].value().getName());
+
+                if (eitherTypeC != null) {
+                    if (responsesAnno.value()[2].value() != eitherTypeC) {
+                        throw new InvalidResponseTypeException(eitherTypeC.getName(), messageType.getName());
+                    }
+                }
             }
 
             declaredResponseType = responsesAnno.value().length == 2

@@ -22,4 +22,9 @@ public class RawUnionTypeException extends RuntimeException {
         super("union types must not be used raw (request '" + requestType + "' responds with either '"
                 + responseTypeA + "' or '" + responseTypeB + "')");
     }
+
+    RawUnionTypeException(String requestType, String responseTypeA, String responseTypeB, String responseTypeC) {
+        super("union types must not be used raw (request '" + requestType + "' responds with either '"
+                + responseTypeA + "' or '" + responseTypeB + "' or '" + responseTypeC + "')");
+    }
 }
