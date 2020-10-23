@@ -10,6 +10,7 @@ import org.timux.ports.types.Nothing;
 import org.timux.ports.types.Success;
 import org.timux.ports.types.Unknown;
 
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -561,5 +562,33 @@ public class EitherTests {
                 success -> fail("no success expected"),
                 failure -> assertEquals("A", failure.getThrowable().get().getMessage())
         );
+    }
+
+    @Test
+    public void getOrThrow() {
+        Either<Integer, String> eitherA = Either.a(1);
+        Either<Integer, String> eitherB = Either.b("a");
+
+        Either3<Integer, Float, String> either3A = Either3.a(10);
+        Either3<Integer, Float, String> either3B = Either3.b(2.0f);
+        Either3<Integer, Float, String> either3C = Either3.c("x");
+
+        assertEquals(1, eitherA.getAOrThrow());
+        assertThrows(NoSuchElementException.class, eitherA::getBOrThrow);
+
+        assertThrows(NoSuchElementException.class, eitherB::getAOrThrow);
+        assertEquals("a", eitherB.getBOrThrow());
+
+        assertEquals(10, either3A.getAOrThrow());
+        assertThrows(NoSuchElementException.class, either3A::getBOrThrow);
+        assertThrows(NoSuchElementException.class, either3A::getCOrThrow);
+
+        assertThrows(NoSuchElementException.class, either3B::getAOrThrow);
+        assertEquals(2.0f, either3B.getBOrThrow());
+        assertThrows(NoSuchElementException.class, either3B::getCOrThrow);
+
+        assertThrows(NoSuchElementException.class, either3C::getAOrThrow);
+        assertThrows(NoSuchElementException.class, either3C::getBOrThrow);
+        assertEquals("x", either3C.getCOrThrow());
     }
 }

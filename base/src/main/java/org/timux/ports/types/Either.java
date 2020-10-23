@@ -19,6 +19,7 @@ package org.timux.ports.types;
 import org.timux.ports.PortsFuture;
 import org.timux.ports.Response;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -278,6 +279,18 @@ public abstract class Either<A, B> {
     }
 
     /**
+     * Returns the A constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract A getAOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns the B constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract B getBOrThrow() throws NoSuchElementException;
+
+    /**
      * Returns true if this union represents an instance of {@link Success},
      * and false otherwise.
      */
@@ -325,7 +338,7 @@ public abstract class Either<A, B> {
     /**
      * Creates an instance of this union that contains an A (non-null).
      */
-    public static <A, B> Either<A, B> a(A a) {
+    public static <A, B> Either<A, B> a(A a) throws IllegalArgumentException {
         if (a == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -410,13 +423,23 @@ public abstract class Either<A, B> {
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.of(a), Optional.empty());
             }
+
+            @Override
+            public A getAOrThrow() {
+                return a;
+            }
+
+            @Override
+            public B getBOrThrow() {
+                throw new NoSuchElementException();
+            }
         };
     }
 
     /**
      * Creates an instance of this union that contains a B (non-null).
      */
-    public static <A, B> Either<A, B> b(B b) {
+    public static <A, B> Either<A, B> b(B b) throws IllegalArgumentException {
         if (b == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -523,6 +546,16 @@ public abstract class Either<A, B> {
             @Override
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.empty(), Optional.of(b));
+            }
+
+            @Override
+            public A getAOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public B getBOrThrow() {
+                return b;
             }
         };
     }

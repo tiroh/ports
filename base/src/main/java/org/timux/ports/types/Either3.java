@@ -20,6 +20,7 @@ import org.timux.ports.PortsFuture;
 import org.timux.ports.Request;
 import org.timux.ports.Response;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -238,6 +239,24 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
+     * Returns the A constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract A getAOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns the B constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract B getBOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns the C constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract C getCOrThrow() throws NoSuchElementException;
+
+    /**
      * Returns true if this union represents an instance of {@link Success},
      * and false otherwise.
      */
@@ -297,7 +316,7 @@ public abstract class Either3<A, B, C> {
     /**
      * Creates an instance of this union that contains an A (non-null).
      */
-    public static <A, B, C> Either3<A, B, C> a(A a) {
+    public static <A, B, C> Either3<A, B, C> a(A a) throws IllegalArgumentException {
         if (a == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -393,13 +412,28 @@ public abstract class Either3<A, B, C> {
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.of(a), Optional.empty(), Optional.empty());
             }
+
+            @Override
+            public A getAOrThrow() {
+                return a;
+            }
+
+            @Override
+            public B getBOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public C getCOrThrow() {
+                throw new NoSuchElementException();
+            }
         };
     }
 
     /**
      * Creates an instance of this union that contains a B (non-null).
      */
-    public static <A, B, C> Either3<A, B, C> b(B b) {
+    public static <A, B, C> Either3<A, B, C> b(B b) throws IllegalArgumentException {
         if (b == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -496,13 +530,28 @@ public abstract class Either3<A, B, C> {
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.empty(), Optional.of(b), Optional.empty());
             }
+
+            @Override
+            public A getAOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public B getBOrThrow() {
+                return b;
+            }
+
+            @Override
+            public C getCOrThrow() {
+                throw new NoSuchElementException();
+            }
         };
     }
 
     /**
      * Creates an instance of this union that contains a C (non-null).
      */
-    public static <A, B, C> Either3<A, B, C> c(C c) {
+    public static <A, B, C> Either3<A, B, C> c(C c) throws IllegalArgumentException {
         if (c == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -620,6 +669,21 @@ public abstract class Either3<A, B, C> {
             @Override
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.empty(), Optional.empty(), Optional.of(c));
+            }
+
+            @Override
+            public A getAOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public B getBOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public C getCOrThrow() {
+                return c;
             }
         };
     }
