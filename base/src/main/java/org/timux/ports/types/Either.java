@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package org.timux.ports.types;
 
 import org.timux.ports.PortsFuture;
 import org.timux.ports.Response;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A union type for two types A and B.
@@ -29,15 +31,13 @@ import java.util.function.Function;
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
  *
+ * @param <A> The first type.
+ * @param <B> The second type.
  * @see Either3
  * @see Nothing
  * @see Unknown
  * @see Pair
  * @see Triple
- *
- * @param <A> The first type.
- * @param <B> The second type.
- *
  * @since 0.4.1
  */
 public abstract class Either<A, B> {
@@ -58,6 +58,114 @@ public abstract class Either<A, B> {
         return optional.isPresent() ? Either.a(optional.get()) : Either.b(orElse);
     }
 
+    public static <T> Either<Success, T> success() {
+        return Either.a(Success.INSTANCE);
+    }
+
+    public static <T> Either<T, Failure> failure() {
+        return Either.b(Failure.INSTANCE);
+    }
+
+    public static <T> Either<T, Failure> failure(String message) {
+        return Either.b(Failure.of(message));
+    }
+
+    public static <T> Either<T, Failure> failure(Throwable throwable) {
+        return Either.b(Failure.of(throwable));
+    }
+
+    public static <T> Either<T, Failure> failure(String message, Throwable throwable) {
+        return Either.b(Failure.of(message, throwable));
+    }
+
+    public static <T, U> Either<T, Failure> failure(Either<U, Failure> either) {
+        return either.map(u -> Either.b(Failure.INSTANCE), Either::b);
+    }
+
+    public static <T, U, V> Either<T, Failure> failure(Either3<U, V, Failure> either3) {
+        return either3.map(u -> Either.b(Failure.INSTANCE), v -> Either.b(Failure.INSTANCE), Either::b);
+    }
+
+    public static <T> Either<T, Nothing> nothing() {
+        return Either.b(Nothing.INSTANCE);
+    }
+
+    public static <T> Either<T, Unknown> unknown() {
+        return Either.b(Unknown.INSTANCE);
+    }
+
+    /**
+     * Returns an {@link Either} containing either the return value of the {@code  supplier} or
+     * a {@link Failure} in case the {@code  supplier} returns null or throws an exception.
+     *
+     * <p>If you want to handle the case that the {@code supplier} returns null separately from the exception case, use
+     * {@link Either3#valueOrNothingOrFailure} instead.
+     *
+     * <p>If you want to ignore the return value of the {@code supplier}, use {@link #successOrFailure(Supplier)}
+     * instead.
+     */
+    public static <T> Either<T, Failure> valueOrFailure(Supplier<T> supplier) {
+        try {
+            T t = supplier.get();
+
+            if (t == null) {
+                return Either.b(Failure.of("supplier has returned null"));
+            } else {
+                return Either.a(t);
+            }
+        } catch (Exception e) {
+            return Either.b(Failure.of(e));
+        }
+    }
+
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the supplied {@code either}
+     * contains a {@code T}, or a {@link Failure}, in case the {@code either} contains a {@link Failure}.
+     */
+    public static <T> Either<Success, Failure> successOrFailure(Either<T, Failure> either) {
+        return either.map(t -> Either.a(Success.INSTANCE), Either::b);
+    }
+
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the supplied {@code either3} contains
+     * a {@code T} or an {@code U}, or a {@link Failure}, in case the {@code either3} contains a {@link Failure}.
+     */
+    public static <T, U> Either<Success, Failure> successOrFailure(Either3<T, U, Failure> either3) {
+        return either3.map(t -> Either.a(Success.INSTANCE), u -> Either.a(Success.INSTANCE), Either::b);
+    }
+
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the {@code supplier} terminates
+     * normally, or a {@link Failure}, in case the {@code supplier} throws an exception. The return value of the
+     * {@code supplier} is ignored.
+     *
+     * <p>If you don't want to ignore the return value of the {@code supplier}, use {@link #valueOrFailure} or
+     * {@link Either3#valueOrNothingOrFailure} instead.
+     * 
+     * @see #successOrFailure(Runnable)
+     */
+    public static <T> Either<Success, Failure> successOrFailure(Supplier<T> supplier) {
+        try {
+            supplier.get();
+            return Either.a(Success.INSTANCE);
+        } catch (Exception e) {
+            return Either.b(Failure.of(e));
+        }
+    }
+
+    /**
+     * Returns an {@link Either} containing either a {@link Success}, in case the {@code action} terminates
+     * normally, or a {@link Failure}, in case the {@code action} throws an exception.
+     */
+    public static <T> Either<Success, Failure> successOrFailure(Runnable action) {
+        try {
+            action.run();
+            return Either.a(Success.INSTANCE);
+        } catch (Exception e) {
+            return Either.b(Failure.of(e));
+        }
+    }
+
     /**
      * Maps the constituents of this union to R.
      */
@@ -75,7 +183,7 @@ public abstract class Either<A, B> {
 
     /**
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either}.
-     * 
+     *
      * @see #andThen
      * @see #andThenR
      */
@@ -116,7 +224,7 @@ public abstract class Either<A, B> {
 
     /**
      * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
-     * 
+     *
      * @see #orElseDoOnce
      */
     public abstract Either<A, B> orElseDo(Consumer<? super B> bC);
@@ -171,6 +279,50 @@ public abstract class Either<A, B> {
     }
 
     /**
+     * Returns the A constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract A getAOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns the B constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract B getBOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns true if this union represents an instance of {@link Success},
+     * and false otherwise.
+     */
+    public boolean isSuccess() {
+        return map(a -> a.getClass() == Success.class, b -> b.getClass() == Success.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Failure},
+     * and false otherwise.
+     */
+    public boolean isFailure() {
+        return map(a -> a.getClass() == Failure.class, b -> b.getClass() == Failure.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Nothing},
+     * and false otherwise.
+     */
+    public boolean isNothing() {
+        return map(a -> a.getClass() == Nothing.class, b -> b.getClass() == Nothing.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Unknown},
+     * and false otherwise.
+     */
+    public boolean isUnknown() {
+        return map(a -> a.getClass() == Unknown.class, b -> b.getClass() == Unknown.class);
+    }
+
+    /**
      * Executes the provided runnable and returns this union.
      */
     public Either<A, B> finallyDo(Runnable runnable) {
@@ -186,7 +338,7 @@ public abstract class Either<A, B> {
     /**
      * Creates an instance of this union that contains an A (non-null).
      */
-    public static <A, B> Either<A, B> a(A a) {
+    public static <A, B> Either<A, B> a(A a) throws IllegalArgumentException {
         if (a == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -271,13 +423,23 @@ public abstract class Either<A, B> {
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.of(a), Optional.empty());
             }
+
+            @Override
+            public A getAOrThrow() {
+                return a;
+            }
+
+            @Override
+            public B getBOrThrow() {
+                throw new NoSuchElementException();
+            }
         };
     }
 
     /**
      * Creates an instance of this union that contains a B (non-null).
      */
-    public static <A, B> Either<A, B> b(B b) {
+    public static <A, B> Either<A, B> b(B b) throws IllegalArgumentException {
         if (b == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -384,6 +546,16 @@ public abstract class Either<A, B> {
             @Override
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.empty(), Optional.of(b));
+            }
+
+            @Override
+            public A getAOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public B getBOrThrow() {
+                return b;
             }
         };
     }

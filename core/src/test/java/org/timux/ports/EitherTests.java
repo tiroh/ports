@@ -7,9 +7,15 @@ import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Failure;
 import org.timux.ports.types.Nothing;
+import org.timux.ports.types.Success;
+import org.timux.ports.types.Unknown;
+
+import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -311,5 +317,278 @@ public class EitherTests {
 
         assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
         assertEquals(failure1.value, failure2.value);
+    }
+
+    @Test
+    public void eitherConstructorsAndIsTypeMethods() {
+        Either<Success, Failure> successEither = Either.success();
+
+        Either<Success, Failure> failureEither = Either.failure();
+        Either<Success, Failure> failureEitherMsg = Either.failure("message1");
+        Either<Success, Failure> failureEitherT = Either.failure(new RuntimeException());
+        Either<Success, Failure> failureEitherMsgT = Either.failure("message2", new RuntimeException());
+
+        Either<Success, Nothing> nothingEither = Either.nothing();
+        Either<Success, Unknown> unknownEither = Either.unknown();
+
+        assertTrue(successEither.isSuccess());
+        assertFalse(successEither.isFailure());
+        assertFalse(successEither.isUnknown());
+        assertFalse(successEither.isNothing());
+        assertTrue(successEither.getA().isPresent());
+        assertFalse(successEither.getB().isPresent());
+
+        assertFalse(failureEither.isSuccess());
+        assertTrue(failureEither.isFailure());
+        assertFalse(failureEither.isUnknown());
+        assertFalse(failureEither.isNothing());
+        assertFalse(failureEither.getA().isPresent());
+        assertTrue(failureEither.getB().isPresent());
+
+        assertFalse(failureEitherMsg.isSuccess());
+        assertTrue(failureEitherMsg.isFailure());
+        assertFalse(failureEitherMsg.isUnknown());
+        assertFalse(failureEitherMsg.isNothing());
+        assertFalse(failureEitherMsg.getA().isPresent());
+        assertEquals("message1", failureEitherMsg.getB().get().getMessage());
+
+        assertFalse(failureEitherT.isSuccess());
+        assertTrue(failureEitherT.isFailure());
+        assertFalse(failureEitherT.isUnknown());
+        assertFalse(failureEitherT.isNothing());
+        assertFalse(failureEitherT.getA().isPresent());
+        assertSame(failureEitherT.getB().get().getThrowable().get().getClass(), RuntimeException.class);
+
+        assertFalse(failureEitherMsgT.isSuccess());
+        assertTrue(failureEitherMsgT.isFailure());
+        assertFalse(failureEitherMsgT.isUnknown());
+        assertFalse(failureEitherMsgT.isNothing());
+        assertFalse(failureEitherMsgT.getA().isPresent());
+        assertEquals("message2", failureEitherMsgT.getB().get().getMessage());
+        assertSame(failureEitherMsgT.getB().get().getThrowable().get().getClass(), RuntimeException.class);
+
+        assertFalse(nothingEither.isSuccess());
+        assertFalse(nothingEither.isFailure());
+        assertTrue(nothingEither.isNothing());
+        assertFalse(nothingEither.isUnknown());
+        assertFalse(nothingEither.getA().isPresent());
+        assertTrue(nothingEither.getB().isPresent());
+
+        assertFalse(unknownEither.isSuccess());
+        assertFalse(unknownEither.isFailure());
+        assertFalse(unknownEither.isNothing());
+        assertTrue(unknownEither.isUnknown());
+        assertFalse(unknownEither.getA().isPresent());
+        assertTrue(unknownEither.getB().isPresent());
+    }
+
+    @Test
+    public void either3ConstructorsAndIsTypeMethods() {
+        Either3<Success, Nothing, Failure> successEither = Either3.success();
+
+        Either3<Success, Nothing, Failure> failureEither = Either3.failure();
+        Either3<Success, Unknown, Failure> failureEitherMsg = Either3.failure("message1");
+        Either3<Success, String, Failure> failureEitherT = Either3.failure(new RuntimeException());
+        Either3<Success, Integer, Failure> failureEitherMsgT = Either3.failure("message2", new RuntimeException());
+
+        Either3<Success, Nothing, Failure> nothingEither = Either3.nothing();
+        Either3<Success, Unknown, Failure> unknownEither = Either3.unknown();
+
+        assertTrue(successEither.isSuccess());
+        assertFalse(successEither.isFailure());
+        assertFalse(successEither.isUnknown());
+        assertFalse(successEither.isNothing());
+        assertTrue(successEither.getA().isPresent());
+        assertFalse(successEither.getB().isPresent());
+        assertFalse(successEither.getC().isPresent());
+
+        assertFalse(failureEither.isSuccess());
+        assertTrue(failureEither.isFailure());
+        assertFalse(failureEither.isUnknown());
+        assertFalse(failureEither.isNothing());
+        assertFalse(failureEither.getA().isPresent());
+        assertFalse(failureEither.getB().isPresent());
+        assertTrue(failureEither.getC().isPresent());
+
+        assertFalse(failureEitherMsg.isSuccess());
+        assertTrue(failureEitherMsg.isFailure());
+        assertFalse(failureEitherMsg.isUnknown());
+        assertFalse(failureEitherMsg.isNothing());
+        assertFalse(failureEitherMsg.getA().isPresent());
+        assertFalse(failureEitherMsg.getB().isPresent());
+        assertEquals("message1", failureEitherMsg.getC().get().getMessage());
+
+        assertFalse(failureEitherT.isSuccess());
+        assertTrue(failureEitherT.isFailure());
+        assertFalse(failureEitherT.isUnknown());
+        assertFalse(failureEitherT.isNothing());
+        assertFalse(failureEitherT.getA().isPresent());
+        assertFalse(failureEitherT.getB().isPresent());
+        assertSame(failureEitherT.getC().get().getThrowable().get().getClass(), RuntimeException.class);
+
+        assertFalse(failureEitherMsgT.isSuccess());
+        assertTrue(failureEitherMsgT.isFailure());
+        assertFalse(failureEitherMsgT.isUnknown());
+        assertFalse(failureEitherMsgT.isNothing());
+        assertFalse(failureEitherMsgT.getA().isPresent());
+        assertFalse(failureEitherMsgT.getB().isPresent());
+        assertEquals("message2", failureEitherMsgT.getC().get().getMessage());
+        assertSame(failureEitherMsgT.getC().get().getThrowable().get().getClass(), RuntimeException.class);
+
+        assertFalse(nothingEither.isSuccess());
+        assertFalse(nothingEither.isFailure());
+        assertTrue(nothingEither.isNothing());
+        assertFalse(nothingEither.isUnknown());
+        assertFalse(nothingEither.getA().isPresent());
+        assertTrue(nothingEither.getB().isPresent());
+        assertFalse(nothingEither.getC().isPresent());
+
+        assertFalse(unknownEither.isSuccess());
+        assertFalse(unknownEither.isFailure());
+        assertFalse(unknownEither.isNothing());
+        assertTrue(unknownEither.isUnknown());
+        assertFalse(unknownEither.getA().isPresent());
+        assertTrue(unknownEither.getB().isPresent());
+        assertFalse(unknownEither.getC().isPresent());
+    }
+
+    @Test
+    public void eitherSuccessOrFailureMethods() {
+        Container<Boolean> runnableStatus = Container.of(Boolean.FALSE);
+
+        Supplier<Integer> okSupplier = () -> 1;
+        Runnable okRunnable = () -> runnableStatus.value = Boolean.TRUE;
+
+        Supplier<Integer> nullSupplier = () -> null;
+
+        Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
+        Runnable failureRunnable = () -> { throw new RuntimeException("B"); };
+
+        Either<Integer, Failure> okSupplierEither = Either.valueOrFailure(okSupplier);
+        Either<Success, Failure> okSupplierSFEither = Either.successOrFailure(okSupplier);
+        Either<Success, Failure> okRunnableEither = Either.successOrFailure(okRunnable);
+
+        Either<Integer, Failure> failureSupplierEither = Either.valueOrFailure(failureSupplier);
+        Either<Success, Failure> failureSupplierSFEither = Either.successOrFailure(failureSupplier);
+        Either<Success, Failure> failureRunnableEither = Either.successOrFailure(failureRunnable);
+
+        Either<Success, Failure> okSFEither = Either.successOrFailure(okSupplierEither);
+        Either<Success, Failure> failureSFEither = Either.successOrFailure(failureSupplierEither);
+
+        okSupplierEither.on(
+                integer -> assertEquals(1, integer),
+                failure -> fail("no failure expected")
+        );
+
+        okSupplierSFEither.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        okRunnableEither.on(
+                success -> assertTrue(runnableStatus.value),
+                failure -> fail("no failure expected")
+        );
+
+        failureSupplierEither.on(
+                integer -> fail("no integer expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+
+        failureSupplierSFEither.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+
+        failureRunnableEither.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("B", failure.getThrowable().get().getMessage())
+        );
+
+        okSFEither.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        failureSFEither.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+    }
+
+    @Test
+    public void either3SuccessOrFailureMethods() {
+        Supplier<Integer> okSupplier = () -> 1;
+        Supplier<Integer> nullSupplier = () -> null;
+        Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
+
+        Either3<Integer, Nothing, Failure> either3Integer = Either3.valueOrNothingOrFailure(okSupplier);
+        Either3<Integer, Nothing, Failure> either3Nothing = Either3.valueOrNothingOrFailure(nullSupplier);
+        Either3<Integer, Nothing, Failure> either3Failure = Either3.valueOrNothingOrFailure(failureSupplier);
+
+        Either<Success, Failure> eitherIntegerSuccess = Either.successOrFailure(either3Integer);
+        Either<Success, Failure> eitherNothingFailure = Either.successOrFailure(either3Nothing);
+        Either<Success, Failure> eitherFailureFailure = Either.successOrFailure(either3Failure);
+
+        either3Integer.on(
+                integer -> assertEquals(1, integer),
+                nothing -> fail("no nothing expected"),
+                failure -> fail("no failure expected")
+        );
+
+        either3Nothing.on(
+                integer -> fail("no integer expected"),
+                nothing -> {},
+                failure -> fail("no failure expected")
+        );
+
+        either3Failure.on(
+                integer -> fail("no integer expected"),
+                nothing -> fail("no nothing expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+
+        eitherIntegerSuccess.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        eitherNothingFailure.on(
+                success -> {},
+                failure -> fail("no failure expected")
+        );
+
+        eitherFailureFailure.on(
+                success -> fail("no success expected"),
+                failure -> assertEquals("A", failure.getThrowable().get().getMessage())
+        );
+    }
+
+    @Test
+    public void getOrThrow() {
+        Either<Integer, String> eitherA = Either.a(1);
+        Either<Integer, String> eitherB = Either.b("a");
+
+        Either3<Integer, Float, String> either3A = Either3.a(10);
+        Either3<Integer, Float, String> either3B = Either3.b(2.0f);
+        Either3<Integer, Float, String> either3C = Either3.c("x");
+
+        assertEquals(1, eitherA.getAOrThrow());
+        assertThrows(NoSuchElementException.class, eitherA::getBOrThrow);
+
+        assertThrows(NoSuchElementException.class, eitherB::getAOrThrow);
+        assertEquals("a", eitherB.getBOrThrow());
+
+        assertEquals(10, either3A.getAOrThrow());
+        assertThrows(NoSuchElementException.class, either3A::getBOrThrow);
+        assertThrows(NoSuchElementException.class, either3A::getCOrThrow);
+
+        assertThrows(NoSuchElementException.class, either3B::getAOrThrow);
+        assertEquals(2.0f, either3B.getBOrThrow());
+        assertThrows(NoSuchElementException.class, either3B::getCOrThrow);
+
+        assertThrows(NoSuchElementException.class, either3C::getAOrThrow);
+        assertThrows(NoSuchElementException.class, either3C::getBOrThrow);
+        assertEquals("x", either3C.getCOrThrow());
     }
 }

@@ -6,7 +6,7 @@
 
     <groupId>org.timux.ports</groupId>
     <artifactId>ports</artifactId>
-    <version>0.5.5</version>
+    <version>0.5.9-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 

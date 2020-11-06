@@ -1,5 +1,7 @@
 package org.timux.ports;
 
+import org.timux.ports.types.Container;
+
 import java.util.function.Consumer;
 
 public class ActionClause<T> {
@@ -25,7 +27,12 @@ public class ActionClause<T> {
         return new ConditionOrAction<>(state);
     }
 
-    public <U> PortEventClause<U> with(Class<U> messageType, Object owner) {
+    public ConditionOrAction<T> storeIn(Container<T> container) {
+        state.registerAction((Action<T>) (payload, owner) -> container.value = payload);
+        return new ConditionOrAction<>(state);
+    }
+
+    <U> PortEventClause<U> with(Class<U> messageType, Object owner) {
         state.registerWithMessageTypeAndOwner(messageType.getName(), void.class.getName(), owner);
         return new PortEventClause<>(state);
     }
@@ -34,7 +41,7 @@ public class ActionClause<T> {
         return with(messageType, (Object) null);
     }
 
-    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+    <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
         state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>(state);
     }

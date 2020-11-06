@@ -30,7 +30,7 @@ import java.util.Optional;
  *
  * @since 0.5.0
  */
-public class Failure {
+public final class Failure {
 
     public static final Failure INSTANCE = Failure.of("Failure");
 

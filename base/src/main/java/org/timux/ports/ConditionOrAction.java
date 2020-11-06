@@ -19,6 +19,7 @@ package org.timux.ports;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class ConditionOrAction<T> {
@@ -30,15 +31,15 @@ public class ConditionOrAction<T> {
     }
 
     public <U> WhenOutClause<U> when(Class<U> eventType) {
+        Objects.requireNonNull(eventType);
         TypeUtils.verifyResponseType(eventType, void.class);
         state.registerMessageType(eventType.getName());
         return new WhenOutClause<>(state);
     }
 
     public <I, O> WhenRequestClause<I, O> when(Class<I> requestType, Class<O> responseType) {
-        if (responseType == void.class) {
-            throw new IllegalArgumentException("response type must not be void");
-        }
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseType);
 
         TypeUtils.verifyResponseType(requestType, responseType);
         state.registerMessageType(requestType.getName());
@@ -46,6 +47,10 @@ public class ConditionOrAction<T> {
     }
 
     public <I, O1, O2> WhenRequestClause<I, Either<O1, O2>> when(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseTypeA);
+        Objects.requireNonNull(responseTypeB);
+
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
         state.registerMessageType(requestType.getName());
         return new WhenRequestClause<>(state);
@@ -54,6 +59,11 @@ public class ConditionOrAction<T> {
     public <I, O1, O2, O3> WhenRequestClause<I, Either3<O1, O2, O3>> when(
             Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Class<O3> responseTypeC)
     {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseTypeA);
+        Objects.requireNonNull(responseTypeB);
+        Objects.requireNonNull(responseTypeC);
+
         TypeUtils.verifyResponseType(requestType, Either3.class, responseTypeA, responseTypeB, responseTypeC);
         state.registerMessageType(requestType.getName());
         return new WhenRequestClause<>(state);
@@ -75,6 +85,7 @@ public class ConditionOrAction<T> {
     }
 
     public <U> PortEventClause<U> with(Class<U> eventType, Object owner) {
+        Objects.requireNonNull(eventType);
         TypeUtils.verifyResponseType(eventType, void.class);
         state.registerWithMessageTypeAndOwner(eventType.getName(), void.class.getName(), owner);
         return new PortEventClause<>(state);
@@ -84,33 +95,52 @@ public class ConditionOrAction<T> {
         return with(messageType, (Object) null);
     }
 
-    public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+    <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType, Object owner) {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseType);
+
         TypeUtils.verifyResponseType(requestType, responseType);
         state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), owner);
         return new PortRequestClause<>(state);
     }
 
     public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB) {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseTypeA);
+        Objects.requireNonNull(responseTypeB);
+
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        state.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), null);
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseTypeA.getName(), responseTypeB.getName(), null);
         return new PortRequestClause<>(state);
     }
 
-    public <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Object owner) {
+    <I, O1, O2> PortRequestClause<I, Either<O1, O2>> with(Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Object owner) {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseTypeA);
+        Objects.requireNonNull(responseTypeB);
+
         TypeUtils.verifyResponseType(requestType, Either.class, responseTypeA, responseTypeB);
-        state.registerWithMessageTypeAndOwner(requestType.getName(), Either.class.getName(), owner);
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseTypeA.getName(), responseTypeB.getName(), owner);
         return new PortRequestClause<>(state);
     }
 
     public <I, O1, O2, O3> PortRequestClause<I, Either3<O1, O2, O3>> with(
             Class<I> requestType, Class<O1> responseTypeA, Class<O2> responseTypeB, Class<O3> responseTypeC)
     {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseTypeA);
+        Objects.requireNonNull(responseTypeB);
+        Objects.requireNonNull(responseTypeC);
+
         TypeUtils.verifyResponseType(requestType, Either3.class, responseTypeA, responseTypeB, responseTypeC);
-        state.registerWithMessageTypeAndOwner(requestType.getName(), Either3.class.getName(), null);
+        state.registerWithMessageTypeAndOwner(requestType.getName(), responseTypeA.getName(), responseTypeB.getName(), responseTypeC.getName(), null);
         return new PortRequestClause<>(state);
     }
 
     public <I, O> PortRequestClause<I, O> with(Class<I> requestType, Class<O> responseType) {
+        Objects.requireNonNull(requestType);
+        Objects.requireNonNull(responseType);
+
         TypeUtils.verifyResponseType(requestType, responseType);
         state.registerWithMessageTypeAndOwner(requestType.getName(), responseType.getName(), null);
         return new PortRequestClause<>(state);

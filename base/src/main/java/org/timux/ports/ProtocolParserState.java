@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Either3;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +49,18 @@ class ProtocolParserState {
     void registerWithMessageTypeAndOwner(String requestType, String responseType, Object owner) {
         currentWithRequestType = requestType;
         currentWithResponseType = responseType;
+        currentWithOwner = owner;
+    }
+
+    void registerWithMessageTypeAndOwner(String requestType, String responseTypeA, String responseTypeB, Object owner) {
+        currentWithRequestType = requestType;
+        currentWithResponseType = Either.class.getName() + "<" + responseTypeA + ", " + responseTypeB + ">";
+        currentWithOwner = owner;
+    }
+
+    void registerWithMessageTypeAndOwner(String requestType, String responseTypeA, String responseTypeB, String responseTypeC, Object owner) {
+        currentWithRequestType = requestType;
+        currentWithResponseType = Either3.class.getName() + "<" + responseTypeA + ", " + responseTypeB + ", " + responseTypeC + ">";
         currentWithOwner = owner;
     }
 

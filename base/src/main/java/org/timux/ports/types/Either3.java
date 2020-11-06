@@ -20,9 +20,11 @@ import org.timux.ports.PortsFuture;
 import org.timux.ports.Request;
 import org.timux.ports.Response;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A union type for three types A, B, and C. The primary use case is as a response type for a
@@ -47,6 +49,67 @@ public abstract class Either3<A, B, C> {
 
     private Either3() {
         //
+    }
+
+    public static <T, U> Either3<Success, T, U> success() {
+        return Either3.a(Success.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure() {
+        return Either3.c(Failure.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure(String message) {
+        return Either3.c(Failure.of(message));
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure(Throwable throwable) {
+        return Either3.c(Failure.of(throwable));
+    }
+
+    public static <T, U> Either3<T, U, Failure> failure(String message, Throwable throwable) {
+        return Either3.c(Failure.of(message, throwable));
+    }
+
+    public static <T, U, V> Either3<T, U, Failure> failure(Either<V, Failure> either) {
+        return either.map(v -> Either3.c(Failure.INSTANCE), Either3::c);
+    }
+
+    public static <T, U, V, W> Either3<T, U, Failure> failure(Either3<V, W, Failure> either3) {
+        return either3.map(v -> Either3.c(Failure.INSTANCE), w -> Either3.c(Failure.INSTANCE), Either3::c);
+    }
+
+    public static <T, U> Either3<T, Nothing, U> nothing() {
+        return Either3.b(Nothing.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, Unknown, U> unknown() {
+        return Either3.b(Unknown.INSTANCE);
+    }
+
+    /**
+     * Returns an {@link Either3} containing either the return value of the {@code supplier},
+     * {@link Nothing} in case the {@code supplier} returns null,
+     * or {@link Failure} in case the {@code supplier} throws an exception.
+     *
+     * <p>If you want to handle the case that the {@code supplier} returns null in combination with
+     * the exception case, use {@link Either#valueOrFailure} instead.
+     *
+     * <p>If you want to ignore the return value of the {@code supplier}, use {@link Either#successOrFailure(Supplier)}
+     * instead.
+     */
+    public static <T> Either3<T, Nothing, Failure> valueOrNothingOrFailure(Supplier<T> supplier) {
+        try {
+            T t = supplier.get();
+
+            if (t == null) {
+                return Either3.b(Nothing.INSTANCE);
+            } else {
+                return Either3.a(t);
+            }
+        } catch (Exception e) {
+            return Either3.c(Failure.of(e));
+        }
     }
 
     /**
@@ -176,6 +239,68 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
+     * Returns the A constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract A getAOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns the B constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract B getBOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns the C constituent of this union or throws a {@link NoSuchElementException} if it
+     * doesn't exist.
+     */
+    public abstract C getCOrThrow() throws NoSuchElementException;
+
+    /**
+     * Returns true if this union represents an instance of {@link Success},
+     * and false otherwise.
+     */
+    public boolean isSuccess() {
+        return map(
+                a -> a.getClass() == Success.class,
+                b -> b.getClass() == Success.class,
+                c -> c.getClass() == Success.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Failure},
+     * and false otherwise.
+     */
+    public boolean isFailure() {
+        return map(
+                a -> a.getClass() == Failure.class,
+                b -> b.getClass() == Failure.class,
+                c -> c.getClass() == Failure.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Nothing},
+     * and false otherwise.
+     */
+    public boolean isNothing() {
+        return map(
+                a -> a.getClass() == Nothing.class,
+                b -> b.getClass() == Nothing.class,
+                c -> c.getClass() == Nothing.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Unknown},
+     * and false otherwise.
+     */
+    public boolean isUnknown() {
+        return map(
+                a -> a.getClass() == Unknown.class,
+                b -> b.getClass() == Unknown.class,
+                c -> c.getClass() == Unknown.class);
+    }
+
+    /**
      * Executes the provided runnable and returns this union.
      */
     public Either3<A, B, C> finallyDo(Runnable runnable) {
@@ -191,7 +316,7 @@ public abstract class Either3<A, B, C> {
     /**
      * Creates an instance of this union that contains an A (non-null).
      */
-    public static <A, B, C> Either3<A, B, C> a(A a) {
+    public static <A, B, C> Either3<A, B, C> a(A a) throws IllegalArgumentException {
         if (a == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -287,13 +412,28 @@ public abstract class Either3<A, B, C> {
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.of(a), Optional.empty(), Optional.empty());
             }
+
+            @Override
+            public A getAOrThrow() {
+                return a;
+            }
+
+            @Override
+            public B getBOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public C getCOrThrow() {
+                throw new NoSuchElementException();
+            }
         };
     }
 
     /**
      * Creates an instance of this union that contains a B (non-null).
      */
-    public static <A, B, C> Either3<A, B, C> b(B b) {
+    public static <A, B, C> Either3<A, B, C> b(B b) throws IllegalArgumentException {
         if (b == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -390,13 +530,28 @@ public abstract class Either3<A, B, C> {
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.empty(), Optional.of(b), Optional.empty());
             }
+
+            @Override
+            public A getAOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public B getBOrThrow() {
+                return b;
+            }
+
+            @Override
+            public C getCOrThrow() {
+                throw new NoSuchElementException();
+            }
         };
     }
 
     /**
      * Creates an instance of this union that contains a C (non-null).
      */
-    public static <A, B, C> Either3<A, B, C> c(C c) {
+    public static <A, B, C> Either3<A, B, C> c(C c) throws IllegalArgumentException {
         if (c == null) {
             throw new IllegalArgumentException("argument must not be null");
         }
@@ -514,6 +669,21 @@ public abstract class Either3<A, B, C> {
             @Override
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.empty(), Optional.empty(), Optional.of(c));
+            }
+
+            @Override
+            public A getAOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public B getBOrThrow() {
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public C getCOrThrow() {
+                return c;
             }
         };
     }
