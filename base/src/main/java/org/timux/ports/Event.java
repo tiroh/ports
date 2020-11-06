@@ -243,20 +243,31 @@ public class Event<T> {
             }
         }
 
-        for (i--; i >= 0; i--) {
-            PortEntry<T> portEntry = p.get(i);
+        try {
+            for (i--; i >= 0; i--) {
+                PortEntry<T> portEntry;
 
-            Object receiver = portEntry.receiverRef.get();
+                synchronized (this) {
+                    // Synchronize this so that no disconnect can happen in parallel.
+                    portEntry = p.get(i);
+                }
 
-            if (receiver == null) {
-                continue;
+                Object receiver = portEntry.receiverRef.get();
+
+                if (receiver == null) {
+                    continue;
+                }
+
+                if (updateDomains) {
+                    portEntry.receiverDomain = DomainManager.getDomain(receiver);
+                }
+
+                portEntry.receiverDomain.dispatch(portEntry.port, payload, owner, receiver);
             }
-
-            if (updateDomains) {
-                portEntry.receiverDomain = DomainManager.getDomain(receiver);
-            }
-
-            portEntry.receiverDomain.dispatch(portEntry.port, payload, owner, receiver);
+        } catch (IndexOutOfBoundsException e) {
+            // The "p.get(i)" above could cause this if a disconnect happened while
+            // the loop was executing.
+            return;
         }
     }
 
