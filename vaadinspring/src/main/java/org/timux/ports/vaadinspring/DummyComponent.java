@@ -14,29 +14,16 @@
  * limitations under the License.
  */
 
-package org.timux.ports.types;
+package org.timux.ports.vaadinspring;
 
 /**
- * A type representing the absence of a value. This is in contrast to an empty value which
- * is represented by {@link Empty}.
- *
- * <p> When in use, <em>this class should always be instantiated</em>
- * so that the instanceof operator can be used. Null is not an admissible value for this type.
- *
- * @see Empty
- * @see Success
- * @see Failure
- * @see Unknown
- * @see Either
- * @see Either3
- *
- * @since 0.5.0
+ * This component is used internally by the {@link PortConnector}.
  */
-public final class Nothing {
+class DummyComponent {
 
-    public static final Nothing INSTANCE = new Nothing();
+    public final static DummyComponent INSTANCE = new DummyComponent();
 
-    private Nothing() {
+    private DummyComponent() {
         //
     }
 }

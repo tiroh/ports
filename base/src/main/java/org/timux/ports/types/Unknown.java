@@ -22,6 +22,7 @@ package org.timux.ports.types;
  *
  * @see Success
  * @see Failure
+ * @see Empty
  * @see Nothing
  * @see Either
  * @see Either3

@@ -30,7 +30,13 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.stereotype.Component;
-import org.timux.ports.*;
+import org.timux.ports.EventWrapper;
+import org.timux.ports.In;
+import org.timux.ports.MissingPort;
+import org.timux.ports.Out;
+import org.timux.ports.PortNotConnectedException;
+import org.timux.ports.Ports;
+import org.timux.ports.PortsOptions;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -54,8 +60,8 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
     private static final Logger logger = LoggerFactory.getLogger(PortConnector.class);
 
-    private Map<Object, Scope> beans = new HashMap<>();
-    private Scope rootScope = new Scope(ROOT_SCOPE);
+    private final Map<Object, Scope> beans = new HashMap<>();
+    private final Scope rootScope = new Scope(ROOT_SCOPE);
 
     private final Map<String, Integer> SCOPE_ORDERING = new HashMap<>();
 
@@ -73,12 +79,12 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     }
 
     @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
+    public synchronized void postProcessBeanFactory(ConfigurableListableBeanFactory configurableListableBeanFactory) throws BeansException {
         beanFactory = configurableListableBeanFactory;
     }
 
     @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    public synchronized Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         boolean isPortsComponent = false;
 
         for (Field field : bean.getClass().getDeclaredFields()) {
@@ -132,7 +138,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     }
 
     @Override
-    public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
+    public synchronized void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
         Scope beanScope = beans.get(bean);
 
         if (beanScope != null) {
@@ -143,7 +149,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 //        System.out.println(rootScope.toString());
     }
 
-    private void connectParentScopes(Scope scope, Object bean, String beanName) {
+    private synchronized void connectParentScopes(Scope scope, Object bean, String beanName) {
         Scope currentScope = scope;
         boolean isScopeInUi = isScopeInUi(scope);
 
@@ -153,7 +159,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         } while (currentScope != null);
     }
 
-    private void connectChildScopes(Scope scope, Object bean, String beanName) {
+    private synchronized void connectChildScopes(Scope scope, Object bean, String beanName) {
         boolean isScopeInSession = isScopeInUi(scope);
 
         for (Scope childScope : scope.getChildScopes()) {
@@ -162,27 +168,27 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         }
     }
 
-    private void disconnectCompletely(Scope beanScope, Object bean, String beanName) {
+    private synchronized void disconnectCompletely(Scope beanScope, Object bean, String beanName) {
         disconnectParentScopes(beanScope, bean, beanName);
         disconnectChildScopes(beanScope, bean, beanName);
         beans.remove(bean);
     }
 
-    private void disconnectParentScopes(Scope currentScope, Object bean, String beanName) {
+    private synchronized void disconnectParentScopes(Scope currentScope, Object bean, String beanName) {
         do {
             disconnectBeans(currentScope, bean, beanName);
             currentScope = currentScope.getParentScope();
         } while (currentScope != null);
     }
 
-    private void disconnectChildScopes(Scope scope, Object bean, String beanName) {
+    private synchronized void disconnectChildScopes(Scope scope, Object bean, String beanName) {
         for (Scope childScope : scope.getChildScopes()) {
             disconnectChildScopes(childScope, bean, beanName);
             disconnectBeans(childScope, bean, beanName);
         }
     }
 
-    private void connectBeans(Scope scope, Object bean, String beanName, boolean isBeanScopeInUi) {
+    private synchronized void connectBeans(Scope scope, Object bean, String beanName, boolean isBeanScopeInUi) {
         final boolean isScopeInUi = isScopeInUi(scope);
 
         for (Map.Entry<Object, String> e : scope.getBeans()) {
@@ -190,6 +196,10 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
             final String otherBeanName = e.getValue();
 
             if (bean == otherBean) {
+                // We call this in order to ensure that all ports of the bean are instantiated.
+                // (In the rare case that the bean is the only Ports component,
+                // its ports would remain uninstantiated.)
+                Ports.connectDirected(bean, DummyComponent.INSTANCE, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
                 continue;
             }
 
@@ -241,7 +251,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         logger.debug("Connecting to broadcaster: {}", beanName);
     }
 
-    private void disconnectBeans(Scope scope, Object bean, String beanName) {
+    private synchronized void disconnectBeans(Scope scope, Object bean, String beanName) {
         for (Map.Entry<Object, String> e : scope.getBeans()) {
             if (bean != e.getKey()) {
                 Ports.disconnect(bean).and(e.getKey());
@@ -249,7 +259,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         }
     }
 
-    void onSessionDestroyed(VaadinSession session) {
+    synchronized void onSessionDestroyed(VaadinSession session) {
         Scope scope = findScope(rootScope, session);
 
         if (scope == null) {
@@ -263,7 +273,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         scope.getParentScope().removeChildScope(session);
     }
 
-    void onUiDestroyed(UI ui) {
+    synchronized void onUiDestroyed(UI ui) {
 //        System.out.println(rootScope);
         Scope scope = findScope(rootScope, ui);
 
@@ -279,7 +289,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 //        System.out.println(rootScope);
     }
 
-    private void disconnectChildBeans(Scope scope) {
+    private synchronized void disconnectChildBeans(Scope scope) {
         scope.getBeans().forEach(e -> {
             Object bean = e.getKey();
             String beanName = e.getValue();
@@ -298,7 +308,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 //        System.out.println(rootScope.toString());
     }
 
-    private Scope findScope(Scope parent, Object key) {
+    private synchronized Scope findScope(Scope parent, Object key) {
         Scope scope = parent.findChildScope(key);
 
         if (scope != null) {
@@ -316,7 +326,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         return null;
     }
 
-    private Scope getScope(String scopeName, Object bean) {
+    private synchronized Scope getScope(String scopeName, Object bean) {
         Scope scope = rootScope.getChildScope(SINGLETON_SCOPE);
 
         Integer scopeOrder = SCOPE_ORDERING.get(scopeName);
@@ -370,7 +380,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         return scope;
     }
 
-    private boolean isScopeInUi(Scope scope) {
+    private synchronized boolean isScopeInUi(Scope scope) {
         if (SINGLETON_SCOPE.equals(scope.getName()) || ROOT_SCOPE.equals(scope.getName())) {
             return false;
         }
@@ -391,7 +401,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
                 fromName, Integer.toHexString(from.hashCode()), operator, toName, Integer.toHexString(to.hashCode()));
     }
 
-    void verify() {
+    synchronized void verify() {
         List<MissingPort> missingPorts = new ArrayList<>();
 
         Method verifyMethod;
@@ -411,7 +421,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
     }
 
     @SuppressWarnings("unchecked")
-    void verifyScope(Scope scope, List<MissingPort> missingPorts, Method verifyMethod) {
+    synchronized void verifyScope(Scope scope, List<MissingPort> missingPorts, Method verifyMethod) {
         scope.getBeans().forEach(e -> {
             try {
                 List<MissingPort> newMissingPorts =

@@ -21,6 +21,7 @@ package org.timux.ports.types;
  * so that the instanceof operator can be used. Null is not an admissible value for this type.
  *
  * @see Failure
+ * @see Empty
  * @see Nothing
  * @see Unknown
  * @see Either

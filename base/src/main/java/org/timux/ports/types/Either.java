@@ -34,6 +34,7 @@ import java.util.function.Supplier;
  * @param <A> The first type.
  * @param <B> The second type.
  * @see Either3
+ * @see Empty
  * @see Nothing
  * @see Unknown
  * @see Pair

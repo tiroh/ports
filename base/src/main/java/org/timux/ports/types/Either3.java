@@ -34,6 +34,7 @@ import java.util.function.Supplier;
  * use of this union type.
  *
  * @see Either
+ * @see Empty
  * @see Nothing
  * @see Unknown
  * @see Pair

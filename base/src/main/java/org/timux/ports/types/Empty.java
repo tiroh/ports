@@ -17,26 +17,27 @@
 package org.timux.ports.types;
 
 /**
- * A type representing the absence of a value. This is in contrast to an empty value which
- * is represented by {@link Empty}.
+ * A type representing "emptiness".
+ * (For example, a list or a string can be "empty".)
+ * This is in contrast to the absence of any value which is represented by {@link Nothing}.
  *
  * <p> When in use, <em>this class should always be instantiated</em>
  * so that the instanceof operator can be used. Null is not an admissible value for this type.
  *
- * @see Empty
+ * @see Nothing
  * @see Success
  * @see Failure
  * @see Unknown
  * @see Either
  * @see Either3
  *
- * @since 0.5.0
+ * @since 0.5.9
  */
-public final class Nothing {
+public class Empty {
 
-    public static final Nothing INSTANCE = new Nothing();
+    public static final Empty INSTANCE = new Empty();
 
-    private Nothing() {
+    private Empty() {
         //
     }
 }
