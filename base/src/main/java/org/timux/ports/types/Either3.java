@@ -100,6 +100,10 @@ public abstract class Either3<A, B, C> {
         return either3.map(v -> Either3.c(Failure.INSTANCE), w -> Either3.c(Failure.INSTANCE), Either3::c);
     }
 
+    public static <T, U> Either3<T, Empty, U> empty() {
+        return Either3.b(Empty.INSTANCE);
+    }
+
     public static <T, U> Either3<T, Nothing, U> nothing() {
         return Either3.b(Nothing.INSTANCE);
     }
@@ -300,17 +304,6 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
-     * Returns true if this union represents an instance of {@link Nothing},
-     * and false otherwise.
-     */
-    public boolean isNothing() {
-        return map(
-                a -> a.getClass() == Nothing.class,
-                b -> b.getClass() == Nothing.class,
-                c -> c.getClass() == Nothing.class);
-    }
-
-    /**
      * Returns true if this union represents an instance of {@link Empty},
      * and false otherwise.
      */
@@ -319,6 +312,17 @@ public abstract class Either3<A, B, C> {
                 a -> a.getClass() == Empty.class,
                 b -> b.getClass() == Empty.class,
                 c -> c.getClass() == Empty.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Nothing},
+     * and false otherwise.
+     */
+    public boolean isNothing() {
+        return map(
+                a -> a.getClass() == Nothing.class,
+                b -> b.getClass() == Nothing.class,
+                c -> c.getClass() == Nothing.class);
     }
 
     /**

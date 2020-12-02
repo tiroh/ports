@@ -385,12 +385,14 @@ public class EitherTests {
         Either<Success, Failure> failureEitherT = Either.failure(new RuntimeException());
         Either<Success, Failure> failureEitherMsgT = Either.failure("message2", new RuntimeException());
 
+        Either<Success, Empty> emptyEither = Either.empty();
         Either<Success, Nothing> nothingEither = Either.nothing();
         Either<Success, Unknown> unknownEither = Either.unknown();
 
         assertTrue(successEither.isSuccess());
         assertFalse(successEither.isFailure());
         assertFalse(successEither.isUnknown());
+        assertFalse(successEither.isEmpty());
         assertFalse(successEither.isNothing());
         assertTrue(successEither.getA().isPresent());
         assertFalse(successEither.getB().isPresent());
@@ -398,6 +400,7 @@ public class EitherTests {
         assertFalse(failureEither.isSuccess());
         assertTrue(failureEither.isFailure());
         assertFalse(failureEither.isUnknown());
+        assertFalse(failureEither.isEmpty());
         assertFalse(failureEither.isNothing());
         assertFalse(failureEither.getA().isPresent());
         assertTrue(failureEither.getB().isPresent());
@@ -405,6 +408,7 @@ public class EitherTests {
         assertFalse(failureEitherMsg.isSuccess());
         assertTrue(failureEitherMsg.isFailure());
         assertFalse(failureEitherMsg.isUnknown());
+        assertFalse(failureEitherMsg.isEmpty());
         assertFalse(failureEitherMsg.isNothing());
         assertFalse(failureEitherMsg.getA().isPresent());
         assertEquals("message1", failureEitherMsg.getB().get().getMessage());
@@ -412,6 +416,7 @@ public class EitherTests {
         assertFalse(failureEitherT.isSuccess());
         assertTrue(failureEitherT.isFailure());
         assertFalse(failureEitherT.isUnknown());
+        assertFalse(failureEitherT.isEmpty());
         assertFalse(failureEitherT.isNothing());
         assertFalse(failureEitherT.getA().isPresent());
         assertSame(failureEitherT.getB().get().getThrowable().get().getClass(), RuntimeException.class);
@@ -419,22 +424,33 @@ public class EitherTests {
         assertFalse(failureEitherMsgT.isSuccess());
         assertTrue(failureEitherMsgT.isFailure());
         assertFalse(failureEitherMsgT.isUnknown());
+        assertFalse(failureEitherMsgT.isEmpty());
         assertFalse(failureEitherMsgT.isNothing());
         assertFalse(failureEitherMsgT.getA().isPresent());
         assertEquals("message2", failureEitherMsgT.getB().get().getMessage());
         assertSame(failureEitherMsgT.getB().get().getThrowable().get().getClass(), RuntimeException.class);
 
+        assertFalse(emptyEither.isSuccess());
+        assertFalse(emptyEither.isFailure());
+        assertFalse(emptyEither.isUnknown());
+        assertTrue(emptyEither.isEmpty());
+        assertFalse(emptyEither.isNothing());
+        assertFalse(emptyEither.getA().isPresent());
+        assertTrue(emptyEither.getB().isPresent());
+
         assertFalse(nothingEither.isSuccess());
         assertFalse(nothingEither.isFailure());
-        assertTrue(nothingEither.isNothing());
         assertFalse(nothingEither.isUnknown());
+        assertFalse(nothingEither.isEmpty());
+        assertTrue(nothingEither.isNothing());
         assertFalse(nothingEither.getA().isPresent());
         assertTrue(nothingEither.getB().isPresent());
 
         assertFalse(unknownEither.isSuccess());
         assertFalse(unknownEither.isFailure());
-        assertFalse(unknownEither.isNothing());
         assertTrue(unknownEither.isUnknown());
+        assertFalse(unknownEither.isEmpty());
+        assertFalse(unknownEither.isNothing());
         assertFalse(unknownEither.getA().isPresent());
         assertTrue(unknownEither.getB().isPresent());
     }
@@ -448,12 +464,14 @@ public class EitherTests {
         Either3<Success, String, Failure> failureEitherT = Either3.failure(new RuntimeException());
         Either3<Success, Integer, Failure> failureEitherMsgT = Either3.failure("message2", new RuntimeException());
 
+        Either3<Success, Empty, Failure> emptyEither = Either3.empty();
         Either3<Success, Nothing, Failure> nothingEither = Either3.nothing();
         Either3<Success, Unknown, Failure> unknownEither = Either3.unknown();
 
         assertTrue(successEither.isSuccess());
         assertFalse(successEither.isFailure());
         assertFalse(successEither.isUnknown());
+        assertFalse(successEither.isEmpty());
         assertFalse(successEither.isNothing());
         assertTrue(successEither.getA().isPresent());
         assertFalse(successEither.getB().isPresent());
@@ -462,6 +480,7 @@ public class EitherTests {
         assertFalse(failureEither.isSuccess());
         assertTrue(failureEither.isFailure());
         assertFalse(failureEither.isUnknown());
+        assertFalse(failureEither.isEmpty());
         assertFalse(failureEither.isNothing());
         assertFalse(failureEither.getA().isPresent());
         assertFalse(failureEither.getB().isPresent());
@@ -470,6 +489,7 @@ public class EitherTests {
         assertFalse(failureEitherMsg.isSuccess());
         assertTrue(failureEitherMsg.isFailure());
         assertFalse(failureEitherMsg.isUnknown());
+        assertFalse(failureEitherMsg.isEmpty());
         assertFalse(failureEitherMsg.isNothing());
         assertFalse(failureEitherMsg.getA().isPresent());
         assertFalse(failureEitherMsg.getB().isPresent());
@@ -478,6 +498,7 @@ public class EitherTests {
         assertFalse(failureEitherT.isSuccess());
         assertTrue(failureEitherT.isFailure());
         assertFalse(failureEitherT.isUnknown());
+        assertFalse(failureEitherT.isEmpty());
         assertFalse(failureEitherT.isNothing());
         assertFalse(failureEitherT.getA().isPresent());
         assertFalse(failureEitherT.getB().isPresent());
@@ -486,24 +507,36 @@ public class EitherTests {
         assertFalse(failureEitherMsgT.isSuccess());
         assertTrue(failureEitherMsgT.isFailure());
         assertFalse(failureEitherMsgT.isUnknown());
+        assertFalse(failureEitherMsgT.isEmpty());
         assertFalse(failureEitherMsgT.isNothing());
         assertFalse(failureEitherMsgT.getA().isPresent());
         assertFalse(failureEitherMsgT.getB().isPresent());
         assertEquals("message2", failureEitherMsgT.getC().get().getMessage());
         assertSame(failureEitherMsgT.getC().get().getThrowable().get().getClass(), RuntimeException.class);
 
+        assertFalse(emptyEither.isSuccess());
+        assertFalse(emptyEither.isFailure());
+        assertFalse(emptyEither.isUnknown());
+        assertTrue(emptyEither.isEmpty());
+        assertFalse(emptyEither.isNothing());
+        assertFalse(emptyEither.getA().isPresent());
+        assertTrue(emptyEither.getB().isPresent());
+        assertFalse(emptyEither.getC().isPresent());
+
         assertFalse(nothingEither.isSuccess());
         assertFalse(nothingEither.isFailure());
-        assertTrue(nothingEither.isNothing());
         assertFalse(nothingEither.isUnknown());
+        assertFalse(nothingEither.isEmpty());
+        assertTrue(nothingEither.isNothing());
         assertFalse(nothingEither.getA().isPresent());
         assertTrue(nothingEither.getB().isPresent());
         assertFalse(nothingEither.getC().isPresent());
 
         assertFalse(unknownEither.isSuccess());
         assertFalse(unknownEither.isFailure());
-        assertFalse(unknownEither.isNothing());
         assertTrue(unknownEither.isUnknown());
+        assertFalse(unknownEither.isNothing());
+        assertFalse(unknownEither.isEmpty());
         assertFalse(unknownEither.getA().isPresent());
         assertTrue(unknownEither.getB().isPresent());
         assertFalse(unknownEither.getC().isPresent());

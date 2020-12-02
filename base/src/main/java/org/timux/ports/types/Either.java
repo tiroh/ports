@@ -105,6 +105,10 @@ public abstract class Either<A, B> {
         return either3.map(u -> Either.b(Failure.INSTANCE), v -> Either.b(Failure.INSTANCE), Either::b);
     }
 
+    public static <T> Either<T, Empty> empty() {
+        return Either.b(Empty.INSTANCE);
+    }
+
     public static <T> Either<T, Nothing> nothing() {
         return Either.b(Nothing.INSTANCE);
     }
@@ -326,19 +330,19 @@ public abstract class Either<A, B> {
     }
 
     /**
-     * Returns true if this union represents an instance of {@link Nothing},
-     * and false otherwise.
-     */
-    public boolean isNothing() {
-        return map(a -> a.getClass() == Nothing.class, b -> b.getClass() == Nothing.class);
-    }
-
-    /**
      * Returns true if this union represents an instance of {@link Empty},
      * and false otherwise.
      */
     public boolean isEmpty() {
         return map(a -> a.getClass() == Empty.class, b -> b.getClass() == Empty.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Nothing},
+     * and false otherwise.
+     */
+    public boolean isNothing() {
+        return map(a -> a.getClass() == Nothing.class, b -> b.getClass() == Nothing.class);
     }
 
     /**
