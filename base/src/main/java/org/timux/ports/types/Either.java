@@ -59,6 +59,24 @@ public abstract class Either<A, B> {
         return optional.isPresent() ? Either.a(optional.get()) : Either.b(orElse);
     }
 
+    /**
+     * Returns an {@link Either} containing either the provided {@code value} if it is non-null
+     * and non-blank, or {@link Empty} if it is null or blank.
+     *
+     * @see Either3#of(String)
+     */
+    public static Either<String, Empty> of(String value) {
+        if (value != null) {
+            for (int i = value.length() - 1; i >= 0; i--) {
+                if (!Character.isWhitespace(value.charAt(i))) {
+                    return Either.a(value);
+                }
+            }
+        }
+
+        return Either.b(Empty.INSTANCE);
+    }
+
     public static <T> Either<Success, T> success() {
         return Either.a(Success.INSTANCE);
     }
@@ -313,6 +331,14 @@ public abstract class Either<A, B> {
      */
     public boolean isNothing() {
         return map(a -> a.getClass() == Nothing.class, b -> b.getClass() == Nothing.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Empty},
+     * and false otherwise.
+     */
+    public boolean isEmpty() {
+        return map(a -> a.getClass() == Empty.class, b -> b.getClass() == Empty.class);
     }
 
     /**

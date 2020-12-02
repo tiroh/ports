@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
+import org.timux.ports.types.Empty;
 import org.timux.ports.types.Failure;
 import org.timux.ports.types.Nothing;
 import org.timux.ports.types.Success;
@@ -15,12 +16,68 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class EitherTests {
+
+    @Test
+    public void eitherOn() {
+        Either<Integer, Double> intEither = Either.a(1);
+        Either<Integer, Double> doubleEither = Either.b(2.0);
+
+        Container<Integer> intC = Container.of(null);
+        Container<Double> doubleC = Container.of(null);
+
+        intEither.on(
+                integer -> intC.value = integer,
+                dbl -> fail("no double expected")
+        );
+
+        doubleEither.on(
+                integer -> fail("no integer expected"),
+                dbl -> doubleC.value = dbl
+        );
+
+        assertEquals(1, intC.value);
+        assertEquals(2.0, doubleC.value);
+    }
+
+    @Test
+    public void either3On() {
+        Either3<Integer, Float, Double> intEither3 = Either3.a(1);
+        Either3<Integer, Float, Double> floatEither3 = Either3.b(2.0f);
+        Either3<Integer, Float, Double> doubleEither3 = Either3.c(3.0);
+
+        Container<Integer> intC = Container.of(null);
+        Container<Double> doubleC = Container.of(null);
+        Container<Float> floatC = Container.of(null);
+
+        intEither3.on(
+                integer -> intC.value = integer,
+                flt -> fail("no float expected"),
+                dbl -> fail("no double expected")
+        );
+
+        floatEither3.on(
+                integer -> fail("no integer expected"),
+                flt -> floatC.value = flt,
+                dbl -> fail("no double expected")
+        );
+
+        doubleEither3.on(
+                integer -> fail("no integer expected"),
+                flt -> fail("no float expected"),
+                dbl -> doubleC.value = dbl
+        );
+
+        assertEquals(1, intC.value);
+        assertEquals(2.0f, floatC.value);
+        assertEquals(3.0, doubleC.value);
+    }
 
     @Test
     public void eitherMap() {
@@ -590,5 +647,49 @@ public class EitherTests {
         assertThrows(NoSuchElementException.class, either3C::getAOrThrow);
         assertThrows(NoSuchElementException.class, either3C::getBOrThrow);
         assertEquals("x", either3C.getCOrThrow());
+    }
+
+    @Test
+    public void ofString() {
+        Either<String, Empty> emptyEitherA = Either.of(null);
+        Either<String, Empty> emptyEitherB = Either.of("  \n \r \t  ");
+        Either<String, Empty> valueEither = Either.of("  \n \r \t test1  ");
+
+        Either3<String, Empty, Nothing> nothingEither3 = Either3.of(null);
+        Either3<String, Empty, Nothing> emptyEither3 = Either3.of("  \n \r \t  ");
+        Either3<String, Empty, Nothing> valueEither3 = Either3.of("  \n \r \t test2  ");
+
+        emptyEitherA.on(
+                value -> fail("no value expected"),
+                empty -> {}
+        );
+
+        emptyEitherB.on(
+                value -> fail("no value expected"),
+                empty -> {}
+        );
+
+        valueEither.on(
+                value -> assertEquals("  \n \r \t test1  ", value),
+                empty -> fail("no Empty expected")
+        );
+
+        nothingEither3.on(
+                value -> fail("no value expected"),
+                empty -> fail("no Empty expected"),
+                nothing -> {}
+        );
+
+        emptyEither3.on(
+                value -> fail("no value expected"),
+                empty -> {},
+                nothing -> fail("no Nothing expected")
+        );
+
+        valueEither3.on(
+                value -> assertEquals("  \n \r \t test2  ", value),
+                empty -> fail("no Empty expected"),
+                nothing -> fail("no Nothing expected")
+        );
     }
 }

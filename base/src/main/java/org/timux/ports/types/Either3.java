@@ -52,6 +52,26 @@ public abstract class Either3<A, B, C> {
         //
     }
 
+    /**
+     * Returns an {@link Either3} containing either the provided {@code value} if it is non-null
+     * and non-blank, {@link Empty} if it is blank, or {@link Nothing} if it is null.
+     *
+     * @see Either#of(String)
+     */
+    public static Either3<String, Empty, Nothing> of(String value) {
+        if (value == null) {
+            return Either3.c(Nothing.INSTANCE);
+        } else {
+            for (int i = value.length() - 1; i >= 0; i--) {
+                if (!Character.isWhitespace(value.charAt(i))) {
+                    return Either3.a(value);
+                }
+            }
+
+            return Either3.b(Empty.INSTANCE);
+        }
+    }
+
     public static <T, U> Either3<Success, T, U> success() {
         return Either3.a(Success.INSTANCE);
     }
@@ -288,6 +308,17 @@ public abstract class Either3<A, B, C> {
                 a -> a.getClass() == Nothing.class,
                 b -> b.getClass() == Nothing.class,
                 c -> c.getClass() == Nothing.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Empty},
+     * and false otherwise.
+     */
+    public boolean isEmpty() {
+        return map(
+                a -> a.getClass() == Empty.class,
+                b -> b.getClass() == Empty.class,
+                c -> c.getClass() == Empty.class);
     }
 
     /**
