@@ -19,7 +19,6 @@ package org.timux.ports.types;
 import org.timux.ports.PortsFuture;
 import org.timux.ports.Response;
 
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -289,6 +288,10 @@ public abstract class Either<A, B> {
 
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
+     *
+     * @see #getB()
+     * @see #getAOrThrow()
+     * @see #getBOrThrow()
      */
     public Optional<A> getA() {
         return map(Optional::ofNullable, b -> Optional.empty());
@@ -296,22 +299,38 @@ public abstract class Either<A, B> {
 
     /**
      * Returns the B constituent of this union in the form of an {@link Optional}.
+     *
+     * @see #getA()
+     * @see #getAOrThrow()
+     * @see #getBOrThrow()
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable);
     }
 
     /**
-     * Returns the A constituent of this union or throws a {@link NoSuchElementException} if it
-     * doesn't exist.
+     * Returns the A constituent of this union if it exists. If it doesn't exist, a
+     * {@link NoSuchConstituentException} is thrown. If the B constituent of this union
+     * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
+     * provided as the cause of the {@link NoSuchConstituentException}.
+     *
+     * @see #getBOrThrow()
+     * @see #getA()
+     * @see #getB()
      */
-    public abstract A getAOrThrow() throws NoSuchElementException;
+    public abstract A getAOrThrow() throws NoSuchConstituentException;
 
     /**
-     * Returns the B constituent of this union or throws a {@link NoSuchElementException} if it
-     * doesn't exist.
+     * Returns the B constituent of this union if it exists. If it doesn't exist, a
+     * {@link NoSuchConstituentException} is thrown. If the A constituent of this union
+     * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
+     * provided as the cause of the {@link NoSuchConstituentException}.
+     *
+     * @see #getAOrThrow()
+     * @see #getA()
+     * @see #getB()
      */
-    public abstract B getBOrThrow() throws NoSuchElementException;
+    public abstract B getBOrThrow() throws NoSuchConstituentException;
 
     /**
      * Returns true if this union represents an instance of {@link Success},
@@ -462,7 +481,8 @@ public abstract class Either<A, B> {
 
             @Override
             public B getBOrThrow() {
-                throw new NoSuchElementException();
+                throwGetOrThrowException(a);
+                return null; // unreachable
             }
         };
     }
@@ -581,7 +601,8 @@ public abstract class Either<A, B> {
 
             @Override
             public A getAOrThrow() {
-                throw new NoSuchElementException();
+                throwGetOrThrowException(b);
+                return null; // unreachable
             }
 
             @Override
@@ -589,5 +610,27 @@ public abstract class Either<A, B> {
                 return b;
             }
         };
+    }
+
+    // This method is used by both Either and Either3.
+    static void throwGetOrThrowException(Object x) {
+        if (x instanceof Failure) {
+            Failure failure = (Failure) x;
+
+            Throwable cause = failure.getThrowable().orElse(null);
+            String message = failure.getMessage();
+
+            if (cause != null) {
+                if (!message.isEmpty()) {
+                    throw new NoSuchConstituentException(message, cause);
+                }
+
+                throw new NoSuchConstituentException(cause);
+            } else if (!message.isEmpty()) {
+                throw new NoSuchConstituentException(message);
+            }
+        }
+
+        throw new NoSuchConstituentException();
     }
 }

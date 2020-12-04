@@ -7,11 +7,11 @@ import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Empty;
 import org.timux.ports.types.Failure;
+import org.timux.ports.types.NoSuchConstituentException;
 import org.timux.ports.types.Nothing;
 import org.timux.ports.types.Success;
 import org.timux.ports.types.Unknown;
 
-import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -655,31 +655,126 @@ public class EitherTests {
     }
 
     @Test
-    public void getOrThrow() {
+    public void eitherGetOrThrow() {
         Either<Integer, String> eitherA = Either.a(1);
         Either<Integer, String> eitherB = Either.b("a");
 
+        Either<Failure, Integer> failureAEither = Either.a(Failure.of(new MySpecialTestException("test1A")));
+        Either<Integer, Failure> failureBEither = Either.failure("m1B", new MySpecialTestException("test1B"));
+
+        Either<Integer, Failure> messageEither = Either.failure("message");
+
+        assertEquals(1, eitherA.getAOrThrow());
+        assertThrows(NoSuchConstituentException.class, eitherA::getBOrThrow);
+
+        assertThrows(NoSuchConstituentException.class, eitherB::getAOrThrow);
+        assertEquals("a", eitherB.getBOrThrow());
+
+        try {
+            failureAEither.getBOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(MySpecialTestException.class.getName() + ": " + "test1A", e.getMessage());
+            assertEquals(e.getCause().getMessage(), "test1A");
+        }
+
+        try {
+            failureBEither.getAOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals("m1B", e.getMessage());
+            assertEquals(e.getCause().getMessage(), "test1B");
+        }
+
+        try {
+            messageEither.getAOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals("message", e.getMessage());
+            assertNull(e.getCause());
+        }
+    }
+
+    @Test
+    public void either3GetOrThrow() {
         Either3<Integer, Float, String> either3A = Either3.a(10);
         Either3<Integer, Float, String> either3B = Either3.b(2.0f);
         Either3<Integer, Float, String> either3C = Either3.c("x");
 
-        assertEquals(1, eitherA.getAOrThrow());
-        assertThrows(NoSuchElementException.class, eitherA::getBOrThrow);
-
-        assertThrows(NoSuchElementException.class, eitherB::getAOrThrow);
-        assertEquals("a", eitherB.getBOrThrow());
+        Either3<Failure, Integer, Double> failureAEither3 = Either3.a(Failure.of(new MySpecialTestException("test2A")));
+        Either3<Integer, Failure, Double> failureBEither3 = Either3.b(Failure.of(new MySpecialTestException("test2B")));
+        Either3<Integer, Double, Failure> failureCEither3 = Either3.failure(new MySpecialTestException("test2C"));
 
         assertEquals(10, either3A.getAOrThrow());
-        assertThrows(NoSuchElementException.class, either3A::getBOrThrow);
-        assertThrows(NoSuchElementException.class, either3A::getCOrThrow);
+        assertThrows(NoSuchConstituentException.class, either3A::getBOrThrow);
+        assertThrows(NoSuchConstituentException.class, either3A::getCOrThrow);
 
-        assertThrows(NoSuchElementException.class, either3B::getAOrThrow);
+        assertThrows(NoSuchConstituentException.class, either3B::getAOrThrow);
         assertEquals(2.0f, either3B.getBOrThrow());
-        assertThrows(NoSuchElementException.class, either3B::getCOrThrow);
+        assertThrows(NoSuchConstituentException.class, either3B::getCOrThrow);
 
-        assertThrows(NoSuchElementException.class, either3C::getAOrThrow);
-        assertThrows(NoSuchElementException.class, either3C::getBOrThrow);
+        assertThrows(NoSuchConstituentException.class, either3C::getAOrThrow);
+        assertThrows(NoSuchConstituentException.class, either3C::getBOrThrow);
         assertEquals("x", either3C.getCOrThrow());
+
+        try {
+            failureAEither3.getBOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(e.getCause().getMessage(), "test2A");
+        }
+
+        try {
+            failureAEither3.getCOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(e.getCause().getMessage(), "test2A");
+        }
+
+        try {
+            failureBEither3.getAOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(e.getCause().getMessage(), "test2B");
+        }
+
+        try {
+            failureBEither3.getCOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(e.getCause().getMessage(), "test2B");
+        }
+
+        try {
+            failureCEither3.getAOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(e.getCause().getMessage(), "test2C");
+        }
+
+        try {
+            failureCEither3.getBOrThrow();
+            fail("this line must not be reached");
+        } catch (Exception e) {
+            assertEquals(NoSuchConstituentException.class, e.getClass());
+            assertEquals(MySpecialTestException.class, e.getCause().getClass());
+            assertEquals(e.getCause().getMessage(), "test2C");
+        }
     }
 
     @Test
