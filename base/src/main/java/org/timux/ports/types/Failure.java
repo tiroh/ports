@@ -23,6 +23,7 @@ import java.util.Optional;
  * so that the instanceof operator can be used. Null is not an admissible value for this type.
  *
  * @see Success
+ * @see Empty
  * @see Nothing
  * @see Unknown
  * @see Either

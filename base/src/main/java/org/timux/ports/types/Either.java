@@ -19,7 +19,7 @@ package org.timux.ports.types;
 import org.timux.ports.PortsFuture;
 import org.timux.ports.Response;
 
-import java.util.NoSuchElementException;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -34,6 +34,7 @@ import java.util.function.Supplier;
  * @param <A> The first type.
  * @param <B> The second type.
  * @see Either3
+ * @see Empty
  * @see Nothing
  * @see Unknown
  * @see Pair
@@ -46,6 +47,60 @@ public abstract class Either<A, B> {
         //
     }
 
+    /**
+     * Returns an {@link Either} representing either the first or the second argument,
+     * depending on which one is non-null. If both are non-null, the first one is chosen.
+     *
+     * @throws IllegalArgumentException if both arguments are null.
+     * @see #of(List)
+     * @see #of(Pair)
+     * @see Either3#ofNullables
+     */
+    public static <T, U> Either<T, U> of(T t, U u) {
+        if (t != null) {
+            return Either.a(t);
+        }
+
+        if (u != null) {
+            return Either.b(u);
+        }
+
+        throw new IllegalArgumentException("either the first or the second argument must be non-null, but both are null");
+    }
+
+    /**
+     * Returns an {@link Either} representing either the first or the second element of the supplied list,
+     * depending on which one is non-null. If both are non-null, the first one is chosen. If the list has
+     * more than two elements, the others are ignored.
+     *
+     * @throws IllegalArgumentException if both elements are null.
+     * @see #of(Object, Object)
+     * @see #of(Pair)
+     * @see Either3#ofNullables
+     */
+    public static <T> Either<T, T> of(List<T> elements) {
+        return Either.of(elements.get(0), elements.get(1));
+    }
+
+    /**
+     * Returns an {@link Either} representing either the first or the second constituent of the supplied pair,
+     * depending on which one is non-null. If both are non-null, the first one is chosen.
+     *
+     * @throws IllegalArgumentException if both constituents are null.
+     * @see #of(Object, Object) 
+     * @see #of(List)
+     * @see Either3#ofNullables
+     */
+    public static <T, U> Either<T, U> of(Pair<T, U> pair) {
+        return Either.of(pair.getA(), pair.getB());
+    }
+
+    /**
+     * Returns an {@link Either} representing either the supplied value, if it is non-null,
+     * or {@link Nothing}, if it is null.
+     *
+     * @see Either3#ofNullables
+     */
     public static <T> Either<T, Nothing> ofNullable(T t) {
         return t == null ? Either.b(Nothing.INSTANCE) : Either.a(t);
     }
@@ -56,6 +111,24 @@ public abstract class Either<A, B> {
 
     public static <T, U> Either<T, U> ofOptional(Optional<T> optional, U orElse) {
         return optional.isPresent() ? Either.a(optional.get()) : Either.b(orElse);
+    }
+
+    /**
+     * Returns an {@link Either} containing either the provided {@code value} if it is non-null
+     * and non-blank, or {@link Empty} if it is null or blank.
+     *
+     * @see Either3#ofString
+     */
+    public static Either<String, Empty> ofString(String value) {
+        if (value != null) {
+            for (int i = value.length() - 1; i >= 0; i--) {
+                if (!Character.isWhitespace(value.charAt(i))) {
+                    return Either.a(value);
+                }
+            }
+        }
+
+        return Either.b(Empty.INSTANCE);
     }
 
     public static <T> Either<Success, T> success() {
@@ -84,6 +157,10 @@ public abstract class Either<A, B> {
 
     public static <T, U, V> Either<T, Failure> failure(Either3<U, V, Failure> either3) {
         return either3.map(u -> Either.b(Failure.INSTANCE), v -> Either.b(Failure.INSTANCE), Either::b);
+    }
+
+    public static <T> Either<T, Empty> empty() {
+        return Either.b(Empty.INSTANCE);
     }
 
     public static <T> Either<T, Nothing> nothing() {
@@ -266,6 +343,10 @@ public abstract class Either<A, B> {
 
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
+     *
+     * @see #getB()
+     * @see #getAOrThrow()
+     * @see #getBOrThrow()
      */
     public Optional<A> getA() {
         return map(Optional::ofNullable, b -> Optional.empty());
@@ -273,22 +354,38 @@ public abstract class Either<A, B> {
 
     /**
      * Returns the B constituent of this union in the form of an {@link Optional}.
+     *
+     * @see #getA()
+     * @see #getAOrThrow()
+     * @see #getBOrThrow()
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable);
     }
 
     /**
-     * Returns the A constituent of this union or throws a {@link NoSuchElementException} if it
-     * doesn't exist.
+     * Returns the A constituent of this union if it exists. If it doesn't exist, a
+     * {@link NoSuchConstituentException} is thrown. If the B constituent of this union
+     * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
+     * provided as the cause of the {@link NoSuchConstituentException}.
+     *
+     * @see #getBOrThrow()
+     * @see #getA()
+     * @see #getB()
      */
-    public abstract A getAOrThrow() throws NoSuchElementException;
+    public abstract A getAOrThrow() throws NoSuchConstituentException;
 
     /**
-     * Returns the B constituent of this union or throws a {@link NoSuchElementException} if it
-     * doesn't exist.
+     * Returns the B constituent of this union if it exists. If it doesn't exist, a
+     * {@link NoSuchConstituentException} is thrown. If the A constituent of this union
+     * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
+     * provided as the cause of the {@link NoSuchConstituentException}.
+     *
+     * @see #getAOrThrow()
+     * @see #getA()
+     * @see #getB()
      */
-    public abstract B getBOrThrow() throws NoSuchElementException;
+    public abstract B getBOrThrow() throws NoSuchConstituentException;
 
     /**
      * Returns true if this union represents an instance of {@link Success},
@@ -304,6 +401,14 @@ public abstract class Either<A, B> {
      */
     public boolean isFailure() {
         return map(a -> a.getClass() == Failure.class, b -> b.getClass() == Failure.class);
+    }
+
+    /**
+     * Returns true if this union represents an instance of {@link Empty},
+     * and false otherwise.
+     */
+    public boolean isEmpty() {
+        return map(a -> a.getClass() == Empty.class, b -> b.getClass() == Empty.class);
     }
 
     /**
@@ -431,7 +536,8 @@ public abstract class Either<A, B> {
 
             @Override
             public B getBOrThrow() {
-                throw new NoSuchElementException();
+                throwGetOrThrowException(a);
+                return null; // unreachable
             }
         };
     }
@@ -550,7 +656,8 @@ public abstract class Either<A, B> {
 
             @Override
             public A getAOrThrow() {
-                throw new NoSuchElementException();
+                throwGetOrThrowException(b);
+                return null; // unreachable
             }
 
             @Override
@@ -558,5 +665,27 @@ public abstract class Either<A, B> {
                 return b;
             }
         };
+    }
+
+    // This method is used by both Either and Either3.
+    static void throwGetOrThrowException(Object x) {
+        if (x instanceof Failure) {
+            Failure failure = (Failure) x;
+
+            Throwable cause = failure.getThrowable().orElse(null);
+            String message = failure.getMessage();
+
+            if (cause != null) {
+                if (!message.isEmpty()) {
+                    throw new NoSuchConstituentException(message, cause);
+                }
+
+                throw new NoSuchConstituentException(cause);
+            } else if (!message.isEmpty()) {
+                throw new NoSuchConstituentException(message);
+            }
+        }
+
+        throw new NoSuchConstituentException();
     }
 }

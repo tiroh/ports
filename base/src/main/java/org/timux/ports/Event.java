@@ -258,7 +258,9 @@ public class Event<T> {
                     continue;
                 }
 
-                if (updateDomains) {
+                if (updateDomains || portEntry.receiverDomain == null) {
+                    // We have to check the domain for null because a connect could have happened
+                    // in parallel (before the loop).
                     portEntry.receiverDomain = DomainManager.getDomain(receiver);
                 }
 
@@ -269,6 +271,8 @@ public class Event<T> {
             // the loop was executing.
             return;
         }
+
+
     }
 
     private synchronized void cleanUp() {

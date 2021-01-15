@@ -17,26 +17,26 @@
 package org.timux.ports.types;
 
 /**
- * A type representing the absence of a value. This is in contrast to an empty value which
- * is represented by {@link Empty}.
+ * An exception indicating that the requested {@link Either} or {@link Either3} constituent
+ * does not exist.
  *
- * <p> When in use, <em>this class should always be instantiated</em>
- * so that the instanceof operator can be used. Null is not an admissible value for this type.
- *
- * @see Empty
- * @see Success
- * @see Failure
- * @see Unknown
- * @see Either
- * @see Either3
- *
- * @since 0.5.0
+ * @since 0.5.10
  */
-public final class Nothing {
+public class NoSuchConstituentException extends RuntimeException {
 
-    public static final Nothing INSTANCE = new Nothing();
+    public NoSuchConstituentException() {
+        super();
+    }
 
-    private Nothing() {
-        //
+    public NoSuchConstituentException(String message) {
+        super(message);
+    }
+
+    public NoSuchConstituentException(Throwable cause) {
+        super(cause);
+    }
+
+    public NoSuchConstituentException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

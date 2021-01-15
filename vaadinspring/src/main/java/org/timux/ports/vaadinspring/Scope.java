@@ -19,18 +19,15 @@ package org.timux.ports.vaadinspring;
 import com.vaadin.flow.component.UI;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 class Scope {
 
-    private String name;
-
-    private Map<Object, Scope> childScopes = new HashMap<>();
-
+    private final String name;
+    private final Map<Object, Scope> childScopes = new HashMap<>();
     private Scope parentScope = null;
-
-    private Map<Object, String> beans = new HashMap<>();
-
+    private final Map<Object, String> beans = new HashMap<>();
     private UI ui = null;
 
     public Scope(String name) {
@@ -47,33 +44,45 @@ class Scope {
     }
 
     public Scope findChildScope(Object key) {
-        return childScopes.get(key);
+        synchronized (childScopes) {
+            return childScopes.get(key);
+        }
     }
 
     public Scope getChildScope(Object scopeKey) {
-        if (!childScopes.containsKey(scopeKey)) {
-            addChildScope(scopeKey);
-        }
+        synchronized (childScopes) {
+            if (!childScopes.containsKey(scopeKey)) {
+                addChildScope(scopeKey);
+            }
 
-        return childScopes.get(scopeKey);
+            return childScopes.get(scopeKey);
+        }
     }
 
     public Scope addChildScope(Object scopeKey) {
-        Scope newScope = new Scope(scopeKey.toString(), this);
-        childScopes.put(scopeKey, newScope);
-        return newScope;
+        synchronized (childScopes) {
+            Scope newScope = new Scope(scopeKey.toString(), this);
+            childScopes.put(scopeKey, newScope);
+            return newScope;
+        }
     }
 
     public void removeChildScope(Object scopeKey) {
-        childScopes.remove(scopeKey);
+        synchronized (childScopes) {
+            childScopes.remove(scopeKey);
+        }
     }
 
     public void removeBeans() {
-        beans.clear();
+        synchronized (beans) {
+            beans.clear();
+        }
     }
 
     public void removeChildScopes() {
-        childScopes.clear();
+        synchronized (childScopes) {
+            childScopes.clear();
+        }
     }
 
     public Scope getParentScope() {
@@ -81,19 +90,27 @@ class Scope {
     }
 
     public void addBean(Object bean, String beanName) {
-        beans.put(bean, beanName);
+        synchronized (beans) {
+            beans.put(bean, beanName);
+        }
     }
 
     public void removeBean(Object bean) {
-        beans.remove(bean);
+        synchronized (beans) {
+            beans.remove(bean);
+        }
     }
 
     public Iterable<Scope> getChildScopes() {
-        return childScopes.values();
+        synchronized (childScopes) {
+            return childScopes.values();
+        }
     }
 
     public Iterable<Map.Entry<Object, String>> getBeans() {
-        return beans.entrySet();
+        synchronized (beans) {
+            return beans.entrySet();
+        }
     }
 
     public void setUi(UI ui) {

@@ -1,3 +1,4 @@
+
 # The Ports Framework
 
 **Ports is a Java framework for inter-component communication within a JVM process.**
@@ -24,7 +25,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-core</artifactId>
-   <version>0.5.8</version>
+   <version>0.5.9</version>
 </dependency>
 ```
 
@@ -37,7 +38,7 @@ Add the following dependency to your POM(s):
 <dependency>
    <groupId>org.timux.ports</groupId>
    <artifactId>ports-vaadinspring</artifactId>
-   <version>0.5.8</version>
+   <version>0.5.9</version>
 </dependency>
 ```
 
