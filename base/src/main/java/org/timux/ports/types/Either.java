@@ -19,6 +19,7 @@ package org.timux.ports.types;
 import org.timux.ports.PortsFuture;
 import org.timux.ports.Response;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -46,6 +47,60 @@ public abstract class Either<A, B> {
         //
     }
 
+    /**
+     * Returns an {@link Either} representing either the first or the second argument,
+     * depending on which one is non-null. If both are non-null, the first one is chosen.
+     *
+     * @throws IllegalArgumentException if both arguments are null.
+     * @see #of(List)
+     * @see #of(Pair)
+     * @see Either3#ofNullables
+     */
+    public static <T, U> Either<T, U> of(T t, U u) {
+        if (t != null) {
+            return Either.a(t);
+        }
+
+        if (u != null) {
+            return Either.b(u);
+        }
+
+        throw new IllegalArgumentException("either the first or the second argument must be non-null, but both are null");
+    }
+
+    /**
+     * Returns an {@link Either} representing either the first or the second element of the supplied list,
+     * depending on which one is non-null. If both are non-null, the first one is chosen. If the list has
+     * more than two elements, the others are ignored.
+     *
+     * @throws IllegalArgumentException if both elements are null.
+     * @see #of(Object, Object)
+     * @see #of(Pair)
+     * @see Either3#ofNullables
+     */
+    public static <T> Either<T, T> of(List<T> elements) {
+        return Either.of(elements.get(0), elements.get(1));
+    }
+
+    /**
+     * Returns an {@link Either} representing either the first or the second constituent of the supplied pair,
+     * depending on which one is non-null. If both are non-null, the first one is chosen.
+     *
+     * @throws IllegalArgumentException if both constituents are null.
+     * @see #of(Object, Object) 
+     * @see #of(List)
+     * @see Either3#ofNullables
+     */
+    public static <T, U> Either<T, U> of(Pair<T, U> pair) {
+        return Either.of(pair.getA(), pair.getB());
+    }
+
+    /**
+     * Returns an {@link Either} representing either the supplied value, if it is non-null,
+     * or {@link Nothing}, if it is null.
+     *
+     * @see Either3#ofNullables
+     */
     public static <T> Either<T, Nothing> ofNullable(T t) {
         return t == null ? Either.b(Nothing.INSTANCE) : Either.a(t);
     }
@@ -62,9 +117,9 @@ public abstract class Either<A, B> {
      * Returns an {@link Either} containing either the provided {@code value} if it is non-null
      * and non-blank, or {@link Empty} if it is null or blank.
      *
-     * @see Either3#of(String)
+     * @see Either3#ofString
      */
-    public static Either<String, Empty> of(String value) {
+    public static Either<String, Empty> ofString(String value) {
         if (value != null) {
             for (int i = value.length() - 1; i >= 0; i--) {
                 if (!Character.isWhitespace(value.charAt(i))) {

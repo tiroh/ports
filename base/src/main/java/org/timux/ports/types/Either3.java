@@ -20,6 +20,7 @@ import org.timux.ports.PortsFuture;
 import org.timux.ports.Request;
 import org.timux.ports.Response;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -52,12 +53,88 @@ public abstract class Either3<A, B, C> {
     }
 
     /**
+     * Returns an {@link Either3} representing either the first, the second, or the third argument,
+     * depending on which one is non-null. If more than one argument is non-null, the first one
+     * that is non-null is chosen.
+     *
+     * @throws IllegalArgumentException if all arguments are null.
+     * @see #of(List) 
+     * @see #of(Triple)
+     * @see #ofNullables(Object, Object)
+     */
+    public static <T, U, V> Either3<T, U, V> of(T t, U u, V v) {
+        if (t != null) {
+            return Either3.a(t);
+        }
+
+        if (u != null) {
+            return Either3.b(u);
+        }
+
+        if (v != null) {
+            return Either3.c(v);
+        }
+
+        throw new IllegalArgumentException("either the first, the second, or the third argument must be non-null, but all are null");
+    }
+
+    /**
+     * Returns an {@link Either3} representing either the first, the second, or the third element of the
+     * supplied list,
+     * depending on which one is non-null. If more than one element is non-null, the first one
+     * that is non-null is chosen.
+     *
+     * @throws IllegalArgumentException if all elements are null.
+     * @see #of(Object, Object, Object) 
+     * @see #of(Triple) 
+     * @see #ofNullables(Object, Object)
+     */
+    public static <T> Either3<T, T, T> of(List<T> elements) {
+        return Either3.of(elements.get(0), elements.get(1), elements.get(2));
+    }
+
+    /**
+     * Returns an {@link Either3} representing either the first, the second, or the third constituent of
+     * the supplied triple,
+     * depending on which one is non-null. If more than one constituent is non-null, the first one
+     * that is non-null is chosen
+     *
+     * @throws IllegalArgumentException if all constituents are null.
+     * @see #of(Object, Object, Object)
+     * @see #of(List)
+     * @see #ofNullables(Object, Object)
+     */
+    public static <T, U, V> Either3<T, U, V> of(Triple<T, U, V> triple) {
+        return Either3.of(triple.getA(), triple.getB(), triple.getC());
+    }
+
+    /**
+     * Returns an {@link Either3} representing either the first or the second argument,
+     * depending on which one is non-null. If both are non-null, the first one is chosen.
+     * If both are null, the {@link Either3} will represent a {@link Nothing}.
+     * 
+     * @see #of 
+     * @see Either#ofNullable 
+     */
+    public static <T, U> Either3<T, U, Nothing> ofNullables(T t, U u) {
+        if (t != null) {
+            return Either3.a(t);
+        }
+
+        if (u != null) {
+            return Either3.b(u);
+        }
+
+        return Either3.c(Nothing.INSTANCE);
+    }
+
+    /**
      * Returns an {@link Either3} containing either the provided {@code value} if it is non-null
      * and non-blank, {@link Empty} if it is blank, or {@link Nothing} if it is null.
      *
-     * @see Either#of(String)
+     * @see Either#ofString
      */
-    public static Either3<String, Empty, Nothing> of(String value) {
+    public static Either3<String, Empty, Nothing> ofString(String value) {
         if (value == null) {
             return Either3.c(Nothing.INSTANCE);
         } else {
@@ -99,16 +176,28 @@ public abstract class Either3<A, B, C> {
         return either3.map(v -> Either3.c(Failure.INSTANCE), w -> Either3.c(Failure.INSTANCE), Either3::c);
     }
 
-    public static <T, U> Either3<T, Empty, U> empty() {
+    public static <T, U> Either3<T, Empty, U> emptyB() {
         return Either3.b(Empty.INSTANCE);
     }
 
-    public static <T, U> Either3<T, Nothing, U> nothing() {
+    public static <T, U> Either3<T, Nothing, U> nothingB() {
         return Either3.b(Nothing.INSTANCE);
     }
 
-    public static <T, U> Either3<T, Unknown, U> unknown() {
+    public static <T, U> Either3<T, Unknown, U> unknownB() {
         return Either3.b(Unknown.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Empty> emptyC() {
+        return Either3.c(Empty.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Nothing> nothingC() {
+        return Either3.c(Nothing.INSTANCE);
+    }
+
+    public static <T, U> Either3<T, U, Unknown> unknownC() {
+        return Either3.c(Unknown.INSTANCE);
     }
 
     /**

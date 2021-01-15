@@ -2,16 +2,9 @@ package org.timux.ports;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.types.Container;
-import org.timux.ports.types.Either;
-import org.timux.ports.types.Either3;
-import org.timux.ports.types.Empty;
-import org.timux.ports.types.Failure;
-import org.timux.ports.types.NoSuchConstituentException;
-import org.timux.ports.types.Nothing;
-import org.timux.ports.types.Success;
-import org.timux.ports.types.Unknown;
+import org.timux.ports.types.*;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +16,115 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class EitherTests {
+
+    @Test
+    public void eitherOf() {
+        Either<Integer, Double> first1 = Either.of(1, null);
+        Either<Integer, Double> second = Either.of(null, 1.5);
+        Either<Integer, Double> first2 = Either.of(2, 2.5);
+
+        Either<String, String> firstL1 = Either.of(Arrays.asList("a", null));
+        Either<String, String> firstL2 = Either.of(Arrays.asList(null, "b"));
+        Either<String, String> firstL3 = Either.of(Arrays.asList("a", "b"));
+
+        Either<Integer, Double> firstP1 = Either.of(Tuple.of(1, null));
+        Either<Integer, Double> secondP = Either.of(Tuple.of(null, 1.5));
+        Either<Integer, Double> firstP2 = Either.of(Tuple.of(2, 2.5));
+
+        assertEquals(1, first1.getAOrThrow());
+        assertEquals(1.5, second.getBOrThrow());
+        assertEquals(2, first2.getAOrThrow());
+
+        assertEquals("a", firstL1.getAOrThrow());
+        assertEquals("b", firstL2.getBOrThrow());
+        assertEquals("a", firstL3.getAOrThrow());
+
+        assertEquals(1, firstP1.getAOrThrow());
+        assertEquals(1.5, secondP.getBOrThrow());
+        assertEquals(2, firstP2.getAOrThrow());
+
+        assertThrows(IllegalArgumentException.class, () -> Either.of(null, null));
+        assertThrows(IllegalArgumentException.class, () -> Either.of(Arrays.asList(null, null)));
+        assertThrows(IllegalArgumentException.class, () -> Either.of(Tuple.of(null, null)));
+    }
+
+    @Test
+    public void either3Of() {
+        Either3<Integer, Double, String> first1 = Either3.of(1, null, null);
+        Either3<Integer, Double, String> second = Either3.of(null, 1.5, null);
+        Either3<Integer, Double, String> third = Either3.of(null, null, "test");
+
+        Either3<Integer, Double, String> first2 = Either3.of(null, 2.5, "test");
+        Either3<Integer, Double, String> first3 = Either3.of(2, null, "test");
+        Either3<Integer, Double, String> first4 = Either3.of(2, 2.5, "test");
+
+        Either3<String, String, String> firstL1 = Either3.of(Arrays.asList("a", null, null));
+        Either3<String, String, String> firstL2 = Either3.of(Arrays.asList(null, "b", null));
+        Either3<String, String, String> firstL3 = Either3.of(Arrays.asList(null, null, "c"));
+
+        Either3<String, String, String> firstL4 = Either3.of(Arrays.asList("a", "b", null));
+        Either3<String, String, String> firstL5 = Either3.of(Arrays.asList(null, "b", "c"));
+        Either3<String, String, String> firstL6 = Either3.of(Arrays.asList("a", null, "c"));
+
+        Either3<Integer, Double, String> firstP1 = Either3.of(Tuple.of(1, null, null));
+        Either3<Integer, Double, String> secondP = Either3.of(Tuple.of(null, 1.5, null));
+        Either3<Integer, Double, String> thirdP = Either3.of(Tuple.of(null, null, "test"));
+
+        Either3<Integer, Double, String> firstP2 = Either3.of(Tuple.of(null, 2.5, "test"));
+        Either3<Integer, Double, String> firstP3 = Either3.of(Tuple.of(2, null, "test"));
+        Either3<Integer, Double, String> firstP4 = Either3.of(Tuple.of(2, 2.5, "test"));
+
+        assertEquals(1, first1.getAOrThrow());
+        assertEquals(1.5, second.getBOrThrow());
+        assertEquals("test", third.getCOrThrow());
+
+        assertEquals(2.5, first2.getBOrThrow());
+        assertEquals(2, first3.getAOrThrow());
+        assertEquals(2, first4.getAOrThrow());
+
+        assertEquals("a", firstL1.getAOrThrow());
+        assertEquals("b", firstL2.getBOrThrow());
+        assertEquals("c", firstL3.getCOrThrow());
+
+        assertEquals("a", firstL4.getAOrThrow());
+        assertEquals("b", firstL5.getBOrThrow());
+        assertEquals("a", firstL6.getAOrThrow());
+
+        assertEquals(1, firstP1.getAOrThrow());
+        assertEquals(1.5, secondP.getBOrThrow());
+        assertEquals("test", thirdP.getCOrThrow());
+
+        assertEquals(2.5, firstP2.getBOrThrow());
+        assertEquals(2, firstP3.getAOrThrow());
+        assertEquals(2, firstP4.getAOrThrow());
+
+        assertThrows(IllegalArgumentException.class, () -> Either3.of(null, null, null));
+        assertThrows(IllegalArgumentException.class, () -> Either3.of(Arrays.asList(null, null, null)));
+        assertThrows(IllegalArgumentException.class, () -> Either3.of(Tuple.of(null, null, null)));
+    }
+
+    @Test
+    public void nullable() {
+        Either<Integer, Nothing> e = Either.ofNullable(null);
+        Either3<Integer, Double, Nothing> e3 = Either3.ofNullables(null, null);
+
+        Container<Boolean> eNC = Container.of(Boolean.FALSE);
+        Container<Boolean> e3NC = Container.of(Boolean.FALSE);
+
+        e.on(
+                integer -> fail("no integer expected"),
+                nothing -> eNC.value = Boolean.TRUE
+        );
+
+        e3.on(
+                integer -> fail("no integer expected"),
+                dbl -> fail("no double expected"),
+                nothing -> e3NC.value = Boolean.TRUE
+        );
+
+        assertTrue(eNC.value);
+        assertTrue(e3NC.value);
+    }
 
     @Test
     public void eitherOn() {
@@ -464,9 +566,13 @@ public class EitherTests {
         Either3<Success, String, Failure> failureEitherT = Either3.failure(new RuntimeException());
         Either3<Success, Integer, Failure> failureEitherMsgT = Either3.failure("message2", new RuntimeException());
 
-        Either3<Success, Empty, Failure> emptyEither = Either3.empty();
-        Either3<Success, Nothing, Failure> nothingEither = Either3.nothing();
-        Either3<Success, Unknown, Failure> unknownEither = Either3.unknown();
+        Either3<Success, Empty, Failure> emptyEitherB = Either3.emptyB();
+        Either3<Success, Nothing, Failure> nothingEitherB = Either3.nothingB();
+        Either3<Success, Unknown, Failure> unknownEitherB = Either3.unknownB();
+
+        Either3<Success, Integer, Empty> emptyEitherC = Either3.emptyC();
+        Either3<Success, Integer, Nothing> nothingEitherC = Either3.nothingC();
+        Either3<Success, Integer, Unknown> unknownEitherC = Either3.unknownC();
 
         assertTrue(successEither.isSuccess());
         assertFalse(successEither.isFailure());
@@ -514,32 +620,59 @@ public class EitherTests {
         assertEquals("message2", failureEitherMsgT.getC().get().getMessage());
         assertSame(failureEitherMsgT.getC().get().getThrowable().get().getClass(), RuntimeException.class);
 
-        assertFalse(emptyEither.isSuccess());
-        assertFalse(emptyEither.isFailure());
-        assertFalse(emptyEither.isUnknown());
-        assertTrue(emptyEither.isEmpty());
-        assertFalse(emptyEither.isNothing());
-        assertFalse(emptyEither.getA().isPresent());
-        assertTrue(emptyEither.getB().isPresent());
-        assertFalse(emptyEither.getC().isPresent());
+        assertFalse(emptyEitherB.isSuccess());
+        assertFalse(emptyEitherB.isFailure());
+        assertFalse(emptyEitherB.isUnknown());
+        assertTrue(emptyEitherB.isEmpty());
+        assertFalse(emptyEitherB.isNothing());
+        assertFalse(emptyEitherB.getA().isPresent());
+        assertTrue(emptyEitherB.getB().isPresent());
+        assertFalse(emptyEitherB.getC().isPresent());
 
-        assertFalse(nothingEither.isSuccess());
-        assertFalse(nothingEither.isFailure());
-        assertFalse(nothingEither.isUnknown());
-        assertFalse(nothingEither.isEmpty());
-        assertTrue(nothingEither.isNothing());
-        assertFalse(nothingEither.getA().isPresent());
-        assertTrue(nothingEither.getB().isPresent());
-        assertFalse(nothingEither.getC().isPresent());
+        assertFalse(nothingEitherB.isSuccess());
+        assertFalse(nothingEitherB.isFailure());
+        assertFalse(nothingEitherB.isUnknown());
+        assertFalse(nothingEitherB.isEmpty());
+        assertTrue(nothingEitherB.isNothing());
+        assertFalse(nothingEitherB.getA().isPresent());
+        assertTrue(nothingEitherB.getB().isPresent());
+        assertFalse(nothingEitherB.getC().isPresent());
 
-        assertFalse(unknownEither.isSuccess());
-        assertFalse(unknownEither.isFailure());
-        assertTrue(unknownEither.isUnknown());
-        assertFalse(unknownEither.isNothing());
-        assertFalse(unknownEither.isEmpty());
-        assertFalse(unknownEither.getA().isPresent());
-        assertTrue(unknownEither.getB().isPresent());
-        assertFalse(unknownEither.getC().isPresent());
+        assertFalse(unknownEitherB.isSuccess());
+        assertFalse(unknownEitherB.isFailure());
+        assertTrue(unknownEitherB.isUnknown());
+        assertFalse(unknownEitherB.isNothing());
+        assertFalse(unknownEitherB.isEmpty());
+        assertFalse(unknownEitherB.getA().isPresent());
+        assertTrue(unknownEitherB.getB().isPresent());
+        assertFalse(unknownEitherB.getC().isPresent());
+
+        assertFalse(emptyEitherC.isSuccess());
+        assertFalse(emptyEitherC.isFailure());
+        assertFalse(emptyEitherC.isUnknown());
+        assertTrue(emptyEitherC.isEmpty());
+        assertFalse(emptyEitherC.isNothing());
+        assertFalse(emptyEitherC.getA().isPresent());
+        assertFalse(emptyEitherC.getB().isPresent());
+        assertTrue(emptyEitherC.getC().isPresent());
+
+        assertFalse(nothingEitherC.isSuccess());
+        assertFalse(nothingEitherC.isFailure());
+        assertFalse(nothingEitherC.isUnknown());
+        assertFalse(nothingEitherC.isEmpty());
+        assertTrue(nothingEitherC.isNothing());
+        assertFalse(nothingEitherC.getA().isPresent());
+        assertFalse(nothingEitherC.getB().isPresent());
+        assertTrue(nothingEitherC.getC().isPresent());
+
+        assertFalse(unknownEitherC.isSuccess());
+        assertFalse(unknownEitherC.isFailure());
+        assertTrue(unknownEitherC.isUnknown());
+        assertFalse(unknownEitherC.isNothing());
+        assertFalse(unknownEitherC.isEmpty());
+        assertFalse(unknownEitherC.getA().isPresent());
+        assertFalse(unknownEitherC.getB().isPresent());
+        assertTrue(unknownEitherC.getC().isPresent());
     }
 
     @Test
@@ -551,8 +684,12 @@ public class EitherTests {
 
         Supplier<Integer> nullSupplier = () -> null;
 
-        Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
-        Runnable failureRunnable = () -> { throw new RuntimeException("B"); };
+        Supplier<Integer> failureSupplier = () -> {
+            throw new RuntimeException("A");
+        };
+        Runnable failureRunnable = () -> {
+            throw new RuntimeException("B");
+        };
 
         Either<Integer, Failure> okSupplierEither = Either.valueOrFailure(okSupplier);
         Either<Success, Failure> okSupplierSFEither = Either.successOrFailure(okSupplier);
@@ -571,7 +708,8 @@ public class EitherTests {
         );
 
         okSupplierSFEither.on(
-                success -> {},
+                success -> {
+                },
                 failure -> fail("no failure expected")
         );
 
@@ -596,7 +734,8 @@ public class EitherTests {
         );
 
         okSFEither.on(
-                success -> {},
+                success -> {
+                },
                 failure -> fail("no failure expected")
         );
 
@@ -610,7 +749,9 @@ public class EitherTests {
     public void either3SuccessOrFailureMethods() {
         Supplier<Integer> okSupplier = () -> 1;
         Supplier<Integer> nullSupplier = () -> null;
-        Supplier<Integer> failureSupplier = () -> { throw new RuntimeException("A"); };
+        Supplier<Integer> failureSupplier = () -> {
+            throw new RuntimeException("A");
+        };
 
         Either3<Integer, Nothing, Failure> either3Integer = Either3.valueOrNothingOrFailure(okSupplier);
         Either3<Integer, Nothing, Failure> either3Nothing = Either3.valueOrNothingOrFailure(nullSupplier);
@@ -628,7 +769,8 @@ public class EitherTests {
 
         either3Nothing.on(
                 integer -> fail("no integer expected"),
-                nothing -> {},
+                nothing -> {
+                },
                 failure -> fail("no failure expected")
         );
 
@@ -639,12 +781,14 @@ public class EitherTests {
         );
 
         eitherIntegerSuccess.on(
-                success -> {},
+                success -> {
+                },
                 failure -> fail("no failure expected")
         );
 
         eitherNothingFailure.on(
-                success -> {},
+                success -> {
+                },
                 failure -> fail("no failure expected")
         );
 
@@ -779,22 +923,24 @@ public class EitherTests {
 
     @Test
     public void ofString() {
-        Either<String, Empty> emptyEitherA = Either.of(null);
-        Either<String, Empty> emptyEitherB = Either.of("  \n \r \t  ");
-        Either<String, Empty> valueEither = Either.of("  \n \r \t test1  ");
+        Either<String, Empty> emptyEitherA = Either.ofString(null);
+        Either<String, Empty> emptyEitherB = Either.ofString("  \n \r \t  ");
+        Either<String, Empty> valueEither = Either.ofString("  \n \r \t test1  ");
 
-        Either3<String, Empty, Nothing> nothingEither3 = Either3.of(null);
-        Either3<String, Empty, Nothing> emptyEither3 = Either3.of("  \n \r \t  ");
-        Either3<String, Empty, Nothing> valueEither3 = Either3.of("  \n \r \t test2  ");
+        Either3<String, Empty, Nothing> nothingEither3 = Either3.ofString(null);
+        Either3<String, Empty, Nothing> emptyEither3 = Either3.ofString("  \n \r \t  ");
+        Either3<String, Empty, Nothing> valueEither3 = Either3.ofString("  \n \r \t test2  ");
 
         emptyEitherA.on(
                 value -> fail("no value expected"),
-                empty -> {}
+                empty -> {
+                }
         );
 
         emptyEitherB.on(
                 value -> fail("no value expected"),
-                empty -> {}
+                empty -> {
+                }
         );
 
         valueEither.on(
@@ -805,12 +951,14 @@ public class EitherTests {
         nothingEither3.on(
                 value -> fail("no value expected"),
                 empty -> fail("no Empty expected"),
-                nothing -> {}
+                nothing -> {
+                }
         );
 
         emptyEither3.on(
                 value -> fail("no value expected"),
-                empty -> {},
+                empty -> {
+                },
                 nothing -> fail("no Nothing expected")
         );
 
