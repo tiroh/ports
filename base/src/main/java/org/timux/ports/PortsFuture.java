@@ -299,7 +299,7 @@ public class PortsFuture<T> implements Future<T> {
      * @see #orElseDo
      */
     public <R> Either<T, R> orElseE(Function<Failure, R> fn) {
-        return getE().orElse(fn);
+        return getE().orElseMap(fn);
     }
 
     /**
@@ -318,7 +318,7 @@ public class PortsFuture<T> implements Future<T> {
     /**
      * If the receiver terminated with an exception, this method applies the provided
      * consumer to the according failure only if it has not already been handled by
-     * another call of {@link Either#orElseDoOnce}, {@link Either#orElse}, or
+     * another call of {@link Either#orElseDoOnce}, {@link Either#orElseMap}, or
      * {@link Either#orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */

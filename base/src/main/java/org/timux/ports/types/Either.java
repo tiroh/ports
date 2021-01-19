@@ -151,6 +151,10 @@ public abstract class Either<A, B> {
         return Either.b(Failure.of(message, throwable));
     }
 
+    public static <T> Either<T, Failure> failure(Failure failure) {
+        return Either.b(failure);
+    }
+
     public static <T, U> Either<T, Failure> failure(Either<U, Failure> either) {
         return either.map(u -> Either.b(Failure.INSTANCE), Either::b);
     }
@@ -261,16 +265,16 @@ public abstract class Either<A, B> {
     /**
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either}.
      *
-     * @see #andThen
+     * @see #andThenMap
      * @see #andThenR
      */
-    public abstract <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn);
+    public abstract <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn);
 
     /**
      * Maps the A constituent, if it exists, to R, which must be an {@link Either} that has the
      * same B type like this {@link Either}.
      */
-    public abstract <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn);
+    public abstract <R extends Either<?, B>> R andThenMap(Function<? super A, ? extends R> aFn);
 
     /**
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
@@ -278,16 +282,16 @@ public abstract class Either<A, B> {
     public abstract Either<A, B> andThenDo(Consumer<? super A> aC);
 
     /**
-     * A version of {@link #andThen} that supports working with requests. With this method (and together with
+     * A version of {@link #andThenMap} that supports working with requests. With this method (and together with
      * {@link PortsFuture#andThenE}) you can build chains of requests.
      *
      * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
      * otherwise. In this context, the A constituent is the result of a preceding request.
      *
      * @see PortsFuture#andThenE
-     * @see #andThen
-     * @see #andThenE
-     * @see #orElse
+     * @see #andThenMap
+     * @see #andThenMapE
+     * @see #orElseMap
      * @see #orElseDo
      * @see #finallyDo
      */
@@ -297,7 +301,7 @@ public abstract class Either<A, B> {
     /**
      * Maps the B constituent, if it exists, to R.
      */
-    public abstract <R> Either<A, R> orElse(Function<? super B, R> bFn);
+    public abstract <R> Either<A, R> orElseMap(Function<? super B, R> bFn);
 
     /**
      * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
@@ -309,7 +313,7 @@ public abstract class Either<A, B> {
     /**
      * If the B constituent is a {@link Failure}, this method applies the provided
      * consumer to that failure only if it has not already been handled by
-     * another call of {@link #orElseDoOnce}, {@link #orElse}, or {@link #orElseDo}.
+     * another call of {@link #orElseDoOnce}, {@link #orElseMap}, or {@link #orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
     public abstract Either<A, B> orElseDoOnce(Consumer<? super B> bC);
@@ -467,12 +471,12 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return Either.a(aFn.apply(a));
             }
 
             @Override
-            public <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either<?, B>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return aFn.apply(a);
             }
 
@@ -488,7 +492,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<A, R> orElse(Function<? super B, R> bFn) {
+            public <R> Either<A, R> orElseMap(Function<? super B, R> bFn) {
                 return Either.a(a);
             }
 
@@ -570,13 +574,13 @@ public abstract class Either<A, B> {
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return (Either<R, B>) this;
             }
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either<?, B>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return (R) this;
             }
 
@@ -593,7 +597,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<A, R> orElse(Function<? super B, R> bFn) {
+            public <R> Either<A, R> orElseMap(Function<? super B, R> bFn) {
                 if (b instanceof Failure) {
                     ((Failure) b).setHasAlreadyBeenHandled();
                 }
