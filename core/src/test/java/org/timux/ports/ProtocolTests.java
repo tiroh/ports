@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -248,5 +249,25 @@ public class ProtocolTests {
         });
 
         assertTrue(exceptionTriggered.value);
+    }
+
+    @Test
+    public void protocolsFailureCapture() {
+        F f = new F();
+
+        Ports.register(f);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+                .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .call(new EitherXFailureRequest("this is supposed to fail"));
+
+        assertTrue(result.value.isFailure());
     }
 }
