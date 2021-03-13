@@ -111,7 +111,7 @@ public class Request<I, O> {
 
     private PortsFutureResponseTypeInfo getResponseTypeInfo(String responseTypeName) {
         if (responseTypeName.startsWith(Either.class.getName() + "<")) {
-            if (responseTypeName.endsWith(Failure.class.getName() + ">")) {
+            if (responseTypeName.endsWith(" " + Failure.class.getName() + ">")) {
                 return PortsFutureResponseTypeInfo.EITHER_X_FAILURE;
             } else {
                 return PortsFutureResponseTypeInfo.OTHER;
@@ -119,7 +119,7 @@ public class Request<I, O> {
         }
 
         if (responseTypeName.startsWith(Either3.class.getName() + "<")) {
-            if (responseTypeName.endsWith(Failure.class.getName() + ">")) {
+            if (responseTypeName.endsWith(" " + Failure.class.getName() + ">")) {
                 return PortsFutureResponseTypeInfo.EITHER3_X_Y_FAILURE;
             } else {
                 return PortsFutureResponseTypeInfo.OTHER;
