@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ final class Protocol {
         Action action = createOperateOutPortAction(payload, state);
 
         if (action == null) {
-            System.err.println("[ports] warning: no receivers are known for event type " + state.currentWithRequestType);
+            System.err.println("[ports] warning: no receivers are known for message type '" + state.currentWithRequestType + "'");
             return;
         }
 
@@ -129,11 +129,7 @@ final class Protocol {
             return createOperateOutPortOnOwnerAction(payload, outPortType, state);
         }
 
-        if (!componentRegistry.isEmpty()) {
-            return createOperateOutPortOnRegisteredComponentsAction(payload, outPortType, state);
-        }
-
-        return null;
+        return createOperateOutPortOnRegisteredComponentsAction(payload, outPortType, state);
     }
 
     private static Action createOperateOutPortOnOwnerAction(Object payload, Class<?> outPortType, ProtocolParserState state) {
@@ -151,7 +147,15 @@ final class Protocol {
         if (outPortType == Request.class) {
             try {
                 Request requestPort = (Request) outPortField.get(state.currentWithOwner);
-                return (x, owner) -> requestPort.call(payload);
+
+                return (x, owner) -> {
+                    PortsFuture<?> future = requestPort.callF(payload);
+                    Object response = future.get();
+
+                    if (future.hasExceptionOccurred()) {
+                        onDataReceived(state.currentWithRequestType, owner, response);
+                    }
+                };
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -184,9 +188,17 @@ final class Protocol {
         }
 
         if (outPortType == Request.class) {
-            protocolComponent.requestPort = new Request<>(state.currentWithRequestType, "requestPort", protocolComponent);
+            protocolComponent.requestPort = new Request<>(
+                    state.currentWithRequestType, state.currentWithResponseType, "requestPort", protocolComponent);
 
-            action = (x, owner) -> protocolComponent.requestPort.call(payload);
+            action = (x, owner) -> {
+                PortsFuture<?> future = protocolComponent.requestPort.callF(payload);
+                Object response = future.get();
+
+                if (future.hasExceptionOccurred()) {
+                    onDataReceived(state.currentWithRequestType, protocolComponent, response);
+                }
+            };
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("requestPort");

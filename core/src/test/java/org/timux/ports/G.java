@@ -19,11 +19,8 @@ package org.timux.ports;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Failure;
 
-public class F {
+public class G {
 
-    @In
-    private Either<Integer, Failure> onEitherXFailureRequest(EitherXFailureRequest request) {
-        throw new MySpecialTestException(request.getMessage());
-//        return Either.a(1);
-    }
+    @Out
+    private Request<EitherXFailureRequest, Either<Integer, Failure>> eitherXFailureRequest;
 }

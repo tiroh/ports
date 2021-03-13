@@ -347,6 +347,19 @@ public class PortsFuture<T> implements Future<T> {
         return false;
     }
 
+    /**
+     * Returns true if the receiver crashed with an exception, false otherwise. This call is non-blocking, i.e.
+     * if the receiver has not yet finished running, it might still crash with an exception later, but this method
+     * will return false for the time being.
+     *
+     * <p> For now, this method is package-private and just for internal use.
+     *
+     * <p> <em>This call is non-blocking.</em>
+     */
+    boolean hasExceptionOccurred() {
+        return task != null && task.hasReturned() && task.getThrowable() != null;
+    }
+
     @Override
     public String toString() {
         return "PortsFuture{"

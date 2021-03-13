@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Failure;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -38,11 +36,9 @@ import java.util.stream.IntStream;
  *
  * @param <I> The type of the request data (input).
  * @param <O> The type of the response data (output).
- *
+ * @author Tim Rohlfs
  * @see Event
  * @see Response
- *
- * @author Tim Rohlfs
  * @since 0.1
  */
 public class Request<I, O> {
@@ -63,10 +59,22 @@ public class Request<I, O> {
         //
     }
 
-    Request(String requestTypeName, String memberName, Object owner) {
+    Request(String requestTypeName, String responseTypeName, String memberName, Object owner) {
         this.requestTypeName = requestTypeName;
         this.memberName = memberName;
         this.owner = owner;
+
+        responseTypeInfo = getResponseTypeInfo(responseTypeName);
+    }
+
+    Request(String requestTypeName, Field outPortField, String memberName, Object owner) {
+        this(requestTypeName, getResponseTypeName(outPortField), memberName, owner);
+    }
+
+    private static String getResponseTypeName(Field outPortField) {
+        String t = TypeUtils.extractTypeParameter(outPortField.getGenericType().getTypeName(), null);
+        int firstSpacePos = t.indexOf(' ');
+        return t.substring(firstSpacePos + 1);
     }
 
     /**
@@ -90,8 +98,6 @@ public class Request<I, O> {
             throw new IllegalArgumentException("port must not be null");
         }
 
-        responseTypeInfo = getResponseTypeInfo(portMethod);
-
         Function<I, O> portFunction = x -> {
             try {
                 return (O) portMethod.invoke(methodOwner, x);
@@ -103,30 +109,24 @@ public class Request<I, O> {
         connect(portFunction, methodOwner);
     }
 
-    private PortsFutureResponseTypeInfo getResponseTypeInfo(Method portMethod) {
-        if (portMethod.getReturnType() != Either.class && portMethod.getReturnType() != Either3.class) {
-            return PortsFutureResponseTypeInfo.OTHER;
-        }
-
-        if (!(portMethod.getGenericReturnType() instanceof ParameterizedType)) {
-            return PortsFutureResponseTypeInfo.OTHER;
-        }
-
-        ParameterizedType parameterizedType = (ParameterizedType) portMethod.getGenericReturnType();
-
-        if (parameterizedType.getActualTypeArguments().length == 2) {
-            if (parameterizedType.getActualTypeArguments()[1].getTypeName().equals(Failure.class.getName())) {
+    private PortsFutureResponseTypeInfo getResponseTypeInfo(String responseTypeName) {
+        if (responseTypeName.startsWith(Either.class.getName() + "<")) {
+            if (responseTypeName.endsWith(Failure.class.getName() + ">")) {
                 return PortsFutureResponseTypeInfo.EITHER_X_FAILURE;
             } else {
                 return PortsFutureResponseTypeInfo.OTHER;
             }
         }
 
-        if (parameterizedType.getActualTypeArguments()[2].getTypeName().equals(Failure.class.getName())) {
-            return PortsFutureResponseTypeInfo.EITHER3_X_Y_FAILURE;
-        } else {
-            return PortsFutureResponseTypeInfo.OTHER;
+        if (responseTypeName.startsWith(Either3.class.getName() + "<")) {
+            if (responseTypeName.endsWith(Failure.class.getName() + ">")) {
+                return PortsFutureResponseTypeInfo.EITHER3_X_Y_FAILURE;
+            } else {
+                return PortsFutureResponseTypeInfo.OTHER;
+            }
         }
+
+        return PortsFutureResponseTypeInfo.OTHER;
     }
 
     /**
@@ -134,7 +134,10 @@ public class Request<I, O> {
      */
     public void disconnect() {
         port = null;
+        receiver = null;
+        receiverDomain = null;
         domainVersion = -1;
+        wrappedFunction = null;
     }
 
     /**
@@ -142,14 +145,11 @@ public class Request<I, O> {
      * necessarily within the thread of the sender (this depends on the {@link Domain} of the receiver).
      *
      * @param payload The payload to be sent.
-     *
+     * @return The response of the receiver.
+     * @throws ExecutionException        If the receiver terminated unexpectedly.
+     * @throws PortNotConnectedException If this port is not connected.
      * @see #callF
      * @see Domain
-     *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
-     * @throws PortNotConnectedException If this port is not connected.
-     *
-     * @return The response of the receiver.
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
@@ -161,14 +161,11 @@ public class Request<I, O> {
      * necessarily within the thread of the sender (this depends on the {@link Domain} of the receiver).
      *
      * @param payload The payload to be sent.
-     *
+     * @return An {@link Either} containing either the response of the receiver or a
+     * {@link Failure} in case the receiver terminated with an exception.
+     * @throws PortNotConnectedException If this port is not connected.
      * @see #callF
      * @see Domain
-     *
-     * @throws PortNotConnectedException If this port is not connected.
-     *
-     * @return An {@link Either} containing either the response of the receiver or a
-     *   {@link Failure} in case the receiver terminated with an exception.
      */
     public Either<O, Failure> callE(I payload) {
         return callF(payload).getE();
@@ -179,15 +176,11 @@ public class Request<I, O> {
      * asynchronously or whether (and how) it will be synchronized depends on the {@link Domain} of the receiver.
      *
      * @param payload The payload to be sent.
-     *
+     * @return A future of the response of the receiver. Use its {@link PortsFuture#get},
+     * {@link PortsFuture#getNow}, or {@link PortsFuture#getE} methods to access the response object.
+     * @throws PortNotConnectedException If this port is not connected.
      * @see #call
      * @see Domain
-     *
-     * @return A future of the response of the receiver. Use its {@link PortsFuture#get},
-     *   {@link PortsFuture#getNow}, or {@link PortsFuture#getE} methods to access the response object.
-     *
-     * @throws PortNotConnectedException If this port is not connected.
-     *
      * @since 0.5.0
      */
     @SuppressWarnings("unchecked")
@@ -204,7 +197,7 @@ public class Request<I, O> {
                     return new PortsFuture<>(protocolResponse);
                 }
             } catch (Exception e) {
-                return new PortsFuture<>(e, PortsFutureResponseTypeInfo.OTHER);
+                return new PortsFuture<>(e, responseTypeInfo);
             }
         }
 
@@ -226,10 +219,17 @@ public class Request<I, O> {
     private Function<I, O> getWrappedFunctionForProtocols() {
         return Protocol.areProtocolsActive
                 ? (x -> {
-                    O response = port.apply(x);
-                    Protocol.onDataReceived(requestTypeName, owner, response);
-                    return response;
-                })
+            O response = port.apply(x);
+
+            /*
+             * The following call only handles the "happy case", i.e. that no exception occurred.
+             * If the 'apply' call crashed with an exception, we won't reach his point. Instead, the exception
+             * will be caught within the Task class. In the Protocol class, it will be extracted from the
+             * returned future and relayed to the receiver (if the response type allows it).
+             */
+            Protocol.onDataReceived(requestTypeName, owner, response);
+            return response;
+        })
                 : port;
     }
 
@@ -238,8 +238,7 @@ public class Request<I, O> {
      * the requests are dispatched synchronously, asynchronously, or in parallel.
      *
      * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
-     *     received in the future.
-     *
+     * received in the future.
      * @since 0.5.0
      */
     public Fork<O> fork(I... payloads) {
@@ -254,8 +253,7 @@ public class Request<I, O> {
      * 0 to 'endIndexExclusive' (exclusive, as the name suggests).
      *
      * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
-     *     received in the future.
-     *
+     * received in the future.
      * @since 0.5.0
      */
     public Fork<O> fork(int endIndexExclusive, IntFunction<I> payloadProvider) {
@@ -269,8 +267,7 @@ public class Request<I, O> {
      * the requests are dispatched synchronously, asynchronously, or in parallel.
      *
      * @returns A {@link Fork} instance representing the asynchronous requests whose responses will be
-     *     received in the future.
-     *
+     * received in the future.
      * @since 0.5.0
      */
     public Fork<O> fork(List<I> payloads) {
