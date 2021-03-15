@@ -417,7 +417,7 @@ public class EitherTests {
         response.on(
                 integer -> fail("no integer expected"),
                 failure -> {
-                    Throwable throwable = failure.getThrowable().get().getCause().getCause().getCause();
+                    Throwable throwable = failure.getThrowable().get().getCause();
                     assertEquals(MySpecialTestException.class, throwable.getClass());
                     assertEquals("xfailure", throwable.getMessage());
                 }
@@ -436,7 +436,7 @@ public class EitherTests {
                 () -> a.eitherXYRequest.call(new EitherXYRequest("xy"))
         );
 
-        Throwable throwable = exception.getCause().getCause().getCause();
+        Throwable throwable = exception.getCause();
 
         assertEquals(MySpecialTestException.class, throwable.getClass());
         assertEquals("xy", throwable.getMessage());
@@ -455,7 +455,7 @@ public class EitherTests {
                 integer -> fail("no integer expected"),
                 nothing -> fail("no nothing expected"),
                 failure -> {
-                    Throwable throwable = failure.getThrowable().get().getCause().getCause().getCause();
+                    Throwable throwable = failure.getThrowable().get().getCause();
                     assertEquals(MySpecialTestException.class, throwable.getClass());
                     assertEquals("xyfailure", throwable.getMessage());
                 }
@@ -474,7 +474,7 @@ public class EitherTests {
                 () -> a.either3XYZRequest.call(new Either3XYZRequest("xyz"))
         );
 
-        Throwable throwable = exception.getCause().getCause().getCause();
+        Throwable throwable = exception.getCause();
 
         assertEquals(MySpecialTestException.class, throwable.getClass());
         assertEquals("xyz", throwable.getMessage());
@@ -498,7 +498,7 @@ public class EitherTests {
                 .orElseDoOnce(f -> fail("no orElse call expected (2)"))
                 .andThenDo(r -> fail("no andThen call expected"));
 
-        assertEquals("xfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
+        assertEquals("xfailure", failure1.value.getThrowable().get().getCause().getMessage());
         assertEquals(failure1.value, failure2.value);
     }
 
@@ -520,7 +520,7 @@ public class EitherTests {
                 .orElseDoOnce(f -> fail("no orElse call expected (2)"))
                 .andThenDo(r -> fail("no andThen call expected"));
 
-        assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
+        assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getMessage());
         assertEquals(failure1.value, failure2.value);
     }
 
