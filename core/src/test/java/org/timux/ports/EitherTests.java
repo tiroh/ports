@@ -22,7 +22,6 @@ import org.timux.ports.types.*;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -433,7 +432,7 @@ public class EitherTests {
         Ports.connect(a).and(b);
 
         Exception exception = assertThrows(
-                ExecutionException.class,
+                PortsExecutionException.class,
                 () -> a.eitherXYRequest.call(new EitherXYRequest("xy"))
         );
 
@@ -471,7 +470,7 @@ public class EitherTests {
         Ports.connect(a).and(b);
 
         Exception exception = assertThrows(
-                ExecutionException.class,
+                PortsExecutionException.class,
                 () -> a.either3XYZRequest.call(new Either3XYZRequest("xyz"))
         );
 

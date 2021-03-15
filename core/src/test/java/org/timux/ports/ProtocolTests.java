@@ -259,7 +259,7 @@ public class ProtocolTests {
                     throw new MySpecialTestException("?");
                 });
 
-        assertThrows(ExecutionException.class, () -> {
+        assertThrows(PortsExecutionException.class, () -> {
             Ports.protocol()
                 .with(EitherRequest.class, Double.class, String.class)
                     .call(new EitherRequest(1.0));
@@ -311,6 +311,38 @@ public class ProtocolTests {
                 .call(new EitherXFailureRequest("this is supposed to fail"));
 
         assertTrue(result.value.isFailure());
+    }
+
+    @Test
+    public void protocolsFailureCaptureWithFaultInjectionAndGetFirstNonPortsThrowable() {
+        F f = new F();
+
+        Ports.register(f);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .requests()
+                .respond(request -> {
+                    throw new PortsExecutionException(new MySpecialTestException(request.getMessage()));
+                })
+                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+                .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .call(new EitherXFailureRequest("message"));
+
+        result.value.on(
+                integer -> fail("no integer expected"),
+                failure -> {
+                    assertEquals(PortsExecutionException.class, failure.getThrowable().map(Throwable::getClass).orElse(null));
+                    assertEquals(MySpecialTestException.class, failure.getThrowable().map(Throwable::getCause).map(Throwable::getClass).orElse(null));
+                    assertEquals(MySpecialTestException.class, failure.getFirstNonPortsThrowable().map(Throwable::getClass).orElse(null));
+                    assertEquals("message", failure.getFirstNonPortsThrowable().map(Throwable::getMessage).orElse(""));
+                });
     }
 
     @Test

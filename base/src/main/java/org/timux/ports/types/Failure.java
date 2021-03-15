@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.timux.ports.types;
 
+import org.timux.ports.PortsExecutionException;
+
 import java.util.Optional;
 
 /**
@@ -28,7 +30,6 @@ import java.util.Optional;
  * @see Unknown
  * @see Either
  * @see Either3
- *
  * @since 0.5.0
  */
 public final class Failure {
@@ -70,7 +71,7 @@ public final class Failure {
     /**
      * Creates a new Failure instance.
      *
-     * @param message Must not be null.
+     * @param message   Must not be null.
      * @param throwable May be null.
      */
     public static Failure of(String message, Throwable throwable) {
@@ -89,8 +90,62 @@ public final class Failure {
         return message;
     }
 
+    /**
+     * @see #getFirstNonPortsThrowable()
+     * @see #getRootCause()
+     */
     public Optional<Throwable> getThrowable() {
         return throwable;
+    }
+
+    /**
+     * Returns an {@link Optional} containing the first {@link Throwable} that is
+     * not a {@link PortsExecutionException}.
+     * If such a Throwable does not exist, an empty Optional is returned.
+     *
+     * @see #getRootCause()
+     * @see #getThrowable()
+     */
+    public Optional<Throwable> getFirstNonPortsThrowable() {
+        Optional<Throwable> t = throwable;
+
+        while (t.isPresent()) {
+            Throwable tt = t.get();
+
+            // We do NOT want 'instanceof' here because of inheritance!
+            if (!(tt.getClass() == PortsExecutionException.class)) {
+                return t;
+            }
+
+            t = Optional.ofNullable(t.get().getCause());
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Returns an {@link Optional} containing the last {@link Throwable} in the exception chain,
+     * if it exists; or an empty Optional otherwise.
+     *
+     * @see #getFirstNonPortsThrowable()
+     * @see #getThrowable()
+     */
+    public Optional<Throwable> getRootCause() {
+        Optional<Throwable> t = throwable;
+
+        for (;;) {
+            if (!t.isPresent()) {
+                return Optional.empty();
+            }
+
+            Throwable tt = t.get().getCause();
+
+            if (tt == null) {
+                return t;
+            }
+
+            t = Optional.of(tt);
+        }
     }
 
     @Override

@@ -101,8 +101,14 @@ public class Request<I, O> {
         Function<I, O> portFunction = x -> {
             try {
                 return (O) portMethod.invoke(methodOwner, x);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new PortsExecutionException(e);
+            } catch (InvocationTargetException e) {
+                if (e.getCause() instanceof PortsExecutionException) {
+                    throw (PortsExecutionException) e.getCause();
+                }
+
+                throw new PortsExecutionException(e.getCause());
             }
         };
 
@@ -146,7 +152,7 @@ public class Request<I, O> {
      *
      * @param payload The payload to be sent.
      * @return The response of the receiver.
-     * @throws ExecutionException        If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      * @throws PortNotConnectedException If this port is not connected.
      * @see #callF
      * @see Domain

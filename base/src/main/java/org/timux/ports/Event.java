@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,12 +103,11 @@ public class Event<T> {
                             if (owner != null) {
                                 portMethod.invoke(owner, x);
                             }
-                        } catch (IllegalAccessException | InvocationTargetException e) {
-                            if (e.getCause() != null) {
-                                e.getCause().printStackTrace();
-                            } else {
-                                e.printStackTrace();
-                            }
+                        } catch (IllegalAccessException e) {
+                            // TODO: feed this into an error port
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.getCause().printStackTrace();
                         }
                     });
         } else {
@@ -120,13 +119,11 @@ public class Event<T> {
                         if (owner != null) {
                             try {
                                 portMethod.invoke(owner, x);
-                            } catch (IllegalAccessException | InvocationTargetException e) {
+                            } catch (IllegalAccessException e) {
                                 // TODO: feed this into an error port
-                                if (e.getCause() != null) {
-                                    e.getCause().printStackTrace();
-                                } else {
-                                    e.printStackTrace();
-                                }
+                                e.printStackTrace();
+                            } catch (InvocationTargetException e) {
+                                e.getCause().printStackTrace();
                             }
                         }
                     }));

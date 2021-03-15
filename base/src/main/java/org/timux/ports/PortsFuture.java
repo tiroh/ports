@@ -72,7 +72,7 @@ public class PortsFuture<T> implements Future<T> {
      * <p> This particular implementation of get does not throw a CancellationException since
      * PortsFutures are not cancellable.
      *
-     * @throws ExecutionException if the receiver terminated unexpectedly
+     * @throws PortsExecutionException if the receiver terminated unexpectedly
      * @throws java.util.concurrent.CancellationException {@inheritDoc}
      */
     @Override
@@ -104,7 +104,7 @@ public class PortsFuture<T> implements Future<T> {
      * <p> This particular implementation of get does not throw a CancellationException since
      * PortsFutures are not cancellable.
      *
-     * @throws ExecutionException if the receiver terminated unexpectedly
+     * @throws PortsExecutionException if the receiver terminated unexpectedly
      * @throws java.util.concurrent.CancellationException {@inheritDoc}
      */
     @Override
@@ -165,7 +165,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public T getNow(T defaultValue) {
         if (hasReturned) {
@@ -211,7 +211,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public <R> R map(Function<T, R> mapper, R elseValue) {
         if (hasReturned) {
@@ -249,7 +249,7 @@ public class PortsFuture<T> implements Future<T> {
     /**
      * Applies the provided consumer to the result.
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public PortsFuture<T> do_(Consumer<T> consumer) {
         consumer.accept(get());
@@ -266,7 +266,7 @@ public class PortsFuture<T> implements Future<T> {
      * @see #andThenE 
      * @see Either#andThenR
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public <O, R extends PortsFuture<O>> R andThen(Function<T, R> fn) {
         // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
