@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         supportedAnnotationTypes.add(Response.class.getName());
         supportedAnnotationTypes.add(SuccessResponse.class.getName());
         supportedAnnotationTypes.add(FailureResponse.class.getName());
+        supportedAnnotationTypes.add(Pure.class.getName());
 
         unmodifiableSupportedAnnotationTypes = Collections.unmodifiableSet(supportedAnnotationTypes);
     }
@@ -183,6 +184,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         forEachAnnotatedElementDo(roundEnvironment, Response.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, SuccessResponse.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, FailureResponse.class, this::processSingleResponseAnnotatedElement);
+        forEachAnnotatedElementDo(roundEnvironment, Pure.class, this::processConstAnnotatedElement);
 
         verificationModel.verifyThatNoSuccessOrFailureResponseTypesStandAlone();
     }
@@ -253,6 +255,33 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
+    private void processConstAnnotatedElement(Element element, AnnotationMirror mirror) {
+        String messageType = element.toString();
+
+        if (!messageType.endsWith("Request")) {
+            reporter.reportIssue(element, mirror, "message type '%s' cannot be const", messageType);
+        }
+
+        String cacheValue = getMirrorValue("cache", mirror);
+        boolean isCacheEnabled = cacheValue == null || Boolean.parseBoolean(cacheValue);
+
+        if (isCacheEnabled) {
+            boolean foundField = false;
+            boolean foundEquals = false;
+            boolean foundHashCode = false;
+
+            for (Element e : element.getEnclosedElements()) {
+                foundField |= e.getKind().isField();
+                foundEquals |= e.getSimpleName().toString().equals("equals") && e.asType().toString().equals("(java.lang.Object)boolean");
+                foundHashCode |= e.getSimpleName().toString().equals("hashCode") && e.asType().toString().equals("()int");
+            }
+
+            if (foundField && !(foundEquals && foundHashCode)) {
+                reporter.reportIssue(element, mirror, "message type '%s' is declared const but does not implement both equals and hashCode", messageType);
+            }
+        }
+    }
+
     private void forEachAnnotatedElementDo(
             RoundEnvironment roundEnvironment, Class<? extends Annotation> annotation, BiConsumer<Element, AnnotationMirror> action)
     {
@@ -266,13 +295,23 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private String getMirrorValue(AnnotationMirror mirror) {
+        String value = getMirrorValue("value", mirror);
+
+        if (value == null) {
+            throw new IllegalStateException("annotation value must not be empty (" + mirror.getAnnotationType().toString() + ")");
+        }
+
+        return value;
+    }
+
+    private String getMirrorValue(String name, AnnotationMirror mirror) {
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> e : mirror.getElementValues().entrySet()) {
-            if ("value".equals(e.getKey().getSimpleName().toString())) {
+            if (name.equals(e.getKey().getSimpleName().toString())) {
                 return e.getValue().toString();
             }
         }
 
-        throw new IllegalStateException("annotation value must not be empty (" + mirror.getAnnotationType().toString() + ")");
+        return null;
     }
 
     private static String extractTypeParameter(String type, String _default) {

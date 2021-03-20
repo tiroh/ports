@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.timux.ports.Response;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -432,9 +431,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isSuccess() {
         return map(
-                a -> a.getClass() == Success.class,
-                b -> b.getClass() == Success.class,
-                c -> c.getClass() == Success.class);
+                x -> Either.checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess),
+                x -> Either.checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess),
+                x -> Either.checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess));
     }
 
     /**
@@ -443,9 +442,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isFailure() {
         return map(
-                a -> a.getClass() == Failure.class,
-                b -> b.getClass() == Failure.class,
-                c -> c.getClass() == Failure.class);
+                x -> Either.checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure),
+                x -> Either.checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure),
+                x -> Either.checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure));
     }
 
     /**
@@ -454,9 +453,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isEmpty() {
         return map(
-                a -> a.getClass() == Empty.class,
-                b -> b.getClass() == Empty.class,
-                c -> c.getClass() == Empty.class);
+                x -> Either.checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty),
+                x -> Either.checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty),
+                x -> Either.checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty));
     }
 
     /**
@@ -465,9 +464,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isNothing() {
         return map(
-                a -> a.getClass() == Nothing.class,
-                b -> b.getClass() == Nothing.class,
-                c -> c.getClass() == Nothing.class);
+                x -> Either.checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing),
+                x -> Either.checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing),
+                x -> Either.checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing));
     }
 
     /**
@@ -476,9 +475,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isUnknown() {
         return map(
-                a -> a.getClass() == Unknown.class,
-                b -> b.getClass() == Unknown.class,
-                c -> c.getClass() == Unknown.class);
+                x -> Either.checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown),
+                x -> Either.checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown),
+                x -> Either.checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown));
     }
 
     /**

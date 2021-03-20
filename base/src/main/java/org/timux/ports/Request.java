@@ -20,7 +20,9 @@ import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Failure;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -55,16 +57,27 @@ public class Request<I, O> {
     private Function<I, O> wrappedFunction;
     private int domainVersion = -1;
 
+//    private final Map<I, SoftReference<PortsFuture<O>>> cache;
+    private final RequestCache<I, PortsFuture<O>> cache;
+
     public Request() {
-        //
+        cache = null;
     }
 
     Request(String requestTypeName, String responseTypeName, String memberName, Object owner) {
         this.requestTypeName = requestTypeName;
         this.memberName = memberName;
         this.owner = owner;
+        this.responseTypeInfo = getResponseTypeInfo(responseTypeName);
 
-        responseTypeInfo = getResponseTypeInfo(responseTypeName);
+        try {
+            Class<?> requestType = getClass().getClassLoader().loadClass(requestTypeName);
+            Pure pureAnno = requestType.getDeclaredAnnotation(Pure.class);
+            boolean isCacheEnabled = pureAnno != null && pureAnno.cache();
+            this.cache = isCacheEnabled ? new RequestCache<>(4, requestType) : null;
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     Request(String requestTypeName, Field outPortField, String memberName, Object owner) {
@@ -152,14 +165,60 @@ public class Request<I, O> {
      *
      * @param payload The payload to be sent.
      * @return The response of the receiver.
-     * @throws PortsExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException   If the receiver terminated unexpectedly.
      * @throws PortNotConnectedException If this port is not connected.
      * @see #callF
      * @see Domain
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
-        return callF(payload).get();
+        PortsFuture<O> cachedFuture = cache != null ? cache.get(payload) : null;
+
+        if (cachedFuture != null) {
+            if (Protocol.areProtocolsActive) {
+                try {
+                    Protocol.onDataSent(requestTypeName, owner, payload);
+                    Protocol.onDataReceived(requestTypeName, owner, cachedFuture);
+                } catch (Exception e) {
+                    return new PortsFuture<O>(e, responseTypeInfo).get();
+                }
+            }
+
+            return cachedFuture.get();
+        }
+
+        PortsFuture<O> future = callF_internal(payload);
+        O response = future.get();
+
+        if (cache != null) {
+            if (future.hasExceptionOccurred()) {
+                return response;
+            }
+
+            switch (responseTypeInfo) {
+            case EITHER_X_FAILURE:
+                if (((Either<?, Failure>) response).isFailure()) {
+                    return response;
+                }
+                break;
+
+            case EITHER3_X_Y_FAILURE:
+                if (((Either3<?, ?, Failure>) response).isFailure()) {
+                    return response;
+                }
+                break;
+
+            case OTHER:
+                break;
+
+            default:
+                throw new IllegalStateException("unhandled type info: " + responseTypeInfo);
+            }
+
+            cache.put(payload, future);
+        }
+
+        return response;
     }
 
     /**
@@ -174,7 +233,33 @@ public class Request<I, O> {
      * @see Domain
      */
     public Either<O, Failure> callE(I payload) {
-        return callF(payload).getE();
+        PortsFuture<O> cachedFuture = cache != null ? cache.get(payload) : null;
+
+        if (cachedFuture != null) {
+            if (Protocol.areProtocolsActive) {
+                try {
+                    Protocol.onDataSent(requestTypeName, owner, payload);
+                    Protocol.onDataReceived(requestTypeName, owner, cachedFuture);
+                } catch (Exception e) {
+                    return new PortsFuture<O>(e, responseTypeInfo).getE();
+                }
+            }
+
+            return cachedFuture.getE();
+        }
+
+        PortsFuture<O> future = callF_internal(payload);
+        Either<O, Failure> response = future.getE();
+
+        if (cache != null) {
+            if (response.isFailure()) {
+                return response;
+            }
+
+            cache.put(payload, future);
+        }
+
+        return response;
     }
 
     /**
@@ -191,6 +276,57 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public PortsFuture<O> callF(I payload) {
+        PortsFuture<O> cachedFuture = cache != null ? cache.get(payload) : null;
+
+        if (cachedFuture != null) {
+            if (Protocol.areProtocolsActive) {
+                try {
+                    Protocol.onDataSent(requestTypeName, owner, payload);
+                    Protocol.onDataReceived(requestTypeName, owner, cachedFuture);
+                } catch (Exception e) {
+                    return new PortsFuture<>(e, responseTypeInfo);
+                }
+            }
+
+            return cachedFuture;
+        }
+
+        PortsFuture<O> future = callF_internal(payload);
+
+        if (cache != null) {
+            O maybeResponse = future.getNow(null);
+
+            if (!future.hasExceptionOccurred() && maybeResponse != null) {
+                switch (responseTypeInfo) {
+                case EITHER_X_FAILURE:
+                    if (((Either<?, Failure>) maybeResponse).isFailure()) {
+                        return future;
+                    }
+                    break;
+
+                case EITHER3_X_Y_FAILURE:
+                    if (((Either3<?, ?, Failure>) maybeResponse).isFailure()) {
+                        return future;
+                    }
+                    break;
+
+                case OTHER:
+                    break;
+
+                default:
+                    throw new IllegalStateException("unhandled type info: " + responseTypeInfo);
+                }
+
+                cache.put(payload, future);
+            }
+
+            return future;
+        }
+
+        return future;
+    }
+
+    private PortsFuture<O> callF_internal(I payload) {
         if (Protocol.areProtocolsActive) {
             try {
                 Protocol.onDataSent(requestTypeName, owner, payload);
