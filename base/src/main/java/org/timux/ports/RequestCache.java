@@ -23,9 +23,7 @@ import java.lang.ref.SoftReference;
 
 class RequestCache<I, O> {
 
-//    private final Pair<I, O>[] data;
     private final Pair<SoftReference<I>, SoftReference<O>>[] data;
-//private final Pair<I, SoftReference<O>>[] data;
 
     private int startIdx = 0;
     private int size = 0;
@@ -45,15 +43,12 @@ class RequestCache<I, O> {
             int i = (startIdx + k) & (data.length - 1);
 
             Pair<SoftReference<I>, SoftReference<O>> p = data[i];
-//            Pair<I, O> p = data[i];
-//            Pair<I, SoftReference<O>> p = data[i];
 
             if (p == null) {
                 continue;
             }
 
             I input = p.getA().get();
-//            I input = p.getA();
 
             if (input == null) {
                 data[i] = null;
@@ -62,7 +57,6 @@ class RequestCache<I, O> {
 
 
             O output = p.getB().get();
-//            O output = p.getB();
 
             if (output == null) {
                 data[i] = null;
@@ -75,14 +69,8 @@ class RequestCache<I, O> {
                 if (newIndex != i) {
                     int oneBelow = (newIndex + 1) & (data.length - 1);
 
-                Pair<SoftReference<I>, SoftReference<O>> newIndexObj = data[newIndex];
-                Pair<SoftReference<I>, SoftReference<O>> oneBelowObj = data[oneBelow];
-
-//                    Pair<I, O> newIndexObj = data[newIndex];
-//                    Pair<I, O> oneBelowObj = data[oneBelow];
-
-//                    Pair<I, SoftReference<O>> newIndexObj = data[newIndex];
-//                    Pair<I, SoftReference<O>> oneBelowObj = data[oneBelow];
+                    Pair<SoftReference<I>, SoftReference<O>> newIndexObj = data[newIndex];
+                    Pair<SoftReference<I>, SoftReference<O>> oneBelowObj = data[oneBelow];
 
                     data[i] = oneBelowObj;
                     data[oneBelow] = newIndexObj;
@@ -102,9 +90,6 @@ class RequestCache<I, O> {
         }
 
         startIdx = (startIdx + data.length - 1) & (data.length - 1);
-
         data[startIdx] = Tuple.of(new SoftReference<>(input), new SoftReference<>(output));
-//        data[startIdx] = Tuple.of(input, output);
-//        data[startIdx] = Tuple.of(input, new SoftReference<>(output));
     }
 }
