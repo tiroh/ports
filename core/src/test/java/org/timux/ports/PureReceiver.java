@@ -11,4 +11,9 @@ public class PureReceiver {
                 ? Either.a(request.getArg() * 17)
                 : Either.failure("is negative: " + request.getArg());
     }
+
+    @In
+    private Integer onPureStatelessRequest(PureStatelessRequest request) {
+        return 17;
+    }
 }

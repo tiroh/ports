@@ -6,10 +6,7 @@ import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Failure;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CacheTests {
 
@@ -171,6 +168,18 @@ public class CacheTests {
         assertEquals("is negative: -4", responseE.getBOrThrow().getMessage());
         assertEquals("is negative: -4", responseF.getBOrThrow().getMessage());
         assertNotEquals(responseE, responseF);
+    }
+
+    @Test
+    public void statelessRequest() {
+        PureSender pureSender = new PureSender();
+        PureReceiver pureReceiver = new PureReceiver();
+
+        Ports.connect(pureSender).and(pureReceiver);
+
+        int response = pureSender.runStatelessRequest();
+
+        assertEquals(17, response);
     }
 
 //    @Test
