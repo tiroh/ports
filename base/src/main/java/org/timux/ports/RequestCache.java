@@ -92,4 +92,13 @@ class RequestCache<I, O> {
         startIdx = (startIdx + data.length - 1) & (data.length - 1);
         data[startIdx] = Tuple.of(new SoftReference<>(input), new SoftReference<>(output));
     }
+
+    public synchronized void clear() {
+        for (int i = 0; i < data.length; i++) {
+            data[i] = null;
+        }
+
+        startIdx = 0;
+        size = 0;
+    }
 }

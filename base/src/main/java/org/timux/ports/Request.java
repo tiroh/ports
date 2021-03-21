@@ -75,6 +75,10 @@ public class Request<I, O> {
             Pure pureAnno = requestType.getDeclaredAnnotation(Pure.class);
             boolean isCacheEnabled = pureAnno != null && pureAnno.cache();
             this.cache = isCacheEnabled ? new RequestCache<>(4, requestType) : null;
+
+            if (isCacheEnabled) {
+                CacheManager.registerRequestPort(this, pureAnno);
+            }
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -427,5 +431,9 @@ public class Request<I, O> {
      */
     public boolean isConnected() {
         return port != null;
+    }
+
+    void clearCache() {
+        cache.clear();
     }
 }

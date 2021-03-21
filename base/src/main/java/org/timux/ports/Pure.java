@@ -28,7 +28,10 @@ import java.lang.annotation.Target;
  *
  * <p> Ports may decide to cache the responses of pure requests in order to increase
  * performance. However, Ports will never cache failures. Caching can be disabled by
- * setting this annotation's {@link Pure#cache()} property to false.
+ * setting this annotation's {@link #cache()} property to false.
+ *
+ * <p> Use the {@link #clearCacheOn()} property to specify event types that when triggered
+ * cause the cache to be cleared.
  *
  * <p> Be aware that you must not use this annotation on request types whose handlers
  * perform output or transform the system state in another significant way.
@@ -38,7 +41,7 @@ import java.lang.annotation.Target;
  * generation for that in order to avoid subtle errors.
  *
  * @author Tim Rohlfs
- * @since 0.5.12
+ * @since 0.6.0
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -49,4 +52,10 @@ public @interface Pure {
      * By default, caching is enabled.
      */
     boolean cache() default true;
+
+    /**
+     * Use this property to specify a set of event types that when triggered
+     * cause the request cache to be cleared.
+     */
+    Class<?>[] clearCacheOn() default {};
 }

@@ -588,6 +588,19 @@ public final class Ports {
         DomainManager.release();
     }
 
+    public static void clearCaches() {
+        CacheManager.clear();
+    }
+
+    /**
+     * Resets all internal state information, i.e. protocols and domains, and clears all caches.
+     */
+    public static void reset() {
+        releaseProtocols();
+        releaseDomains();
+        CacheManager.reset();
+    }
+
     static void printWarning(String message) {
         System.err.println("[ports] warning: " + message);
     }

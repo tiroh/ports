@@ -199,6 +199,8 @@ public class Event<T> {
      * @see Domain
      */
     public void trigger(T payload) {
+        CacheManager.trigger(payload.getClass());
+
         final List<PortEntry<T>> p = ports;
 
         int i = p.size();
