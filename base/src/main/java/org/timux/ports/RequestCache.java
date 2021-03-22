@@ -21,8 +21,6 @@ import org.timux.ports.types.Tuple;
 
 import java.lang.ref.SoftReference;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 class RequestCache<I, O> {
@@ -37,7 +35,7 @@ class RequestCache<I, O> {
     private static int hits = 0;
     private static int misses = 0;
 
-    private static boolean isInititialized = false;
+    private static boolean isInitialized = false;
 
     /**
      * @param capacity Must be a power of two.
@@ -46,8 +44,8 @@ class RequestCache<I, O> {
         this.data = new Pair[capacity];
         this.isStateless = requestType.getDeclaredFields().length == 0;
 
-        if (!isInititialized) {
-            isInititialized = true;
+        if (!isInitialized) {
+            isInitialized = true;
 
             Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(
                     () -> System.out.printf("Hits: %s   Misses: %s\n", hits, misses),
@@ -74,7 +72,6 @@ class RequestCache<I, O> {
                 System.out.println("missed: " + payload);
                 return null;
             }
-
 
             O output = p.getB().get();
 

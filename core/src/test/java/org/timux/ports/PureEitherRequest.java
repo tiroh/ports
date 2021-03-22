@@ -45,6 +45,6 @@ public class PureEitherRequest {
 
     @Override
     public int hashCode() {
-        return Objects.hash(arg);
+        return Integer.hashCode(arg);
     }
 }

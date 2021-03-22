@@ -588,12 +588,19 @@ public final class Ports {
         DomainManager.release();
     }
 
+    /**
+     * Clears the caches of all ports.
+     *
+     * @since 0.6.0
+     */
     public static void clearCaches() {
         CacheManager.clear();
     }
 
     /**
      * Resets all internal state information, i.e. protocols and domains, and clears all caches.
+     *
+     * @since 0.6.0
      */
     public static void reset() {
         releaseProtocols();

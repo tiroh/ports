@@ -73,7 +73,7 @@ public class Request<I, O> {
             Class<?> requestType = getClass().getClassLoader().loadClass(requestTypeName);
             Pure pureAnno = requestType.getDeclaredAnnotation(Pure.class);
             boolean isCacheEnabled = pureAnno != null && pureAnno.cache();
-            this.cache = isCacheEnabled ? new RequestCache<>(32, requestType) : null;
+            this.cache = isCacheEnabled ? new RequestCache<>(4, requestType) : null;
 
             if (isCacheEnabled) {
                 CacheManager.registerRequestPort(this, pureAnno);

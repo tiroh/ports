@@ -266,24 +266,26 @@ public class AnnotationProcessor extends AbstractProcessor {
         String messageType = element.toString();
 
         if (!messageType.endsWith("Request")) {
-            reporter.reportIssue(element, mirror, "message type '%s' cannot be const", messageType);
+            reporter.reportIssue(element, mirror, "message type '%s' cannot be pure", messageType);
         }
 
         String cacheValue = getMirrorValue("cache", mirror);
         boolean isCacheEnabled = cacheValue == null || Boolean.parseBoolean(cacheValue);
 
         if (isCacheEnabled) {
-            boolean foundField = false;
+            boolean foundState = false;
             boolean foundEquals = false;
             boolean foundHashCode = false;
 
             for (Element e : element.getEnclosedElements()) {
-                foundField |= e.getKind().isField();
+                Set<Modifier> modifiers = e.getModifiers();
+
+                foundState |= e.getKind().isField() && !(modifiers.contains(Modifier.STATIC) && modifiers.contains(Modifier.FINAL));
                 foundEquals |= e.getSimpleName().toString().equals("equals") && e.asType().toString().equals("(java.lang.Object)boolean");
                 foundHashCode |= e.getSimpleName().toString().equals("hashCode") && e.asType().toString().equals("()int");
             }
 
-            if (foundField && !(foundEquals && foundHashCode)) {
+            if (foundState && !(foundEquals && foundHashCode)) {
                 reporter.reportIssue(element, mirror,
                         "message type '%s' is stateful and declared pure but does not implement both equals and hashCode",
                         messageType);
