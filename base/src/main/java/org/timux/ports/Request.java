@@ -57,7 +57,6 @@ public class Request<I, O> {
     private Function<I, O> wrappedFunction;
     private int domainVersion = -1;
 
-//    private final Map<I, SoftReference<PortsFuture<O>>> cache;
     private final RequestCache<I, PortsFuture<O>> cache;
 
     public Request() {
@@ -74,7 +73,7 @@ public class Request<I, O> {
             Class<?> requestType = getClass().getClassLoader().loadClass(requestTypeName);
             Pure pureAnno = requestType.getDeclaredAnnotation(Pure.class);
             boolean isCacheEnabled = pureAnno != null && pureAnno.cache();
-            this.cache = isCacheEnabled ? new RequestCache<>(4, requestType) : null;
+            this.cache = isCacheEnabled ? new RequestCache<>(32, requestType) : null;
 
             if (isCacheEnabled) {
                 CacheManager.registerRequestPort(this, pureAnno);
@@ -176,6 +175,8 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public O call(I payload) {
+        CacheManager.onMessageSent(payload.getClass());
+
         PortsFuture<O> cachedFuture = cache != null ? cache.get(payload) : null;
 
         if (cachedFuture != null) {
@@ -237,6 +238,8 @@ public class Request<I, O> {
      * @see Domain
      */
     public Either<O, Failure> callE(I payload) {
+        CacheManager.onMessageSent(payload.getClass());
+
         PortsFuture<O> cachedFuture = cache != null ? cache.get(payload) : null;
 
         if (cachedFuture != null) {
@@ -280,6 +283,8 @@ public class Request<I, O> {
      */
     @SuppressWarnings("unchecked")
     public PortsFuture<O> callF(I payload) {
+        CacheManager.onMessageSent(payload.getClass());
+
         PortsFuture<O> cachedFuture = cache != null ? cache.get(payload) : null;
 
         if (cachedFuture != null) {

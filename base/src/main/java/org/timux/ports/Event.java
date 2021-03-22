@@ -199,7 +199,7 @@ public class Event<T> {
      * @see Domain
      */
     public void trigger(T payload) {
-        CacheManager.trigger(payload.getClass());
+        CacheManager.onMessageSent(payload.getClass());
 
         final List<PortEntry<T>> p = ports;
 

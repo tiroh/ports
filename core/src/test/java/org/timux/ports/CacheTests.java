@@ -73,16 +73,16 @@ public class CacheTests {
         Either<Integer, Failure> responseF = pureSender.runCall(-4);
 
         assertEquals(3 * 17, responseA.getAOrThrow());
-        assertEquals(responseA, responseB);
+        assertSame(responseA, responseB);
 
         assertEquals(4 * 17, responseC.getAOrThrow());
-        assertEquals(responseC, responseD);
+        assertSame(responseC, responseD);
 
-        assertNotEquals(responseA, responseC);
+        assertNotSame(responseA, responseC);
 
         assertEquals("is negative: -4", responseE.getBOrThrow().getMessage());
         assertEquals("is negative: -4", responseF.getBOrThrow().getMessage());
-        assertNotEquals(responseE, responseF);
+        assertNotSame(responseE, responseF);
     }
 
     @Test
@@ -102,16 +102,16 @@ public class CacheTests {
         Either<Integer, Failure> responseF = pureSender.runCallE(-4);
 
         assertEquals(3 * 17, responseA.getAOrThrow());
-        assertEquals(responseA, responseB);
+        assertSame(responseA, responseB);
 
         assertEquals(4 * 17, responseC.getAOrThrow());
-        assertEquals(responseC, responseD);
+        assertSame(responseC, responseD);
 
-        assertNotEquals(responseA, responseC);
+        assertNotSame(responseA, responseC);
 
         assertEquals("is negative: -4", responseE.getBOrThrow().getMessage());
         assertEquals("is negative: -4", responseF.getBOrThrow().getMessage());
-        assertNotEquals(responseE, responseF);
+        assertNotSame(responseE, responseF);
     }
 
     @Test
@@ -131,16 +131,16 @@ public class CacheTests {
         Either<Integer, Failure> responseF = pureSender.runCallF(-4);
 
         assertEquals(3 * 17, responseA.getAOrThrow());
-        assertEquals(responseA, responseB);
+        assertSame(responseA, responseB);
 
         assertEquals(4 * 17, responseC.getAOrThrow());
-        assertEquals(responseC, responseD);
+        assertSame(responseC, responseD);
 
-        assertNotEquals(responseA, responseC);
+        assertNotSame(responseA, responseC);
 
         assertEquals("is negative: -4", responseE.getBOrThrow().getMessage());
         assertEquals("is negative: -4", responseF.getBOrThrow().getMessage());
-        assertNotEquals(responseE, responseF);
+        assertNotSame(responseE, responseF);
     }
 
     @Test
@@ -174,16 +174,16 @@ public class CacheTests {
         assertEquals(6, responseCounter.value);
 
         assertEquals(3 * 17, responseA.getAOrThrow());
-        assertEquals(responseA, responseB);
+        assertSame(responseA, responseB);
 
         assertEquals(4 * 17, responseC.getAOrThrow());
-        assertEquals(responseC, responseD);
+        assertSame(responseC, responseD);
 
-        assertNotEquals(responseA, responseC);
+        assertNotSame(responseA, responseC);
 
         assertEquals("is negative: -4", responseE.getBOrThrow().getMessage());
         assertEquals("is negative: -4", responseF.getBOrThrow().getMessage());
-        assertNotEquals(responseE, responseF);
+        assertNotSame(responseE, responseF);
     }
 
     @Test
@@ -215,13 +215,42 @@ public class CacheTests {
         Either<Integer, Failure> responseC = pureSender.runCall(3);
         Either<Integer, Failure> responseD = pureSender.runCall(3);
 
+        Ports.protocol()
+            .when(PureStatelessRequest.class, Integer.class)
+                .requests()
+                .respond(17);
+
+        Either<Integer, Failure> responseE = pureSender.runCall(3);
+        Either<Integer, Failure> responseF = pureSender.runCall(3);
+
+        Ports.protocol()
+            .with(PureStatelessRequest.class, Integer.class)
+                .call(new PureStatelessRequest());
+
+        Either<Integer, Failure> responseG = pureSender.runCall(3);
+        Either<Integer, Failure> responseH = pureSender.runCall(3);
+
         assertEquals(3 * 17, responseA.getAOrThrow());
-        assertEquals(responseA, responseB);
+        assertSame(responseA, responseB);
 
         assertEquals(3 * 17, responseC.getAOrThrow());
-        assertEquals(responseC, responseD);
+        assertSame(responseC, responseD);
 
-        assertNotEquals(responseA, responseC);
+        assertEquals(3 * 17, responseE.getAOrThrow());
+        assertSame(responseE, responseF);
+
+        assertEquals(3 * 17, responseG.getAOrThrow());
+        assertSame(responseG, responseH);
+
+        assertNotSame(responseA, responseC);
+        assertNotSame(responseA, responseE);
+        assertNotSame(responseA, responseF);
+
+        assertSame(responseC, responseE);
+        assertSame(responseC, responseF);
+
+        assertNotSame(responseE, responseG);
+        assertSame(responseE, responseF);
     }
 
 //    @Test

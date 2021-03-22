@@ -20,6 +20,10 @@ import org.timux.ports.types.Pair;
 import org.timux.ports.types.Tuple;
 
 import java.lang.ref.SoftReference;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 class RequestCache<I, O> {
 
@@ -30,12 +34,26 @@ class RequestCache<I, O> {
 
     private final boolean isStateless;
 
+    private static int hits = 0;
+    private static int misses = 0;
+
+    private static boolean isInititialized = false;
+
     /**
      * @param capacity Must be a power of two.
      */
     public RequestCache(int capacity, Class<?> requestType) {
         this.data = new Pair[capacity];
         this.isStateless = requestType.getDeclaredFields().length == 0;
+
+        if (!isInititialized) {
+            isInititialized = true;
+
+            Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(
+                    () -> System.out.printf("Hits: %s   Misses: %s\n", hits, misses),
+                    1000, 1000, TimeUnit.MILLISECONDS
+            );
+        }
     }
 
     public synchronized O get(I payload) {
@@ -52,6 +70,8 @@ class RequestCache<I, O> {
 
             if (input == null) {
                 data[i] = null;
+                misses++;
+                System.out.println("missed: " + payload);
                 return null;
             }
 
@@ -60,6 +80,8 @@ class RequestCache<I, O> {
 
             if (output == null) {
                 data[i] = null;
+                misses++;
+                System.out.println("missed: " + payload);
                 return null;
             }
 
@@ -77,9 +99,15 @@ class RequestCache<I, O> {
                     data[newIndex] = p;
                 }
 
+                hits++;
+                System.out.println("found: " + payload);
+
                 return output;
             }
         }
+
+        misses++;
+        System.out.println("missed: " + payload);
 
         return null;
     }

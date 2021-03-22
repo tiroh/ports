@@ -29,6 +29,7 @@ import javax.lang.model.element.*;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 public class AnnotationProcessor extends AbstractProcessor {
 
@@ -130,13 +131,15 @@ public class AnnotationProcessor extends AbstractProcessor {
                         ? " (commands should be implemented via request ports)"
                         : "";
 
-                reporter.reportIssue(element, "'%s' is not a valid event type%s", messageType, commandNote);
+                reporter.reportIssue(element,
+                        "'%s' is not a valid event type%s", messageType, commandNote);
             } else {
                 if (portType.startsWith(EVENT_TYPE) && (messageType.endsWith("Event") || messageType.endsWith("Exception"))) {
                     String correctName = PortNamer.toOutPortName(messageType);
 
                     if (!portName.equals(correctName)) {
-                        reporter.reportIssue(element, "'%s' is not a valid OUT port name (should be '%s')", portName, correctName);
+                        reporter.reportIssue(element,
+                                "'%s' is not a valid OUT port name (should be '%s')", portName, correctName);
                     }
                 }
             }
@@ -148,7 +151,8 @@ public class AnnotationProcessor extends AbstractProcessor {
                     String correctName = PortNamer.toOutPortName(messageType);
 
                     if (!portName.equals(correctName)) {
-                        reporter.reportIssue(element, "'%s' is not a valid OUT port name (should be '%s')", portName, correctName);
+                        reporter.reportIssue(element,
+                                "'%s' is not a valid OUT port name (should be '%s')", portName, correctName);
                     }
                 }
             }
@@ -184,7 +188,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         forEachAnnotatedElementDo(roundEnvironment, Response.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, SuccessResponse.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, FailureResponse.class, this::processSingleResponseAnnotatedElement);
-        forEachAnnotatedElementDo(roundEnvironment, Pure.class, this::processConstAnnotatedElement);
+        forEachAnnotatedElementDo(roundEnvironment, Pure.class, this::processPureAnnotatedElement);
 
         verificationModel.verifyThatNoSuccessOrFailureResponseTypesStandAlone();
     }
@@ -202,17 +206,20 @@ public class AnnotationProcessor extends AbstractProcessor {
 
         for (String responseType : responseTypes) {
             if (responseType.equals(Void.class.getName())) {
-                reporter.reportIssue(element, mirror, "message type '%s' has inadmissible response type (%s)", messageType, responseType);
+                reporter.reportIssue(element, mirror,
+                        "message type '%s' has inadmissible response type (%s)", messageType, responseType);
             }
         }
 
         if (responseTypes.size() < 2) {
-            reporter.reportIssue(element, mirror, "too few response types for message type '%s' (min. 2 required)", messageType);
+            reporter.reportIssue(element, mirror,
+                    "too few response types for message type '%s' (min. 2 required)", messageType);
             return;
         }
 
         if (responseTypes.size() > 3) {
-            reporter.reportIssue(element, mirror, "too many response types for message type '%s' (max. 3 allowed)", messageType);
+            reporter.reportIssue(element, mirror,
+                    "too many response types for message type '%s' (max. 3 allowed)", messageType);
             return;
         }
 
@@ -255,7 +262,7 @@ public class AnnotationProcessor extends AbstractProcessor {
         }
     }
 
-    private void processConstAnnotatedElement(Element element, AnnotationMirror mirror) {
+    private void processPureAnnotatedElement(Element element, AnnotationMirror mirror) {
         String messageType = element.toString();
 
         if (!messageType.endsWith("Request")) {
@@ -277,9 +284,26 @@ public class AnnotationProcessor extends AbstractProcessor {
             }
 
             if (foundField && !(foundEquals && foundHashCode)) {
-                reporter.reportIssue(element, mirror, "message type '%s' is declared const but does not implement both equals and hashCode", messageType);
+                reporter.reportIssue(element, mirror,
+                        "message type '%s' is stateful and declared pure but does not implement both equals and hashCode",
+                        messageType);
             }
         }
+
+        String clearCacheOnValue = getMirrorValue("clearCacheOn", mirror);
+        List<String> clearCacheOnTypes = splitArrayMirrorValue(clearCacheOnValue);
+
+        clearCacheOnTypes.forEach(type -> {
+            if (!(type.endsWith("Event.class")
+                    || type.endsWith("Request.class")
+                    || type.endsWith("Command.class")
+                    || type.endsWith("Exception.class")))
+            {
+                reporter.reportIssue(element, mirror,
+                        "invalid type '%s': all provided types must be message types (events, requests, commands, or exceptions)",
+                        type.substring(0, type.length() - ".class".length()));
+            }
+        });
     }
 
     private void forEachAnnotatedElementDo(
@@ -314,12 +338,25 @@ public class AnnotationProcessor extends AbstractProcessor {
         return null;
     }
 
+    private static List<String> splitArrayMirrorValue(String arrayMirrorValue) {
+        if (arrayMirrorValue == null) {
+            return Collections.emptyList();
+        }
+
+        int start = arrayMirrorValue.indexOf('{') + 1;
+        int end = arrayMirrorValue.lastIndexOf('}');
+
+        return Arrays.stream(arrayMirrorValue.substring(start, end).split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+    }
+
     private static String extractTypeParameter(String type, String _default) {
-        int genericStart = type.indexOf('<');
+        int genericStart = type.indexOf('<') + 1;
         int genericEnd = type.lastIndexOf('>');
 
-        return genericStart < 0
+        return genericStart <= 0
                 ? _default
-                : type.substring(genericStart + 1, genericEnd);
+                : type.substring(genericStart, genericEnd);
     }
 }

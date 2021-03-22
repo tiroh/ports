@@ -28,12 +28,12 @@ class CacheManager {
     synchronized static void registerRequestPort(Request<?, ?> requestPort, Pure pureAnno) {
         Class<?>[] clearCacheOn = pureAnno.clearCacheOn();
 
-        for (Class<?> eventType : clearCacheOn) {
-            ArrayList<WeakReference<Request<?, ?>>> requestPorts = cachesToBeCleared.get(eventType);
+        for (Class<?> messageType : clearCacheOn) {
+            ArrayList<WeakReference<Request<?, ?>>> requestPorts = cachesToBeCleared.get(messageType);
 
             if (requestPorts == null) {
                 requestPorts = new ArrayList<>();
-                cachesToBeCleared.put(eventType, requestPorts);
+                cachesToBeCleared.put(messageType, requestPorts);
             }
 
             for (int j = 0; j < requestPorts.size(); ) {
@@ -48,8 +48,8 @@ class CacheManager {
         }
     }
 
-    synchronized static void trigger(Class<?> eventType) {
-        ArrayList<WeakReference<Request<?, ?>>> requestPorts = cachesToBeCleared.get(eventType);
+    synchronized static void onMessageSent(Class<?> messageType) {
+        ArrayList<WeakReference<Request<?, ?>>> requestPorts = cachesToBeCleared.get(messageType);
 
         if (requestPorts == null) {
             return;
@@ -67,7 +67,7 @@ class CacheManager {
     }
 
     synchronized static void clear() {
-        cachesToBeCleared.forEach((eventType, requestPorts) -> {
+        cachesToBeCleared.forEach((messageType, requestPorts) -> {
             requestPorts.forEach(ref -> {
                 Request<?, ?> requestPort = ref.get();
 

@@ -22,7 +22,7 @@ import java.util.Objects;
 
 @Response(Integer.class)
 @Response(Failure.class)
-@Pure(clearCacheOn = ClearEvent.class)
+@Pure(clearCacheOn = {ClearEvent.class, PureStatelessRequest.class})
 public class PureEitherRequest {
 
     private final int arg;
