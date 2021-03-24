@@ -27,7 +27,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * A union type for two types A and B.
+ * A union type for two constituent types A and B.
  *
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
@@ -554,6 +554,16 @@ public abstract class Either<A, B> {
                 throwGetOrThrowException(a);
                 return null; // unreachable
             }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, a, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return a.hashCode();
+            }
         };
     }
 
@@ -679,6 +689,16 @@ public abstract class Either<A, B> {
             public B getBOrThrow() {
                 return b;
             }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, b, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return b.hashCode();
+            }
         };
     }
 
@@ -709,5 +729,20 @@ public abstract class Either<A, B> {
         return x instanceof Either
                 ? ep.test((Either<?, ?>) x)
                 : (x instanceof Either3 ? e3p.test(((Either3<?, ?, ?>) x)) : x.getClass() == clazz);
+    }
+
+    // This method is used by both Either and Either3.
+    static boolean equals(Object self, Object value, Object other) {
+        if (self == other) {
+            return true;
+        }
+
+        if (other instanceof Either) {
+            return ((Either<?, ?>) other).map(x -> x.equals(value), x -> x.equals(value));
+        } else if (other instanceof Either3) {
+            return ((Either3<?, ?, ?>) other).map(x -> x.equals(value), x -> x.equals(value), x -> x.equals(value));
+        }
+
+        return false;
     }
 }

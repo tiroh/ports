@@ -27,8 +27,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * A union type for three types A, B, and C. The primary use case is as a response type for a
- * {@link Request} that may return different kinds of data, depending on the situation.
+ * A union type for three constituent types A, B, and C. The primary use case is as a response
+ * type for a {@link Request} that may return different kinds of data, depending on the situation.
  *
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
@@ -620,6 +620,16 @@ public abstract class Either3<A, B, C> {
                 Either.throwGetOrThrowException(a);
                 return null; // unreachable
             }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, a, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return a.hashCode();
+            }
         };
     }
 
@@ -750,6 +760,16 @@ public abstract class Either3<A, B, C> {
             public C getCOrThrow() {
                 Either.throwGetOrThrowException(b);
                 return null; // unreachable
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, b, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return b.hashCode();
             }
         };
     }
@@ -903,6 +923,16 @@ public abstract class Either3<A, B, C> {
             @Override
             public C getCOrThrow() {
                 return c;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, c, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return c.hashCode();
             }
         };
     }

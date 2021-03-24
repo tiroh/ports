@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1077,5 +1078,58 @@ public class EitherTests {
         assertFalse(t6.getA().isPresent());
         assertFalse(t6.getB().isPresent());
         assertEquals(5.0, t6.getC().get());
+    }
+
+    @Test
+    public void eitherEquals() {
+        Either<Integer, String> e1 = Either.a(1);
+        Either<Integer, String> e2 = Either.a(1);
+        Either<Integer, String> e3 = Either.a(2);
+
+        Either<Integer, String> e4 = Either.b("a");
+        Either<Integer, String> e5 = Either.b("a");
+        Either<Integer, String> e6 = Either.b("b");
+
+        Either3<Integer, String, Double> e7 = Either3.a(1);
+        Either3<Integer, String, Double> e8 = Either3.b("a");
+        Either3<Integer, String, Double> e9 = Either3.c(2.0);
+
+        Either<Either<Integer, String>, Double> r = Either.a(e1);
+
+        assertEquals(e1, e1);
+        assertEquals(e4, e4);
+
+        assertEquals(e7, e7);
+        assertEquals(e8, e8);
+        assertEquals(e9, e9);
+
+        assertNotEquals(1, e1);
+        assertNotEquals(e1, 1);
+        assertEquals(e1, e2);
+        assertEquals(e2, e1);
+        assertNotEquals(e1, e3);
+        assertNotEquals(e3, e1);
+
+        assertNotEquals("a", e4);
+        assertNotEquals(e4, "a");
+        assertEquals(e4, e5);
+        assertEquals(e5, e4);
+        assertNotEquals(e4, e6);
+        assertNotEquals(e6, e4);
+
+        assertNotEquals(e1, e4);
+        assertNotEquals(e4, e1);
+
+        assertEquals(e1, e7);
+        assertEquals(e7, e1);
+
+        assertEquals(e4, e8);
+        assertEquals(e8, e4);
+
+        assertNotEquals(e1, e9);
+        assertNotEquals(e9, e1);
+
+        assertNotEquals(r, e1);
+        assertNotEquals(e1, r);
     }
 }
