@@ -620,7 +620,7 @@ public final class Ports {
         Properties properties = new Properties();
 
         try {
-            properties.load(Ports.class.getClassLoader().getResourceAsStream("version.properties"));
+            properties.load(Ports.class.getClassLoader().getResourceAsStream("ports.properties"));
             return properties.getProperty("version", "?");
         } catch (IOException e) {
             e.printStackTrace();
