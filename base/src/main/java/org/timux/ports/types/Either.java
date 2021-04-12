@@ -88,7 +88,7 @@ public abstract class Either<A, B> {
      * depending on which one is non-null. If both are non-null, the first one is chosen.
      *
      * @throws IllegalArgumentException if both constituents are null.
-     * @see #of(Object, Object) 
+     * @see #of(Object, Object)
      * @see #of(List)
      * @see Either3#ofNullables
      */
@@ -178,7 +178,7 @@ public abstract class Either<A, B> {
 
     /**
      * Returns an {@link Either} containing either the return value of the {@code  supplier} or
-     * a {@link Failure} in case the {@code  supplier} returns null or throws an exception.
+     * a {@link Failure} in case the {@code  supplier} returns null, a Failure, or throws an exception.
      *
      * <p>If you want to handle the case that the {@code supplier} returns null separately from the exception case, use
      * {@link Either3#valueOrNothingOrFailure} instead.
@@ -193,7 +193,7 @@ public abstract class Either<A, B> {
             if (t == null) {
                 return Either.b(Failure.of("supplier has returned null"));
             } else {
-                return Either.a(t);
+                return t instanceof Failure ? Either.b((Failure) t) : Either.a(t);
             }
         } catch (Exception e) {
             return Either.b(Failure.of(e));
@@ -223,7 +223,7 @@ public abstract class Either<A, B> {
      *
      * <p>If you don't want to ignore the return value of the {@code supplier}, use {@link #valueOrFailure} or
      * {@link Either3#valueOrNothingOrFailure} instead.
-     * 
+     *
      * @see #successOrFailure(Runnable)
      */
     public static <T> Either<Success, Failure> successOrFailure(Supplier<T> supplier) {

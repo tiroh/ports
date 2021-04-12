@@ -207,7 +207,7 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns an {@link Either3} containing either the return value of the {@code supplier},
      * {@link Nothing} in case the {@code supplier} returns null,
-     * or {@link Failure} in case the {@code supplier} throws an exception.
+     * or {@link Failure} in case the {@code supplier} returns a Failure or throws an exception.
      *
      * <p>If you want to handle the case that the {@code supplier} returns null in combination with
      * the exception case, use {@link Either#valueOrFailure} instead.
@@ -222,7 +222,7 @@ public abstract class Either3<A, B, C> {
             if (t == null) {
                 return Either3.b(Nothing.INSTANCE);
             } else {
-                return Either3.a(t);
+                return t instanceof Failure ? Either3.c((Failure) t) : Either3.a(t);
             }
         } catch (Exception e) {
             return Either3.c(Failure.of(e));
