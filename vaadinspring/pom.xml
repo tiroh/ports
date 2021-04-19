@@ -22,7 +22,7 @@
 
         <!-- Dependencies -->
         <spring.version>5.2.5.RELEASE</spring.version>
-        <vaadin.version>14.1.27</vaadin.version>
+        <vaadin.version>14.4.10</vaadin.version>
     </properties>
 
     <repositories>
