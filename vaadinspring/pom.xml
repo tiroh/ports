@@ -20,9 +20,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <!-- Dependencies -->
         <spring.version>5.3.6</spring.version>
-        <vaadin.version>14.4.10</vaadin.version>
+        <vaadin.version>14.5.4</vaadin.version>
     </properties>
 
     <repositories>
@@ -95,12 +94,6 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
         </dependency>
     </dependencies>
 </project>
