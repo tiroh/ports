@@ -349,9 +349,8 @@ public abstract class Either<A, B> {
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getB()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
+     * @see #getAOrElse
+     * @see #getAOrThrow
      */
     public Optional<A> getA() {
         return map(Optional::ofNullable, b -> Optional.empty());
@@ -360,13 +359,30 @@ public abstract class Either<A, B> {
     /**
      * Returns the B constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getA()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
+     * @see #getBOrElse
+     * @see #getBOrThrow
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable);
     }
+
+    /**
+     * Returns the A constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getA
+     * @see #getAOrThrow
+     */
+    public abstract A getAOrElse(A defaultValue);
+
+    /**
+     * Returns the B constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getB
+     * @see #getBOrThrow
+     */
+    public abstract B getBOrElse(B defaultValue);
 
     /**
      * Returns the A constituent of this union if it exists. If it doesn't exist, a
@@ -374,9 +390,8 @@ public abstract class Either<A, B> {
      * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getBOrThrow()
-     * @see #getA()
-     * @see #getB()
+     * @see #getA
+     * @see #getAOrElse 
      */
     public abstract A getAOrThrow() throws NoSuchConstituentException;
 
@@ -386,9 +401,8 @@ public abstract class Either<A, B> {
      * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getAOrThrow()
-     * @see #getA()
-     * @see #getB()
+     * @see #getB
+     * @see #getBOrElse
      */
     public abstract B getBOrThrow() throws NoSuchConstituentException;
 
@@ -545,6 +559,16 @@ public abstract class Either<A, B> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return a;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
             public A getAOrThrow() {
                 return a;
             }
@@ -677,6 +701,16 @@ public abstract class Either<A, B> {
             @Override
             public Pair<Optional<A>, Optional<B>> toPairOfOptionals() {
                 return new Pair<>(Optional.empty(), Optional.of(b));
+            }
+
+            @Override
+            public A getAOrElse(A defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return b;
             }
 
             @Override

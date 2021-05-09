@@ -347,11 +347,8 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getB()
-     * @see #getC()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
+     * @see #getAOrElse
+     * @see #getAOrThrow
      */
     public Optional<A> getA() {
         return map(Optional::ofNullable, b -> Optional.empty(), c -> Optional.empty());
@@ -360,11 +357,8 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns the B constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getA()
-     * @see #getC()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
+     * @see #getBOrElse 
+     * @see #getBOrThrow
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable, c -> Optional.empty());
@@ -373,15 +367,39 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns the C constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getA()
-     * @see #getB()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
+     * @see #getCOrElse 
+     * @see #getCOrThrow
      */
     public Optional<C> getC() {
         return map(a -> Optional.empty(), b -> Optional.empty(), Optional::ofNullable);
     }
+
+    /**
+     * Returns the A constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getA
+     * @see #getAOrThrow
+     */
+    public abstract A getAOrElse(A defaultValue);
+
+    /**
+     * Returns the B constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getB
+     * @see #getBOrThrow
+     */
+    public abstract B getBOrElse(B defaultValue);
+
+    /**
+     * Returns the C constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getC
+     * @see #getCOrThrow
+     */
+    public abstract C getCOrElse(C defaultValue);
 
     /**
      * Returns the A constituent of this union if it exists. If it doesn't exist, a
@@ -389,11 +407,8 @@ public abstract class Either3<A, B, C> {
      * represent a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
-     * @see #getA()
-     * @see #getB()
-     * @see #getC()
+     * @see #getA
+     * @see #getAOrElse
      */
     public abstract A getAOrThrow() throws NoSuchConstituentException;
 
@@ -403,11 +418,8 @@ public abstract class Either3<A, B, C> {
      * represent a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getAOrThrow()
-     * @see #getCOrThrow()
-     * @see #getA()
-     * @see #getB()
-     * @see #getC()
+     * @see #getB
+     * @see #getBOrElse 
      */
     public abstract B getBOrThrow() throws NoSuchConstituentException;
 
@@ -417,11 +429,8 @@ public abstract class Either3<A, B, C> {
      * represent a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getA()
-     * @see #getB()
-     * @see #getC()
+     * @see #getC
+     * @see #getCOrElse
      */
     public abstract C getCOrThrow() throws NoSuchConstituentException;
 
@@ -605,6 +614,21 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return a;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public C getCOrElse(C defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
             public A getAOrThrow() {
                 return a;
             }
@@ -743,6 +767,21 @@ public abstract class Either3<A, B, C> {
             @Override
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.empty(), Optional.of(b), Optional.empty());
+            }
+
+            @Override
+            public A getAOrElse(A defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return b;
+            }
+
+            @Override
+            public C getCOrElse(C defaultValue) {
+                return defaultValue;
             }
 
             @Override
@@ -906,6 +945,21 @@ public abstract class Either3<A, B, C> {
             @Override
             public Triple<Optional<A>, Optional<B>, Optional<C>> toTripleOfOptionals() {
                 return new Triple<>(Optional.empty(), Optional.empty(), Optional.of(c));
+            }
+
+            @Override
+            public A getAOrElse(A defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public C getCOrElse(C defaultValue) {
+                return c;
             }
 
             @Override

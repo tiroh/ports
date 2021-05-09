@@ -846,6 +846,34 @@ public class EitherTests {
     }
 
     @Test
+    public void eitherGetOrElse() {
+        Either<Integer, String> eitherA = Either.a(1);
+        Either<Integer, String> eitherB = Either.b("a");
+
+        Either3<Integer, Double, String> either3A = Either3.a(1);
+        Either3<Integer, Double, String> either3B = Either3.b(2.0);
+        Either3<Integer, Double, String> either3C = Either3.c("a");
+
+        assertEquals(1, eitherA.getAOrElse(37));
+        assertEquals("test", eitherA.getBOrElse("test"));
+
+        assertEquals(37, eitherB.getAOrElse(37));
+        assertEquals("a", eitherB.getBOrElse("test"));
+
+        assertEquals(1, either3A.getAOrElse(37));
+        assertEquals(5.0, either3A.getBOrElse(5.0));
+        assertEquals("test", either3A.getCOrElse("test"));
+
+        assertEquals(37, either3B.getAOrElse(37));
+        assertEquals(2.0, either3B.getBOrElse(5.0));
+        assertEquals("test", either3B.getCOrElse("test"));
+
+        assertEquals(37, either3C.getAOrElse(37));
+        assertEquals(5.0, either3C.getBOrElse(5.0));
+        assertEquals("a", either3C.getCOrElse("test"));
+    }
+
+    @Test
     public void eitherGetOrThrow() {
         Either<Integer, String> eitherA = Either.a(1);
         Either<Integer, String> eitherB = Either.b("a");
