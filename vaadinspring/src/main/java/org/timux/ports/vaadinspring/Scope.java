@@ -19,15 +19,15 @@ package org.timux.ports.vaadinspring;
 import com.vaadin.flow.component.UI;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 class Scope {
 
     private final String name;
-    private final Map<Object, Scope> childScopes = new HashMap<>();
+    private final Map<Object, Scope> childScopes = new WeakHashMap<>();
     private Scope parentScope = null;
-    private final Map<Object, String> beans = new HashMap<>();
+    private final Map<Object, String> beans = new WeakHashMap<>();
     private UI ui = null;
 
     public Scope(String name) {

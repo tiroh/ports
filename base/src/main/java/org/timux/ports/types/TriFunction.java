@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 /**
  * Represents a function that accepts three arguments and produces a result.
- * This is the three-arity specialization of {@link java.util.function.BiFunction}.
+ * This is a three-arity specialization of {@link java.util.function.Function}.
  *
  * @since 0.5.5
  */

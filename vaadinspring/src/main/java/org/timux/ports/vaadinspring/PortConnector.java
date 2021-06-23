@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 @Component
 public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFactoryPostProcessor {
@@ -60,7 +61,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
 
     private static final Logger logger = LoggerFactory.getLogger(PortConnector.class);
 
-    private final Map<Object, Scope> beans = new HashMap<>();
+    private final Map<Object, Scope> beans = new WeakHashMap<>();
     private final Scope rootScope = new Scope(ROOT_SCOPE);
 
     private final Map<String, Integer> SCOPE_ORDERING = new HashMap<>();
@@ -142,6 +143,7 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
         Scope beanScope = beans.get(bean);
 
         if (beanScope != null) {
+            logger.debug("removing bean {} due to destruction", beanName);
             disconnectCompletely(beanScope, bean, beanName);
             beanScope.removeBean(bean);
         }

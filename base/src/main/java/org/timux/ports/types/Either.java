@@ -464,6 +464,13 @@ public abstract class Either<A, B> {
         return this;
     }
 
+    /**
+     * Executes the provided supplier and returns its result.
+     */
+    public <R> R finallyMap(Supplier<R> supplier) {
+        return supplier.get();
+    }
+
     @Override
     public String toString() {
         return map(String::valueOf, String::valueOf);

@@ -497,6 +497,13 @@ public abstract class Either3<A, B, C> {
         return this;
     }
 
+    /**
+     * Executes the provided supplier and returns its result.
+     */
+    public <R> R finallyMap(Supplier<R> supplier) {
+        return supplier.get();
+    }
+
     @Override
     public String toString() {
         return map(String::valueOf, String::valueOf, String::valueOf);

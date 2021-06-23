@@ -260,6 +260,34 @@ public class EitherTests {
     }
 
     @Test
+    public void eitherFinally() {
+        Container<Integer> f1 = Container.of(0);
+        Container<Integer> f2 = Container.of(0);
+
+        Either<Integer, String> e1 = Either.a(1);
+        Either3<Integer, Double, String> e2 = Either3.a(11);
+
+        int r1 = e1.finallyDo(() -> f1.value = 1)
+                .on(
+                        integer -> assertEquals(1, integer),
+                        string -> fail("no string expected"))
+                .finallyMap(() -> 17);
+
+        int r2 = e2.finallyDo(() -> f2.value = 2)
+                .on(
+                        integer -> assertEquals(11, integer),
+                        dbl -> fail("no double expected"),
+                        string -> fail("no string expected"))
+                .finallyMap(() -> 18);
+
+        assertEquals(1, f1.value);
+        assertEquals(17, r1);
+
+        assertEquals(2, f2.value);
+        assertEquals(18, r2);
+    }
+
+    @Test
     public void eitherAndThenOrElse() {
         Either<Integer, String> either1 = Either.a(1);
 
