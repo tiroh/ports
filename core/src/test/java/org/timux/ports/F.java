@@ -16,16 +16,14 @@
 
 package org.timux.ports;
 
-public class PortEventClause<T> {
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Failure;
 
-    private final ProtocolParserState state;
+public class F {
 
-    PortEventClause(ProtocolParserState state) {
-        this.state = state;
-    }
-
-    public ConditionOrAction<?> trigger(T payload) {
-        Protocol.registerOrExecuteTriggerOrCallActionDependingOnParseState(payload, state);
-        return new ConditionOrAction<>(state);
+    @In
+    private Either<Integer, Failure> onEitherXFailureRequest(EitherXFailureRequest request) {
+        throw new MySpecialTestException(request.getMessage());
+//        return Either.a(1);
     }
 }

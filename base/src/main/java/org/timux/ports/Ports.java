@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -272,7 +272,7 @@ public final class Ports {
             }
 
             if (outPortField.getType() == Request.class) {
-                Request request = new Request(requestTypeName, outPortField.getName(), owner);
+                Request request = new Request(requestTypeName, outPortField, outPortField.getName(), owner);
                 outPortField.set(owner, request);
             }
         }
@@ -526,7 +526,10 @@ public final class Ports {
 
     /**
      * Releases all previously declared protocols. When writing unit tests with protocols, this must be called
-     * before each individual test method.
+     * after each individual test method so that subsequent tests are not influenced by the preceding tests'
+     * protocols.
+     *
+     * <p> When using JUnit, it is recommended to create an 'afterEach' method calling this method.
      *
      * @since 0.5.0
      */
@@ -585,6 +588,26 @@ public final class Ports {
         DomainManager.release();
     }
 
+    /**
+     * Clears the caches of all ports.
+     *
+     * @since 0.6.0
+     */
+    public static void clearCaches() {
+        CacheManager.clear();
+    }
+
+    /**
+     * Resets all internal state information, i.e. protocols and domains, and clears all caches.
+     *
+     * @since 0.6.0
+     */
+    public static void reset() {
+        releaseProtocols();
+        releaseDomains();
+        CacheManager.reset();
+    }
+
     static void printWarning(String message) {
         System.err.println("[ports] warning: " + message);
     }
@@ -597,7 +620,7 @@ public final class Ports {
         Properties properties = new Properties();
 
         try {
-            properties.load(Ports.class.getClassLoader().getResourceAsStream("version.properties"));
+            properties.load(Ports.class.getClassLoader().getResourceAsStream("ports.properties"));
             return properties.getProperty("version", "?");
         } catch (IOException e) {
             e.printStackTrace();

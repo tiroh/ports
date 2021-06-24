@@ -32,9 +32,9 @@ import java.util.List;
  *
  * @since 0.5.0
  */
-public class ExecutionException extends RuntimeException {
+public class PortsExecutionException extends RuntimeException {
 
-    ExecutionException(Throwable t) {
+    PortsExecutionException(Throwable t) {
         super(t);
     }
 }

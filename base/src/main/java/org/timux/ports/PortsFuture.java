@@ -72,7 +72,7 @@ public class PortsFuture<T> implements Future<T> {
      * <p> This particular implementation of get does not throw a CancellationException since
      * PortsFutures are not cancellable.
      *
-     * @throws ExecutionException if the receiver terminated unexpectedly
+     * @throws PortsExecutionException if the receiver terminated unexpectedly
      * @throws java.util.concurrent.CancellationException {@inheritDoc}
      */
     @Override
@@ -104,7 +104,7 @@ public class PortsFuture<T> implements Future<T> {
      * <p> This particular implementation of get does not throw a CancellationException since
      * PortsFutures are not cancellable.
      *
-     * @throws ExecutionException if the receiver terminated unexpectedly
+     * @throws PortsExecutionException if the receiver terminated unexpectedly
      * @throws java.util.concurrent.CancellationException {@inheritDoc}
      */
     @Override
@@ -165,7 +165,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public T getNow(T defaultValue) {
         if (hasReturned) {
@@ -211,7 +211,7 @@ public class PortsFuture<T> implements Future<T> {
      *
      * <p> <em>This call is non-blocking.</em>
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public <R> R map(Function<T, R> mapper, R elseValue) {
         if (hasReturned) {
@@ -249,7 +249,7 @@ public class PortsFuture<T> implements Future<T> {
     /**
      * Applies the provided consumer to the result.
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public PortsFuture<T> do_(Consumer<T> consumer) {
         consumer.accept(get());
@@ -266,7 +266,7 @@ public class PortsFuture<T> implements Future<T> {
      * @see #andThenE 
      * @see Either#andThenR
      *
-     * @throws ExecutionException If the receiver terminated unexpectedly.
+     * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public <O, R extends PortsFuture<O>> R andThen(Function<T, R> fn) {
         // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
@@ -299,7 +299,7 @@ public class PortsFuture<T> implements Future<T> {
      * @see #orElseDo
      */
     public <R> Either<T, R> orElseE(Function<Failure, R> fn) {
-        return getE().orElse(fn);
+        return getE().orElseMap(fn);
     }
 
     /**
@@ -318,7 +318,7 @@ public class PortsFuture<T> implements Future<T> {
     /**
      * If the receiver terminated with an exception, this method applies the provided
      * consumer to the according failure only if it has not already been handled by
-     * another call of {@link Either#orElseDoOnce}, {@link Either#orElse}, or
+     * another call of {@link Either#orElseDoOnce}, {@link Either#orElseMap}, or
      * {@link Either#orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
@@ -345,6 +345,19 @@ public class PortsFuture<T> implements Future<T> {
     @Override
     public boolean isCancelled() {
         return false;
+    }
+
+    /**
+     * Returns true if the receiver crashed with an exception, false otherwise. This call is non-blocking, i.e.
+     * if the receiver has not yet finished running, it might still crash with an exception later, but this method
+     * will return false for the time being.
+     *
+     * <p> For now, this method is package-private and just for internal use.
+     *
+     * <p> <em>This call is non-blocking.</em>
+     */
+    boolean hasExceptionOccurred() {
+        return task != null && task.hasReturned() && task.getThrowable() != null;
     }
 
     @Override

@@ -16,16 +16,7 @@
 
 package org.timux.ports;
 
-public class PortEventClause<T> {
-
-    private final ProtocolParserState state;
-
-    PortEventClause(ProtocolParserState state) {
-        this.state = state;
-    }
-
-    public ConditionOrAction<?> trigger(T payload) {
-        Protocol.registerOrExecuteTriggerOrCallActionDependingOnParseState(payload, state);
-        return new ConditionOrAction<>(state);
-    }
+@Response(Integer.class)
+@Pure
+public class PureStatelessRequest {
 }

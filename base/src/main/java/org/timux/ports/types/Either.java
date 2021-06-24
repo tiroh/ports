@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * A union type for two types A and B.
+ * A union type for two constituent types A and B.
  *
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
@@ -87,7 +88,7 @@ public abstract class Either<A, B> {
      * depending on which one is non-null. If both are non-null, the first one is chosen.
      *
      * @throws IllegalArgumentException if both constituents are null.
-     * @see #of(Object, Object) 
+     * @see #of(Object, Object)
      * @see #of(List)
      * @see Either3#ofNullables
      */
@@ -151,6 +152,10 @@ public abstract class Either<A, B> {
         return Either.b(Failure.of(message, throwable));
     }
 
+    public static <T> Either<T, Failure> failure(Failure failure) {
+        return Either.b(failure);
+    }
+
     public static <T, U> Either<T, Failure> failure(Either<U, Failure> either) {
         return either.map(u -> Either.b(Failure.INSTANCE), Either::b);
     }
@@ -173,7 +178,7 @@ public abstract class Either<A, B> {
 
     /**
      * Returns an {@link Either} containing either the return value of the {@code  supplier} or
-     * a {@link Failure} in case the {@code  supplier} returns null or throws an exception.
+     * a {@link Failure} in case the {@code  supplier} returns null, a Failure, or throws an exception.
      *
      * <p>If you want to handle the case that the {@code supplier} returns null separately from the exception case, use
      * {@link Either3#valueOrNothingOrFailure} instead.
@@ -188,7 +193,7 @@ public abstract class Either<A, B> {
             if (t == null) {
                 return Either.b(Failure.of("supplier has returned null"));
             } else {
-                return Either.a(t);
+                return t instanceof Failure ? Either.b((Failure) t) : Either.a(t);
             }
         } catch (Exception e) {
             return Either.b(Failure.of(e));
@@ -218,7 +223,7 @@ public abstract class Either<A, B> {
      *
      * <p>If you don't want to ignore the return value of the {@code supplier}, use {@link #valueOrFailure} or
      * {@link Either3#valueOrNothingOrFailure} instead.
-     * 
+     *
      * @see #successOrFailure(Runnable)
      */
     public static <T> Either<Success, Failure> successOrFailure(Supplier<T> supplier) {
@@ -261,16 +266,16 @@ public abstract class Either<A, B> {
     /**
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either}.
      *
-     * @see #andThen
+     * @see #andThenMap
      * @see #andThenR
      */
-    public abstract <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn);
+    public abstract <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn);
 
     /**
      * Maps the A constituent, if it exists, to R, which must be an {@link Either} that has the
      * same B type like this {@link Either}.
      */
-    public abstract <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn);
+    public abstract <R extends Either<?, B>> R andThenMap(Function<? super A, ? extends R> aFn);
 
     /**
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
@@ -278,16 +283,16 @@ public abstract class Either<A, B> {
     public abstract Either<A, B> andThenDo(Consumer<? super A> aC);
 
     /**
-     * A version of {@link #andThen} that supports working with requests. With this method (and together with
+     * A version of {@link #andThenMap} that supports working with requests. With this method (and together with
      * {@link PortsFuture#andThenE}) you can build chains of requests.
      *
      * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
      * otherwise. In this context, the A constituent is the result of a preceding request.
      *
      * @see PortsFuture#andThenE
-     * @see #andThen
-     * @see #andThenE
-     * @see #orElse
+     * @see #andThenMap
+     * @see #andThenMapE
+     * @see #orElseMap
      * @see #orElseDo
      * @see #finallyDo
      */
@@ -297,7 +302,7 @@ public abstract class Either<A, B> {
     /**
      * Maps the B constituent, if it exists, to R.
      */
-    public abstract <R> Either<A, R> orElse(Function<? super B, R> bFn);
+    public abstract <R> Either<A, R> orElseMap(Function<? super B, R> bFn);
 
     /**
      * Applies the provided consumer to the B constituent, if it exists, or does nothing otherwise.
@@ -309,7 +314,7 @@ public abstract class Either<A, B> {
     /**
      * If the B constituent is a {@link Failure}, this method applies the provided
      * consumer to that failure only if it has not already been handled by
-     * another call of {@link #orElseDoOnce}, {@link #orElse}, or {@link #orElseDo}.
+     * another call of {@link #orElseDoOnce}, {@link #orElseMap}, or {@link #orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
     public abstract Either<A, B> orElseDoOnce(Consumer<? super B> bC);
@@ -344,9 +349,8 @@ public abstract class Either<A, B> {
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getB()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
+     * @see #getAOrElse
+     * @see #getAOrThrow
      */
     public Optional<A> getA() {
         return map(Optional::ofNullable, b -> Optional.empty());
@@ -355,13 +359,30 @@ public abstract class Either<A, B> {
     /**
      * Returns the B constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getA()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
+     * @see #getBOrElse
+     * @see #getBOrThrow
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable);
     }
+
+    /**
+     * Returns the A constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getA
+     * @see #getAOrThrow
+     */
+    public abstract A getAOrElse(A defaultValue);
+
+    /**
+     * Returns the B constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getB
+     * @see #getBOrThrow
+     */
+    public abstract B getBOrElse(B defaultValue);
 
     /**
      * Returns the A constituent of this union if it exists. If it doesn't exist, a
@@ -369,9 +390,8 @@ public abstract class Either<A, B> {
      * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getBOrThrow()
-     * @see #getA()
-     * @see #getB()
+     * @see #getA
+     * @see #getAOrElse 
      */
     public abstract A getAOrThrow() throws NoSuchConstituentException;
 
@@ -381,9 +401,8 @@ public abstract class Either<A, B> {
      * represents a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getAOrThrow()
-     * @see #getA()
-     * @see #getB()
+     * @see #getB
+     * @see #getBOrElse
      */
     public abstract B getBOrThrow() throws NoSuchConstituentException;
 
@@ -392,7 +411,9 @@ public abstract class Either<A, B> {
      * and false otherwise.
      */
     public boolean isSuccess() {
-        return map(a -> a.getClass() == Success.class, b -> b.getClass() == Success.class);
+        return map(
+                x -> checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess),
+                x -> checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess));
     }
 
     /**
@@ -400,7 +421,9 @@ public abstract class Either<A, B> {
      * and false otherwise.
      */
     public boolean isFailure() {
-        return map(a -> a.getClass() == Failure.class, b -> b.getClass() == Failure.class);
+        return map(
+                x -> checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure),
+                x -> checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure));
     }
 
     /**
@@ -408,7 +431,9 @@ public abstract class Either<A, B> {
      * and false otherwise.
      */
     public boolean isEmpty() {
-        return map(a -> a.getClass() == Empty.class, b -> b.getClass() == Empty.class);
+        return map(
+                x -> checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty),
+                x -> checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty));
     }
 
     /**
@@ -416,7 +441,9 @@ public abstract class Either<A, B> {
      * and false otherwise.
      */
     public boolean isNothing() {
-        return map(a -> a.getClass() == Nothing.class, b -> b.getClass() == Nothing.class);
+        return map(
+                x -> checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing),
+                x -> checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing));
     }
 
     /**
@@ -424,7 +451,9 @@ public abstract class Either<A, B> {
      * and false otherwise.
      */
     public boolean isUnknown() {
-        return map(a -> a.getClass() == Unknown.class, b -> b.getClass() == Unknown.class);
+        return map(
+                x -> checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown),
+                x -> checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown));
     }
 
     /**
@@ -433,6 +462,13 @@ public abstract class Either<A, B> {
     public Either<A, B> finallyDo(Runnable runnable) {
         runnable.run();
         return this;
+    }
+
+    /**
+     * Executes the provided supplier and returns its result.
+     */
+    public <R> R finallyMap(Supplier<R> supplier) {
+        return supplier.get();
     }
 
     @Override
@@ -467,12 +503,12 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return Either.a(aFn.apply(a));
             }
 
             @Override
-            public <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either<?, B>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return aFn.apply(a);
             }
 
@@ -488,7 +524,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<A, R> orElse(Function<? super B, R> bFn) {
+            public <R> Either<A, R> orElseMap(Function<? super B, R> bFn) {
                 return Either.a(a);
             }
 
@@ -530,6 +566,16 @@ public abstract class Either<A, B> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return a;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
             public A getAOrThrow() {
                 return a;
             }
@@ -538,6 +584,16 @@ public abstract class Either<A, B> {
             public B getBOrThrow() {
                 throwGetOrThrowException(a);
                 return null; // unreachable
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, a, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return a.hashCode();
             }
         };
     }
@@ -570,13 +626,13 @@ public abstract class Either<A, B> {
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R> Either<R, B> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return (Either<R, B>) this;
             }
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R extends Either<?, B>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either<?, B>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return (R) this;
             }
 
@@ -593,7 +649,7 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<A, R> orElse(Function<? super B, R> bFn) {
+            public <R> Either<A, R> orElseMap(Function<? super B, R> bFn) {
                 if (b instanceof Failure) {
                     ((Failure) b).setHasAlreadyBeenHandled();
                 }
@@ -655,6 +711,16 @@ public abstract class Either<A, B> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return b;
+            }
+
+            @Override
             public A getAOrThrow() {
                 throwGetOrThrowException(b);
                 return null; // unreachable
@@ -663,6 +729,16 @@ public abstract class Either<A, B> {
             @Override
             public B getBOrThrow() {
                 return b;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, b, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return b.hashCode();
             }
         };
     }
@@ -687,5 +763,27 @@ public abstract class Either<A, B> {
         }
 
         throw new NoSuchConstituentException();
+    }
+
+    // This method is used by both Either and Either3.
+    static boolean checkRecursively(Object x, Class<?> clazz, Predicate<Either<?, ?>> ep, Predicate<Either3<?, ?, ?>> e3p) {
+        return x instanceof Either
+                ? ep.test((Either<?, ?>) x)
+                : (x instanceof Either3 ? e3p.test(((Either3<?, ?, ?>) x)) : x.getClass() == clazz);
+    }
+
+    // This method is used by both Either and Either3.
+    static boolean equals(Object self, Object value, Object other) {
+        if (self == other) {
+            return true;
+        }
+
+        if (other instanceof Either) {
+            return ((Either<?, ?>) other).map(x -> x.equals(value), x -> x.equals(value));
+        } else if (other instanceof Either3) {
+            return ((Either3<?, ?, ?>) other).map(x -> x.equals(value), x -> x.equals(value), x -> x.equals(value));
+        }
+
+        return false;
     }
 }

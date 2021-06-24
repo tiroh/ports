@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018-2021 Tim Rohlfs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.timux.ports;
 
 import org.junit.jupiter.api.Assertions;
@@ -5,10 +21,12 @@ import org.junit.jupiter.api.Test;
 import org.timux.ports.types.*;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -176,6 +194,27 @@ public class EitherTests {
                 dbl -> doubleC.value = dbl
         );
 
+        intEither3.on(
+                either -> either.on(
+                        integer -> intC.value = integer,
+                        flt -> fail("no float expected")
+                ),
+                dbl -> fail("no double expected")
+        );
+
+        floatEither3.on(
+                either -> either.on(
+                        integer -> fail("no integer expected"),
+                        flt -> floatC.value = flt
+                ),
+                dbl -> fail("no double expected")
+        );
+
+        doubleEither3.on(
+                either -> fail("no either expected"),
+                dbl -> doubleC.value = dbl
+        );
+
         assertEquals(1, intC.value);
         assertEquals(2.0f, floatC.value);
         assertEquals(3.0, doubleC.value);
@@ -207,17 +246,53 @@ public class EitherTests {
         String resultY = y.map(integer -> "wrong integer", string -> string, dbl -> "wrong double");
         String resultZ = z.map(integer -> "wrong integer", flt -> "correct " + flt, string -> "wrong string");
 
+        String resultXE = x.map(either -> either.map(string -> "wrong string", flt -> "correct " + flt), dbl -> "wrong double");
+        String resultYE = y.map(either -> either.map(integer -> "wrong integer", string -> string), dbl -> "wrong double");
+        String resultZE = z.map(either -> either.map(integer -> "wrong integer", flt -> "correct " + flt), string -> "wrong string");
+
         assertEquals("correct 1.5", resultX);
         assertEquals("Float toString 1.5", resultY);
         assertEquals("correct 1.5", resultZ);
+
+        assertEquals("correct 1.5", resultXE);
+        assertEquals("Float toString 1.5", resultYE);
+        assertEquals("correct 1.5", resultZE);
+    }
+
+    @Test
+    public void eitherFinally() {
+        Container<Integer> f1 = Container.of(0);
+        Container<Integer> f2 = Container.of(0);
+
+        Either<Integer, String> e1 = Either.a(1);
+        Either3<Integer, Double, String> e2 = Either3.a(11);
+
+        int r1 = e1.finallyDo(() -> f1.value = 1)
+                .on(
+                        integer -> assertEquals(1, integer),
+                        string -> fail("no string expected"))
+                .finallyMap(() -> 17);
+
+        int r2 = e2.finallyDo(() -> f2.value = 2)
+                .on(
+                        integer -> assertEquals(11, integer),
+                        dbl -> fail("no double expected"),
+                        string -> fail("no string expected"))
+                .finallyMap(() -> 18);
+
+        assertEquals(1, f1.value);
+        assertEquals(17, r1);
+
+        assertEquals(2, f2.value);
+        assertEquals(18, r2);
     }
 
     @Test
     public void eitherAndThenOrElse() {
         Either<Integer, String> either1 = Either.a(1);
 
-        either1.orElse(string -> fail("no string expected"))
-                .andThenE(integer -> true)
+        either1.orElseMap(string -> fail("no string expected"))
+                .andThenMapE(integer -> true)
                 .on(
                         Assertions::assertTrue,
                         string -> fail("no string expected")
@@ -225,8 +300,8 @@ public class EitherTests {
 
         Either<Integer, String> either2 = Either.b("1.5");
 
-        either2.andThenE(integer -> fail("no integer expected"))
-                .orElse(Double::parseDouble)
+        either2.andThenMapE(integer -> fail("no integer expected"))
+                .orElseMap(Double::parseDouble)
                 .on(
                         integer -> fail("no integer expected"),
                         value -> assertEquals(1.5, value)
@@ -237,8 +312,8 @@ public class EitherTests {
     public void either3AndThenOrElse() {
         Either3<Integer, Boolean, String> either1 = Either3.a(1);
 
-        either1.orElse(string -> fail("no string expected"))
-                .andThenE(integer -> true)
+        either1.orElseMap(string -> fail("no string expected"))
+                .andThenMapE(integer -> true)
                 .on(
                         Assertions::assertTrue,
                         bool -> fail("no boolean expected"),
@@ -247,8 +322,8 @@ public class EitherTests {
 
         Either3<Integer, Boolean, String> either2 = Either3.c("1.5");
 
-        either2.andThenE(integer -> fail("no integer expected"))
-                .orElse(Double::parseDouble)
+        either2.andThenMapE(integer -> fail("no integer expected"))
+                .orElseMap(Double::parseDouble)
                 .on(
                         integer -> fail("no integer expected"),
                         bool -> fail("no boolean expected"),
@@ -262,10 +337,10 @@ public class EitherTests {
         Container<Double> imDouble = Container.of(null);
 
         Either<Double, Failure> result = eitherAndThenChain_test_function_1(1)
-                .andThen(integer -> eitherAndThenChain_test_function_1(integer + 1))
-                .andThen(integer -> eitherAndThenChain_test_function_1(integer + 1))
+                .andThenMap(integer -> eitherAndThenChain_test_function_1(integer + 1))
+                .andThenMap(integer -> eitherAndThenChain_test_function_1(integer + 1))
                 .andThenDo(integer -> imInteger.value = integer)
-                .andThen(integer -> eitherAndThenChain_test_function_2(integer + 1))
+                .andThenMap(integer -> eitherAndThenChain_test_function_2(integer + 1))
                 .andThenDo(dbl -> imDouble.value = dbl)
                 .orElseDo(failure -> fail("no orElseDo call expected"));
 
@@ -286,7 +361,7 @@ public class EitherTests {
 
         Either<Integer, Failure> result = eitherAndThenChain_test_function_1(1)
                 .andThenDo(integer -> finalValue.value = integer)
-                .andThen(this::eitherAndThenChain_test_function_3)
+                .andThenMap(this::eitherAndThenChain_test_function_3)
                 .orElseDo(failure -> orElseCalled.value = Boolean.TRUE)
                 .andThenDo(integer -> andThenCalled.value = Boolean.TRUE);
 
@@ -313,10 +388,10 @@ public class EitherTests {
         Container<Double> imDouble = Container.of(null);
 
         Either3<Double, String, Failure> result = either3AndThenChain_test_function_1(1)
-                .andThen(integer -> either3AndThenChain_test_function_1(integer + 1))
-                .andThen(integer -> either3AndThenChain_test_function_1(integer + 1))
+                .andThenMap(integer -> either3AndThenChain_test_function_1(integer + 1))
+                .andThenMap(integer -> either3AndThenChain_test_function_1(integer + 1))
                 .andThenDo(integer -> imInteger.value = integer)
-                .andThen(integer -> either3AndThenChain_test_function_2(integer + 1))
+                .andThenMap(integer -> either3AndThenChain_test_function_2(integer + 1))
                 .andThenDo(dbl -> imDouble.value = dbl)
                 .orElseDo(failure -> fail("no orElseDo call expected"));
 
@@ -338,7 +413,7 @@ public class EitherTests {
 
         Either3<Integer, String, Failure> result = either3AndThenChain_test_function_1(1)
                 .andThenDo(integer -> finalValue.value = integer)
-                .andThen(this::either3AndThenChain_test_function_3)
+                .andThenMap(this::either3AndThenChain_test_function_3)
                 .orElseDo(failure -> orElseCalled.value = Boolean.TRUE)
                 .andThenDo(integer -> andThenCalled.value = Boolean.TRUE);
 
@@ -371,7 +446,7 @@ public class EitherTests {
         response.on(
                 integer -> fail("no integer expected"),
                 failure -> {
-                    Throwable throwable = failure.getThrowable().get().getCause().getCause().getCause();
+                    Throwable throwable = failure.getThrowable().get().getCause();
                     assertEquals(MySpecialTestException.class, throwable.getClass());
                     assertEquals("xfailure", throwable.getMessage());
                 }
@@ -386,11 +461,11 @@ public class EitherTests {
         Ports.connect(a).and(b);
 
         Exception exception = assertThrows(
-                ExecutionException.class,
+                PortsExecutionException.class,
                 () -> a.eitherXYRequest.call(new EitherXYRequest("xy"))
         );
 
-        Throwable throwable = exception.getCause().getCause().getCause();
+        Throwable throwable = exception.getCause();
 
         assertEquals(MySpecialTestException.class, throwable.getClass());
         assertEquals("xy", throwable.getMessage());
@@ -409,7 +484,7 @@ public class EitherTests {
                 integer -> fail("no integer expected"),
                 nothing -> fail("no nothing expected"),
                 failure -> {
-                    Throwable throwable = failure.getThrowable().get().getCause().getCause().getCause();
+                    Throwable throwable = failure.getThrowable().get().getCause();
                     assertEquals(MySpecialTestException.class, throwable.getClass());
                     assertEquals("xyfailure", throwable.getMessage());
                 }
@@ -424,11 +499,11 @@ public class EitherTests {
         Ports.connect(a).and(b);
 
         Exception exception = assertThrows(
-                ExecutionException.class,
+                PortsExecutionException.class,
                 () -> a.either3XYZRequest.call(new Either3XYZRequest("xyz"))
         );
 
-        Throwable throwable = exception.getCause().getCause().getCause();
+        Throwable throwable = exception.getCause();
 
         assertEquals(MySpecialTestException.class, throwable.getClass());
         assertEquals("xyz", throwable.getMessage());
@@ -447,12 +522,12 @@ public class EitherTests {
         a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure"))
                 .orElseDo(f -> failure1.value = f)
                 .orElseDoOnce(f -> fail("no orElse call expected (1)"))
-                .andThenE(r -> a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure")))
+                .andThenMapE(r -> a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure")))
                 .orElseDo(f -> failure2.value = f)
                 .orElseDoOnce(f -> fail("no orElse call expected (2)"))
                 .andThenDo(r -> fail("no andThen call expected"));
 
-        assertEquals("xfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
+        assertEquals("xfailure", failure1.value.getThrowable().get().getCause().getMessage());
         assertEquals(failure1.value, failure2.value);
     }
 
@@ -469,12 +544,12 @@ public class EitherTests {
         a.either3XYFailureRequest.call(new Either3XYFailureRequest("xyfailure"))
                 .orElseDo(f -> failure1.value = f)
                 .orElseDoOnce(f -> fail("no orElse call expected (1)"))
-                .andThenE(r -> a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure")))
+                .andThenMapE(r -> a.eitherXFailureRequest.call(new EitherXFailureRequest("xfailure")))
                 .orElseDo(f -> failure2.value = f)
                 .orElseDoOnce(f -> fail("no orElse call expected (2)"))
                 .andThenDo(r -> fail("no andThen call expected"));
 
-        assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getCause().getCause().getMessage());
+        assertEquals("xyfailure", failure1.value.getThrowable().get().getCause().getMessage());
         assertEquals(failure1.value, failure2.value);
     }
 
@@ -799,6 +874,34 @@ public class EitherTests {
     }
 
     @Test
+    public void eitherGetOrElse() {
+        Either<Integer, String> eitherA = Either.a(1);
+        Either<Integer, String> eitherB = Either.b("a");
+
+        Either3<Integer, Double, String> either3A = Either3.a(1);
+        Either3<Integer, Double, String> either3B = Either3.b(2.0);
+        Either3<Integer, Double, String> either3C = Either3.c("a");
+
+        assertEquals(1, eitherA.getAOrElse(37));
+        assertEquals("test", eitherA.getBOrElse("test"));
+
+        assertEquals(37, eitherB.getAOrElse(37));
+        assertEquals("a", eitherB.getBOrElse("test"));
+
+        assertEquals(1, either3A.getAOrElse(37));
+        assertEquals(5.0, either3A.getBOrElse(5.0));
+        assertEquals("test", either3A.getCOrElse("test"));
+
+        assertEquals(37, either3B.getAOrElse(37));
+        assertEquals(2.0, either3B.getBOrElse(5.0));
+        assertEquals("test", either3B.getCOrElse("test"));
+
+        assertEquals(37, either3C.getAOrElse(37));
+        assertEquals(5.0, either3C.getBOrElse(5.0));
+        assertEquals("a", either3C.getCOrElse("test"));
+    }
+
+    @Test
     public void eitherGetOrThrow() {
         Either<Integer, String> eitherA = Either.a(1);
         Either<Integer, String> eitherB = Either.b("a");
@@ -967,5 +1070,122 @@ public class EitherTests {
                 empty -> fail("no Empty expected"),
                 nothing -> fail("no Nothing expected")
         );
+    }
+
+    @Test
+    public void toPairs() {
+        Either<Integer, Float> e1 = Either.a(1);
+        Either<Integer, Float> e2 = Either.b(2.0f);
+
+        Pair<Integer, Float> p1 = e1.toPair();
+        Pair<Optional<Integer>, Optional<Float>> p2 = e1.toPairOfOptionals();
+
+        Pair<Integer, Float> p3 = e2.toPair();
+        Pair<Optional<Integer>, Optional<Float>> p4 = e2.toPairOfOptionals();
+
+        assertEquals(1, p1.getA());
+        assertNull(p1.getB());
+
+        assertEquals(1, p2.getA().get());
+        assertFalse(p2.getB().isPresent());
+
+        assertNull(p3.getA());
+        assertEquals(2.0f, p3.getB());
+
+        assertFalse(p4.getA().isPresent());
+        assertEquals(2.0f, p4.getB().get());
+    }
+
+    @Test
+    public void toTriples() {
+        Either3<Integer, Float, Double> e3 = Either3.a(3);
+        Either3<Integer, Float, Double> e4 = Either3.b(4.0f);
+        Either3<Integer, Float, Double> e5 = Either3.c(5.0);
+
+        Triple<Integer, Float, Double> t1 = e3.toTriple();
+        Triple<Optional<Integer>, Optional<Float>, Optional<Double>> t2 = e3.toTripleOfOptionals();
+
+        Triple<Integer, Float, Double> t3 = e4.toTriple();
+        Triple<Optional<Integer>, Optional<Float>, Optional<Double>> t4 = e4.toTripleOfOptionals();
+
+        Triple<Integer, Float, Double> t5 = e5.toTriple();
+        Triple<Optional<Integer>, Optional<Float>, Optional<Double>> t6 = e5.toTripleOfOptionals();
+
+        assertEquals(3, t1.getA());
+        assertNull(t1.getB());
+        assertNull(t1.getC());
+
+        assertEquals(3, t2.getA().get());
+        assertFalse(t2.getB().isPresent());
+        assertFalse(t2.getC().isPresent());
+
+        assertNull(t3.getA());
+        assertEquals(4.0f, t3.getB());
+        assertNull(t3.getC());
+
+        assertFalse(t4.getA().isPresent());
+        assertEquals(4.0f, t4.getB().get());
+        assertFalse(t4.getC().isPresent());
+
+        assertNull(t5.getA());
+        assertNull(t5.getB());
+        assertEquals(5.0, t5.getC());
+
+        assertFalse(t6.getA().isPresent());
+        assertFalse(t6.getB().isPresent());
+        assertEquals(5.0, t6.getC().get());
+    }
+
+    @Test
+    public void eitherEquals() {
+        Either<Integer, String> e1 = Either.a(1);
+        Either<Integer, String> e2 = Either.a(1);
+        Either<Integer, String> e3 = Either.a(2);
+
+        Either<Integer, String> e4 = Either.b("a");
+        Either<Integer, String> e5 = Either.b("a");
+        Either<Integer, String> e6 = Either.b("b");
+
+        Either3<Integer, String, Double> e7 = Either3.a(1);
+        Either3<Integer, String, Double> e8 = Either3.b("a");
+        Either3<Integer, String, Double> e9 = Either3.c(2.0);
+
+        Either<Either<Integer, String>, Double> r = Either.a(e1);
+
+        assertEquals(e1, e1);
+        assertEquals(e4, e4);
+
+        assertEquals(e7, e7);
+        assertEquals(e8, e8);
+        assertEquals(e9, e9);
+
+        assertNotEquals(1, e1);
+        assertNotEquals(e1, 1);
+        assertEquals(e1, e2);
+        assertEquals(e2, e1);
+        assertNotEquals(e1, e3);
+        assertNotEquals(e3, e1);
+
+        assertNotEquals("a", e4);
+        assertNotEquals(e4, "a");
+        assertEquals(e4, e5);
+        assertEquals(e5, e4);
+        assertNotEquals(e4, e6);
+        assertNotEquals(e6, e4);
+
+        assertNotEquals(e1, e4);
+        assertNotEquals(e4, e1);
+
+        assertEquals(e1, e7);
+        assertEquals(e7, e1);
+
+        assertEquals(e4, e8);
+        assertEquals(e8, e4);
+
+        assertNotEquals(e1, e9);
+        assertNotEquals(e9, e1);
+
+        assertNotEquals(r, e1);
+        assertNotEquals(e1, r);
     }
 }

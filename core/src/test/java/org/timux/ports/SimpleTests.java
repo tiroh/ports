@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package org.timux.ports;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.timux.ports.types.Pair;
-import org.timux.ports.types.PairX;
-import org.timux.ports.types.TripleX;
-import org.timux.ports.types.Tuple;
+import org.timux.ports.types.Failure;
 
-import java.util.Random;
+import java.lang.reflect.InvocationTargetException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -140,6 +138,24 @@ public class SimpleTests {
     }
 
     @Test
+    public void getRootCauseAndFirstNonPortsException() {
+        Throwable t2 = new MySpecialTestException("test2");
+        Throwable t1 = new MySpecialTestException("test", new InvocationTargetException(new RuntimeException(t2)));
+
+        Failure f1 = Failure.of(new PortsExecutionException(new PortsExecutionException(t1)));
+        Failure f2 = Failure.of(t1);
+        Failure f4 = Failure.of("test");
+
+        assertEquals(t1, f1.getFirstNonPortsThrowable().orElse(null));
+        assertEquals(t1, f2.getFirstNonPortsThrowable().orElse(null));
+
+        assertFalse(f4.getFirstNonPortsThrowable().isPresent());
+
+        assertEquals(t2, f1.getRootCause().orElse(null));
+        assertEquals(t2, f2.getRootCause().orElse(null));
+    }
+
+    @Test
     public void deadlockResolutionSync() {
         DeadlockA a = new DeadlockA();
         DeadlockB b = new DeadlockB();
@@ -236,7 +252,8 @@ public class SimpleTests {
 
         fork.getNowEither()
                 .forEach(either -> either.on(
-                        value -> {},
+                        value -> {
+                        },
                         nothing -> fail("result expected"),
                         Assertions::fail));
 

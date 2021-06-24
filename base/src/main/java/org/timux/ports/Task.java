@@ -173,7 +173,7 @@ class Task implements Runnable {
                     } else {
                         int timeoutIdx = 0;
 
-                        for (;;) {
+                        for (; ; ) {
                             boolean isAcquired = false;
 
                             try {
@@ -290,12 +290,14 @@ class Task implements Runnable {
             try {
                 wait();
             } catch (InterruptedException e) {
-                throw new ExecutionException(e);
+                throw new PortsExecutionException(e);
             }
         }
 
         if (throwable != null) {
-            throw new ExecutionException(throwable);
+            throw throwable instanceof PortsExecutionException
+                    ? (PortsExecutionException) throwable
+                    : new PortsExecutionException(throwable);
         }
 
         return response;
@@ -310,7 +312,7 @@ class Task implements Runnable {
             try {
                 wait(waitMillis);
             } catch (InterruptedException e) {
-                throw new ExecutionException(e);
+                throw new PortsExecutionException(e);
             }
 
             if (!hasReturned) {
@@ -325,7 +327,9 @@ class Task implements Runnable {
         }
 
         if (throwable != null) {
-            throw new ExecutionException(throwable);
+            throw throwable instanceof PortsExecutionException
+                    ? (PortsExecutionException) throwable
+                    : new PortsExecutionException(throwable);
         }
 
         return response;
@@ -340,7 +344,7 @@ class Task implements Runnable {
 
         Task t = this;
 
-        for (;;) {
+        for (; ; ) {
             chain.add(t);
 
             if (t == deadlockStart) {

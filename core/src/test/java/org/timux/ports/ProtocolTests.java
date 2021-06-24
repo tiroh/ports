@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018-2021 Tim Rohlfs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.timux.ports;
 
 import org.junit.jupiter.api.AfterEach;
@@ -5,8 +21,14 @@ import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
+import org.timux.ports.types.Failure;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ProtocolTests {
 
@@ -54,9 +76,9 @@ public class ProtocolTests {
             .when(IntEvent.class)
                 .triggers(x -> x.getData() > 3)
                 .do_((x, owner) -> firstActionC.value = !firstActionC.value && x.getData() == 4 && owner == a)
-            .with(DoubleRequest.class, Double.class)
+                .with(DoubleRequest.class, Double.class)
                 .call(new DoubleRequest(50.0))
-            .with(IntEvent.class)
+                .with(IntEvent.class)
                 .trigger(new IntEvent(2))
             .when(DoubleRequest.class, Double.class)
                 .requests(x -> x.getData() >= 4.0)
@@ -75,7 +97,7 @@ public class ProtocolTests {
         Ports.protocol()
             .when(IntEvent.class)
                 .triggers(x -> x.getData() > 1)
-            .with(DoubleRequest.class, Double.class, b)
+                .with(DoubleRequest.class, Double.class, b)
                 .call(new DoubleRequest(2.5))
             .when(DoubleRequest.class, Double.class)
                 .requests()
@@ -83,7 +105,7 @@ public class ProtocolTests {
                     if (x.getData() == doubleRequestValues[doubleRequestIndex.value]) {
                         doubleRequestIndex.value++;
                     } else {
-                        System.out.println(x.getData() );
+                        System.out.println(x.getData());
                         System.out.println(doubleRequestValues[doubleRequestIndex.value]);
                         System.out.println(x.getData() - doubleRequestValues[doubleRequestIndex.value]);
                         System.out.println();
@@ -185,7 +207,8 @@ public class ProtocolTests {
                 .storeIn(eitherValue)
             .when(Either3Request.class, Double.class, Integer.class, String.class)
                 .responds()
-                .storeIn(either3Value);;
+                .storeIn(either3Value);
+        ;
 
         Ports.protocol()
             .with(EitherRequest.class, Double.class, String.class)
@@ -241,12 +264,135 @@ public class ProtocolTests {
                     throw new MySpecialTestException("?");
                 });
 
-        assertThrows(ExecutionException.class, () -> {
+        assertThrows(PortsExecutionException.class, () -> {
             Ports.protocol()
                 .with(EitherRequest.class, Double.class, String.class)
                     .call(new EitherRequest(1.0));
         });
 
         assertTrue(exceptionTriggered.value);
+    }
+
+    @Test
+    public void protocolsFailureCaptureWithReceiverComponent() {
+        F f = new F();
+
+        Ports.register(f);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+            .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .call(new EitherXFailureRequest("this is supposed to fail"));
+
+        assertTrue(result.value.isFailure());
+    }
+
+    @Test
+    public void protocolsFailureCaptureWithReceiverComponentAndFaultInjection() {
+        F f = new F();
+
+        Ports.register(f);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .requests()
+                .respond(request -> {
+                    throw new MySpecialTestException(request.getMessage());
+                })
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+            .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .call(new EitherXFailureRequest("this is supposed to fail"));
+
+        assertTrue(result.value.isFailure());
+    }
+
+    @Test
+    public void protocolsFailureCaptureWithFaultInjectionAndGetFirstNonPortsThrowable() {
+        F f = new F();
+
+        Ports.register(f);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .requests()
+                .respond(request -> {
+                    throw new PortsExecutionException(new MySpecialTestException(request.getMessage()));
+                })
+                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+                .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .call(new EitherXFailureRequest("message"));
+
+        result.value.on(
+                integer -> fail("no integer expected"),
+                failure -> {
+                    assertEquals(PortsExecutionException.class, failure.getThrowable().map(Throwable::getClass).orElse(null));
+                    assertEquals(MySpecialTestException.class, failure.getThrowable().map(Throwable::getCause).map(Throwable::getClass).orElse(null));
+                    assertEquals(MySpecialTestException.class, failure.getFirstNonPortsThrowable().map(Throwable::getClass).orElse(null));
+                    assertEquals("message", failure.getFirstNonPortsThrowable().map(Throwable::getMessage).orElse(""));
+                });
+    }
+
+    @Test
+    public void protocolsFailureCaptureWithoutReceiverComponentAndWithFaultInjection() {
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .requests()
+                .respond(request -> {
+                    throw new MySpecialTestException(request.getMessage());
+                })
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+            .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .call(new EitherXFailureRequest("this is supposed to fail"));
+
+        assertTrue(result.value.isFailure());
+    }
+
+    @Test
+    public void protocolsFailureCaptureWithOwnerComponentAndWithFaultInjection() {
+        G g = new G();
+
+        Ports.register(g);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .requests()
+                .respond(request -> {
+                    throw new MySpecialTestException(request.getMessage());
+                })
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+            .with(EitherXFailureRequest.class, Integer.class, Failure.class, g)
+                .call(new EitherXFailureRequest("this is supposed to fail"));
+
+        assertTrue(result.value.isFailure());
     }
 }

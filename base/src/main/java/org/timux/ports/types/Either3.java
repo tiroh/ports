@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * A union type for three types A, B, and C. The primary use case is as a response type for a
- * {@link Request} that may return different kinds of data, depending on the situation.
+ * A union type for three constituent types A, B, and C. The primary use case is as a response
+ * type for a {@link Request} that may return different kinds of data, depending on the situation.
  *
  * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
  * use of this union type.
@@ -168,6 +168,10 @@ public abstract class Either3<A, B, C> {
         return Either3.c(Failure.of(message, throwable));
     }
 
+    public static <T, U> Either3<T, U, Failure> failure(Failure failure) {
+        return Either3.c(failure);
+    }
+
     public static <T, U, V> Either3<T, U, Failure> failure(Either<V, Failure> either) {
         return either.map(v -> Either3.c(Failure.INSTANCE), Either3::c);
     }
@@ -203,7 +207,7 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns an {@link Either3} containing either the return value of the {@code supplier},
      * {@link Nothing} in case the {@code supplier} returns null,
-     * or {@link Failure} in case the {@code supplier} throws an exception.
+     * or {@link Failure} in case the {@code supplier} returns a Failure or throws an exception.
      *
      * <p>If you want to handle the case that the {@code supplier} returns null in combination with
      * the exception case, use {@link Either#valueOrFailure} instead.
@@ -218,7 +222,7 @@ public abstract class Either3<A, B, C> {
             if (t == null) {
                 return Either3.b(Nothing.INSTANCE);
             } else {
-                return Either3.a(t);
+                return t instanceof Failure ? Either3.c((Failure) t) : Either3.a(t);
             }
         } catch (Exception e) {
             return Either3.c(Failure.of(e));
@@ -229,6 +233,11 @@ public abstract class Either3<A, B, C> {
      * Maps the constituents of this union to R.
      */
     public abstract <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn, Function<? super C, ? extends R> cFn);
+
+    /**
+     * Maps the constituents of this union to R.
+     */
+    public abstract <R> R map(Function<Either<A, B>, ? extends R> abFn, Function<? super C, ? extends R> cFn);
 
     /**
      * Maps the A constituent, if it exists, to R.
@@ -248,16 +257,16 @@ public abstract class Either3<A, B, C> {
     /**
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either3}.
      *
-     * @see #andThen
+     * @see #andThenMap
      * @see #andThenR
      */
-    public abstract <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn);
+    public abstract <R> Either3<R, B, C> andThenMapE(Function<? super A, ? extends R> aFn);
 
     /**
      * Maps the A constituent, if it exists, to R, which must be an {@link Either3} that has the
      * same B and C types like this {@link Either3}.
      */
-    public abstract <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn);
+    public abstract <R extends Either3<?, B, C>> R andThenMap(Function<? super A, ? extends R> aFn);
 
     /**
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
@@ -265,16 +274,16 @@ public abstract class Either3<A, B, C> {
     public abstract Either3<A, B, C> andThenDo(Consumer<? super A> aC);
 
     /**
-     * A version of {@link #andThen} that supports working with requests. With this method (and together with
+     * A version of {@link #andThenMap} that supports working with requests. With this method (and together with
      * {@link PortsFuture#andThenE}) you can build chains of requests.
      *
      * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
      * otherwise. In this context, the A constituent is the result of a preceding request.
      *
      * @see PortsFuture#andThenE
-     * @see #andThen
-     * @see #andThenE
-     * @see #orElse
+     * @see #andThenMap
+     * @see #andThenMapE
+     * @see #orElseMap
      * @see #orElseDo
      * @see #finallyDo
      */
@@ -283,7 +292,7 @@ public abstract class Either3<A, B, C> {
     /**
      * Maps the C constituent, if it exists, to R.
      */
-    public abstract <R> Either3<A, B, R> orElse(Function<? super C, R> cFn);
+    public abstract <R> Either3<A, B, R> orElseMap(Function<? super C, R> cFn);
 
     /**
      * Applies the provided consumer to the C constituent, if it exists, or does nothing otherwise.
@@ -293,7 +302,7 @@ public abstract class Either3<A, B, C> {
     /**
      * If the C constituent is a {@link Failure}, this method applies the provided
      * consumer to that failure only if it has not already been handled by
-     * another call of {@link #orElseDoOnce}, {@link #orElse}, or {@link #orElseDo}.
+     * another call of {@link #orElseDoOnce}, {@link #orElseMap}, or {@link #orElseDo}.
      * Otherwise, this method behaves exactly like {@link #orElseDo}.
      */
     public abstract Either3<A, B, C> orElseDoOnce(Consumer<? super C> cC);
@@ -302,6 +311,11 @@ public abstract class Either3<A, B, C> {
      * Executes the provided actions on the constituents of this union.
      */
     public abstract Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC);
+
+    /**
+     * Executes the provided actions on the constituents of this union.
+     */
+    public abstract Either3<A, B, C> on(Consumer<Either<A, B>> abC, Consumer<? super C> cC);
 
     /**
      * Executes the provided action on the A constituent, if it exists, and returns this union.
@@ -333,11 +347,8 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns the A constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getB()
-     * @see #getC()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
+     * @see #getAOrElse
+     * @see #getAOrThrow
      */
     public Optional<A> getA() {
         return map(Optional::ofNullable, b -> Optional.empty(), c -> Optional.empty());
@@ -346,11 +357,8 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns the B constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getA()
-     * @see #getC()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
+     * @see #getBOrElse 
+     * @see #getBOrThrow
      */
     public Optional<B> getB() {
         return map(a -> Optional.empty(), Optional::ofNullable, c -> Optional.empty());
@@ -359,15 +367,39 @@ public abstract class Either3<A, B, C> {
     /**
      * Returns the C constituent of this union in the form of an {@link Optional}.
      *
-     * @see #getA()
-     * @see #getB()
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
+     * @see #getCOrElse 
+     * @see #getCOrThrow
      */
     public Optional<C> getC() {
         return map(a -> Optional.empty(), b -> Optional.empty(), Optional::ofNullable);
     }
+
+    /**
+     * Returns the A constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getA
+     * @see #getAOrThrow
+     */
+    public abstract A getAOrElse(A defaultValue);
+
+    /**
+     * Returns the B constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getB
+     * @see #getBOrThrow
+     */
+    public abstract B getBOrElse(B defaultValue);
+
+    /**
+     * Returns the C constituent of this union if it exists, or {@code defaultValue}
+     * otherwise.
+     *
+     * @see #getC
+     * @see #getCOrThrow
+     */
+    public abstract C getCOrElse(C defaultValue);
 
     /**
      * Returns the A constituent of this union if it exists. If it doesn't exist, a
@@ -375,11 +407,8 @@ public abstract class Either3<A, B, C> {
      * represent a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getBOrThrow()
-     * @see #getCOrThrow()
-     * @see #getA()
-     * @see #getB()
-     * @see #getC()
+     * @see #getA
+     * @see #getAOrElse
      */
     public abstract A getAOrThrow() throws NoSuchConstituentException;
 
@@ -389,11 +418,8 @@ public abstract class Either3<A, B, C> {
      * represent a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getAOrThrow()
-     * @see #getCOrThrow()
-     * @see #getA()
-     * @see #getB()
-     * @see #getC()
+     * @see #getB
+     * @see #getBOrElse 
      */
     public abstract B getBOrThrow() throws NoSuchConstituentException;
 
@@ -403,11 +429,8 @@ public abstract class Either3<A, B, C> {
      * represent a {@link Failure} that is equipped with a {@link Throwable}, that Throwable is
      * provided as the cause of the {@link NoSuchConstituentException}.
      *
-     * @see #getAOrThrow()
-     * @see #getBOrThrow()
-     * @see #getA()
-     * @see #getB()
-     * @see #getC()
+     * @see #getC
+     * @see #getCOrElse
      */
     public abstract C getCOrThrow() throws NoSuchConstituentException;
 
@@ -417,9 +440,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isSuccess() {
         return map(
-                a -> a.getClass() == Success.class,
-                b -> b.getClass() == Success.class,
-                c -> c.getClass() == Success.class);
+                x -> Either.checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess),
+                x -> Either.checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess),
+                x -> Either.checkRecursively(x, Success.class, Either::isSuccess, Either3::isSuccess));
     }
 
     /**
@@ -428,9 +451,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isFailure() {
         return map(
-                a -> a.getClass() == Failure.class,
-                b -> b.getClass() == Failure.class,
-                c -> c.getClass() == Failure.class);
+                x -> Either.checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure),
+                x -> Either.checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure),
+                x -> Either.checkRecursively(x, Failure.class, Either::isFailure, Either3::isFailure));
     }
 
     /**
@@ -439,9 +462,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isEmpty() {
         return map(
-                a -> a.getClass() == Empty.class,
-                b -> b.getClass() == Empty.class,
-                c -> c.getClass() == Empty.class);
+                x -> Either.checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty),
+                x -> Either.checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty),
+                x -> Either.checkRecursively(x, Empty.class, Either::isEmpty, Either3::isEmpty));
     }
 
     /**
@@ -450,9 +473,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isNothing() {
         return map(
-                a -> a.getClass() == Nothing.class,
-                b -> b.getClass() == Nothing.class,
-                c -> c.getClass() == Nothing.class);
+                x -> Either.checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing),
+                x -> Either.checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing),
+                x -> Either.checkRecursively(x, Nothing.class, Either::isNothing, Either3::isNothing));
     }
 
     /**
@@ -461,9 +484,9 @@ public abstract class Either3<A, B, C> {
      */
     public boolean isUnknown() {
         return map(
-                a -> a.getClass() == Unknown.class,
-                b -> b.getClass() == Unknown.class,
-                c -> c.getClass() == Unknown.class);
+                x -> Either.checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown),
+                x -> Either.checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown),
+                x -> Either.checkRecursively(x, Unknown.class, Either::isUnknown, Either3::isUnknown));
     }
 
     /**
@@ -472,6 +495,13 @@ public abstract class Either3<A, B, C> {
     public Either3<A, B, C> finallyDo(Runnable runnable) {
         runnable.run();
         return this;
+    }
+
+    /**
+     * Executes the provided supplier and returns its result.
+     */
+    public <R> R finallyMap(Supplier<R> supplier) {
+        return supplier.get();
     }
 
     @Override
@@ -495,6 +525,11 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public <R> R map(Function<Either<A, B>, ? extends R> abFn, Function<? super C, ? extends R> cFn) {
+                return abFn.apply(Either.a(a));
+            }
+
+            @Override
             public <R> Either3<R, B, C> mapA(Function<? super A, ? extends R> aFn) {
                 return Either3.a(aFn.apply(a));
             }
@@ -512,12 +547,12 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either3<R, B, C> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return Either3.a(aFn.apply(a));
             }
 
             @Override
-            public <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either3<?, B, C>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return aFn.apply(a);
             }
 
@@ -533,7 +568,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
+            public <R> Either3<A, B, R> orElseMap(Function<? super C, R> cFn) {
                 return Either3.a(a);
             }
 
@@ -550,6 +585,12 @@ public abstract class Either3<A, B, C> {
             @Override
             public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 aC.accept(a);
+                return this;
+            }
+
+            @Override
+            public Either3<A, B, C> on(Consumer<Either<A, B>> abC, Consumer<? super C> cC) {
+                abC.accept(Either.a(a));
                 return this;
             }
 
@@ -580,6 +621,21 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return a;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public C getCOrElse(C defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
             public A getAOrThrow() {
                 return a;
             }
@@ -594,6 +650,16 @@ public abstract class Either3<A, B, C> {
             public C getCOrThrow() {
                 Either.throwGetOrThrowException(a);
                 return null; // unreachable
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, a, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return a.hashCode();
             }
         };
     }
@@ -611,6 +677,11 @@ public abstract class Either3<A, B, C> {
             @Override
             public <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn, Function<? super C, ? extends R> cFn) {
                 return bFn.apply(b);
+            }
+
+            @Override
+            public <R> R map(Function<Either<A, B>, ? extends R> abFn, Function<? super C, ? extends R> cFn) {
+                return abFn.apply(Either.b(b));
             }
 
             @Override
@@ -632,13 +703,13 @@ public abstract class Either3<A, B, C> {
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either3<R, B, C> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return (Either3<R, B, C>) this;
             }
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either3<?, B, C>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return (R) this;
             }
 
@@ -653,7 +724,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
+            public <R> Either3<A, B, R> orElseMap(Function<? super C, R> cFn) {
                 return Either3.b(b);
             }
 
@@ -670,6 +741,12 @@ public abstract class Either3<A, B, C> {
             @Override
             public Either3<A, B, C> on(Consumer<? super A> aC, Consumer<? super B> bC, Consumer<? super C> cC) {
                 bC.accept(b);
+                return this;
+            }
+
+            @Override
+            public Either3<A, B, C> on(Consumer<Either<A, B>> abC, Consumer<? super C> cC) {
+                abC.accept(Either.b(b));
                 return this;
             }
 
@@ -700,6 +777,21 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return b;
+            }
+
+            @Override
+            public C getCOrElse(C defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
             public A getAOrThrow() {
                 Either.throwGetOrThrowException(b);
                 return null; // unreachable
@@ -714,6 +806,16 @@ public abstract class Either3<A, B, C> {
             public C getCOrThrow() {
                 Either.throwGetOrThrowException(b);
                 return null; // unreachable
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, b, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return b.hashCode();
             }
         };
     }
@@ -730,6 +832,11 @@ public abstract class Either3<A, B, C> {
 
             @Override
             public <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn, Function<? super C, ? extends R> cFn) {
+                return cFn.apply(c);
+            }
+
+            @Override
+            public <R> R map(Function<Either<A, B>, ? extends R> abFn, Function<? super C, ? extends R> cFn) {
                 return cFn.apply(c);
             }
 
@@ -752,13 +859,13 @@ public abstract class Either3<A, B, C> {
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R> Either3<R, B, C> andThenE(Function<? super A, ? extends R> aFn) {
+            public <R> Either3<R, B, C> andThenMapE(Function<? super A, ? extends R> aFn) {
                 return (Either3<R, B, C>) this;
             }
 
             @Override
             @SuppressWarnings("unchecked")
-            public <R extends Either3<?, B, C>> R andThen(Function<? super A, ? extends R> aFn) {
+            public <R extends Either3<?, B, C>> R andThenMap(Function<? super A, ? extends R> aFn) {
                 return (R) this;
             }
 
@@ -775,7 +882,7 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either3<A, B, R> orElse(Function<? super C, R> cFn) {
+            public <R> Either3<A, B, R> orElseMap(Function<? super C, R> cFn) {
                 if (c instanceof Failure) {
                     ((Failure) c).setHasAlreadyBeenHandled();
                 }
@@ -816,6 +923,12 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public Either3<A, B, C> on(Consumer<Either<A, B>> abC, Consumer<? super C> cC) {
+                cC.accept(c);
+                return this;
+            }
+
+            @Override
             public Either3<A, B, C> onA(Consumer<? super A> aC) {
                 return this;
             }
@@ -842,6 +955,21 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
+            public A getAOrElse(A defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public B getBOrElse(B defaultValue) {
+                return defaultValue;
+            }
+
+            @Override
+            public C getCOrElse(C defaultValue) {
+                return c;
+            }
+
+            @Override
             public A getAOrThrow() {
                 Either.throwGetOrThrowException(c);
                 return null; // unreachable
@@ -856,6 +984,16 @@ public abstract class Either3<A, B, C> {
             @Override
             public C getCOrThrow() {
                 return c;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                return Either.equals(this, c, obj);
+            }
+
+            @Override
+            public int hashCode() {
+                return c.hashCode();
             }
         };
     }
