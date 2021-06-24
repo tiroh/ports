@@ -6,7 +6,7 @@
 
     <groupId>org.timux.ports</groupId>
     <artifactId>ports</artifactId>
-    <version>0.6.1</version>
+    <version>0.7.0-ALPHA.1</version>
 
     <packaging>pom</packaging>
 
@@ -24,7 +24,7 @@
 
         <junit.version>5.6.2</junit.version>
         <surefire.version>3.0.0-M5</surefire.version>
-        <classgraph.version>4.8.89</classgraph.version>
+        <classgraph.version>4.8.108</classgraph.version>
         <slf4j.version>1.7.30</slf4j.version>
         <logback.version>1.2.3</logback.version>
     </properties>

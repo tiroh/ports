@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,12 @@
 package org.timux.ports;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Container;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class IocTests {
 
@@ -36,18 +38,58 @@ public class IocTests {
     }
 
     @Test
-    public void smokeTest() {
+    public void iocSmokeTest() {
+        IocCompA a = PortsApplication.getOrMakeInstance(IocCompA.class);
+        IocCompB b = PortsApplication.getOrMakeInstance(IocCompB.class);
+
+        Ports.register(a, b);
+
         Container<Integer> result = Container.of(0);
 
         Ports.protocol()
-                .when(IocTestRequest.class, Integer.class)
+            .when(IocTestRequest.class, Integer.class)
                 .responds()
-                .do_(response -> result.value = response);
+                .storeIn(result);
 
         Ports.protocol()
-                .with(IocTestEvent.class)
+            .with(IocTestEvent.class)
                 .trigger(new IocTestEvent(1));
 
-        Assertions.assertEquals(4, result.value);
+        assertEquals(4, result.value);
+    }
+
+    @Test
+    public void iocInstantiation() {
+        IocCompA stc1 = PortsApplication.getOrMakeInstance(IocCompA.class);
+        IocCompA stc2 = PortsApplication.getOrMakeInstance(IocCompA.class);
+
+        IocCompB stc3 = PortsApplication.getOrMakeInstance(IocCompB.class);
+        IocCompB stc4 = PortsApplication.getOrMakeInstance(IocCompB.class);
+
+        IocCompC dyn1 = PortsApplication.getOrMakeInstance(IocCompC.class);
+        IocCompC dyn2 = PortsApplication.getOrMakeInstance(IocCompC.class);
+
+        assertEquals(stc1, stc2);
+        assertEquals(stc3, stc4);
+
+        assertNotEquals(dyn1, dyn2);
+    }
+
+    @Test
+    public void iocDynamic() {
+        IocCompC dyn1 = PortsApplication.getOrMakeInstance(IocCompC.class);
+        IocCompC dyn2 = PortsApplication.getOrMakeInstance(IocCompC.class);
+
+        Ports.register(dyn1, dyn2);
+
+        dyn1.testData = 17;
+        dyn2.testData = 19;
+
+        Ports.protocol()
+            .with(IocTestEvent.class)
+                .trigger(new IocTestEvent(1));
+
+        assertEquals(36, dyn1.result);
+        assertEquals(40, dyn2.result);
     }
 }

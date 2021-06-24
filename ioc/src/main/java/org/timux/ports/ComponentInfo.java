@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,45 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.Either;
+
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 class ComponentInfo {
 
-    private final WeakReference<?> componentRef;
-    private final Scope scope;
+    static class Dummy {}
 
-    ComponentInfo(Object component, Scope scope) {
-        this.componentRef = new WeakReference<>(component);
-        this.scope = scope;
+    private final Either<Object, Map<Object, Dummy>> component;
+
+    private ComponentInfo(Object staticComponent, Map<Object, Dummy> dynamicComponentRefs) {
+        component = Either.of(staticComponent, dynamicComponentRefs);
     }
 
-    public WeakReference<?> componentRef() {
-        return componentRef;
+    static ComponentInfo ofStatic(Object staticComponent) {
+        return new ComponentInfo(staticComponent, null);
     }
 
-    public Scope scope() {
-        return scope;
+    static ComponentInfo ofDynamic(Object dynamicComponent) {
+        Map<Object, Dummy> refs = new WeakHashMap<>();
+        refs.put(dynamicComponent, null);
+        return new ComponentInfo(null, refs);
+    }
+
+    public Either<Object, Map<Object, Dummy>> getComponents() {
+        return component;
     }
 
     @Override
     public String toString() {
-        return "ComponentInfo{" + componentRef.get() + ", " + scope + '}';
+        return "ComponentInfo{" +
+                "component=" + component +
+                '}';
     }
 }

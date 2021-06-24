@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@
 package org.timux.ports;
 
 import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 class ClasspathScanner {
 
-    public void scan(List<String> componentScanPackages) {
+    private static final HashMap<String, Class<?>> statics = new HashMap<>();
+
+    synchronized static void scan(List<String> componentScanPackages) {
         String[] packages = componentScanPackages.toArray(new String[componentScanPackages.size()]);
 
         ClassGraph classGraph = new ClassGraph()
@@ -38,33 +37,20 @@ class ClasspathScanner {
                 .enableFieldInfo()
                 .enableAnnotationInfo();
 
-//        Arrays.stream(classGraph.getClasspath().split(":")).forEach(System.out::println);
-//        System.out.println();
-
         try (ScanResult scanResult = classGraph.scan()) {
-//            scanResult.getAllClasses().forEach(System.out::println);
-
-            Set<ClassInfo> classInfos = new HashSet<>(scanResult.getClassesWithMethodAnnotation(In.class.getName()));
-            classInfos.addAll(scanResult.getClassesWithFieldAnnotation(In.class.getName()));
-            classInfos.addAll(scanResult.getClassesWithFieldAnnotation(Out.class.getName()));
-
-            classInfos.forEach(
-                    classInfo -> {
-                        try {
-                            Object instance = classInfo.loadClass().getConstructor().newInstance();
-                            PortsIoc.register(instance, Scope.SINGLETON);
-                        } catch (InstantiationException e) {
-                            e.printStackTrace();
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        } catch (InvocationTargetException e) {
-                            e.printStackTrace();
-                        } catch (NoSuchMethodException e) {
-                            e.printStackTrace();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+            scanResult.getClassesWithAnnotation(Static.class.getName()).forEach(
+                    ci -> statics.put(ci.getName(), ci.loadClass())
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
+
+    synchronized static HashMap<String, Class<?>> getStatics() {
+        return statics;
+    }
+
+    synchronized static void clear() {
+        statics.clear();
     }
 }

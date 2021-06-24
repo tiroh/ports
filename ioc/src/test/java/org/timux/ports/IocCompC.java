@@ -16,7 +16,17 @@
 
 package org.timux.ports;
 
-public enum Scope {
+@Dynamic
+public class IocCompC {
 
-    SINGLETON
+    @Out
+    private Request<IocTestRequest, Integer> iocTestRequest;
+
+    public int testData;
+    public int result;
+
+    @In
+    private void onIocTest(IocTestEvent event) {
+        result = iocTestRequest.call(new IocTestRequest(event.getData() + testData));
+    }
 }
