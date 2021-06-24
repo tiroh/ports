@@ -76,8 +76,6 @@ class TypeUtils {
 
         Response responseAnno = messageType.getDeclaredAnnotation(Response.class);
         Responses responsesAnno = messageType.getDeclaredAnnotation(Responses.class);
-        SuccessResponse successResponseAnno = messageType.getDeclaredAnnotation(SuccessResponse.class);
-        FailureResponse failureResponseAnno = messageType.getDeclaredAnnotation(FailureResponse.class);
 
         String declaredResponseType = null;
 
@@ -132,29 +130,6 @@ class TypeUtils {
             declaredResponseType = responsesAnno.value().length == 2
                     ? Either.class.getName()
                     : Either3.class.getName();
-        }
-
-        if (successResponseAnno == null ^ failureResponseAnno == null) {
-            throw new InvalidResponseDeclarationException(responseType.getName());
-        }
-
-        if (successResponseAnno != null) {
-            if (eitherTypeA != null && eitherTypeB != null) {
-                if (successResponseAnno.value() != eitherTypeA) {
-                    throw new InvalidResponseTypeException(eitherTypeA.getName(), messageType.getName());
-                }
-
-                if (failureResponseAnno.value() != eitherTypeB) {
-                    throw new InvalidResponseTypeException(eitherTypeB.getName(), messageType.getName());
-                }
-            } else if (responseType == Either.class) {
-                throw new RawUnionTypeException(
-                        messageType.getName(),
-                        successResponseAnno.value().getName(),
-                        failureResponseAnno.value().getName());
-            }
-
-            declaredResponseType = Either.class.getName();
         }
 
         if (declaredResponseType == null) {

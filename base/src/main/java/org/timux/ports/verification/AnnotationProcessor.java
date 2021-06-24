@@ -51,9 +51,8 @@ public class AnnotationProcessor extends AbstractProcessor {
         supportedAnnotationTypes.add(In.class.getName());
         supportedAnnotationTypes.add(Out.class.getName());
         supportedAnnotationTypes.add(Response.class.getName());
-        supportedAnnotationTypes.add(SuccessResponse.class.getName());
-        supportedAnnotationTypes.add(FailureResponse.class.getName());
         supportedAnnotationTypes.add(Pure.class.getName());
+        supportedAnnotationTypes.add(Dynamic.class.getName());
 
         unmodifiableSupportedAnnotationTypes = Collections.unmodifiableSet(supportedAnnotationTypes);
     }
@@ -186,11 +185,7 @@ public class AnnotationProcessor extends AbstractProcessor {
     private void checkRequestTypes(RoundEnvironment roundEnvironment) {
         forEachAnnotatedElementDo(roundEnvironment, Responses.class, this::processMultipleResponsesAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, Response.class, this::processSingleResponseAnnotatedElement);
-        forEachAnnotatedElementDo(roundEnvironment, SuccessResponse.class, this::processSingleResponseAnnotatedElement);
-        forEachAnnotatedElementDo(roundEnvironment, FailureResponse.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, Pure.class, this::processPureAnnotatedElement);
-
-        verificationModel.verifyThatNoSuccessOrFailureResponseTypesStandAlone();
     }
 
     private void processMultipleResponsesAnnotatedElement(Element element, AnnotationMirror mirror) {
@@ -235,10 +230,6 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private void processSingleResponseAnnotatedElement(Element element, AnnotationMirror mirror) {
-        boolean isSuccessResponse = mirror.getAnnotationType().toString().equals(SuccessResponse.class.getName());
-        boolean isFailureResponse = mirror.getAnnotationType().toString().equals(FailureResponse.class.getName());
-        boolean isRegularResponse = !isSuccessResponse && !isFailureResponse;
-
         String mirrorValue = getMirrorValue(mirror);
 
         String messageType = element.toString();
@@ -249,17 +240,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             return;
         }
 
-        if (isRegularResponse) {
-            verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
-        }
-
-        if (isSuccessResponse) {
-            verificationModel.verifyAndRegisterSuccessResponseType(messageType, responseType, element, mirror);
-        }
-
-        if (isFailureResponse) {
-            verificationModel.verifyAndRegisterFailureResponseType(messageType, responseType, element, mirror);
-        }
+        verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
     }
 
     private void processPureAnnotatedElement(Element element, AnnotationMirror mirror) {

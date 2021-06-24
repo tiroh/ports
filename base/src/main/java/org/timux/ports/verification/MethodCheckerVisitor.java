@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
  
 package org.timux.ports.verification;
+
+import org.timux.ports.Dynamic;
 
 import javax.lang.model.element.*;
 
@@ -97,7 +99,7 @@ class MethodCheckerVisitor implements ElementVisitor<Void, Void> {
         }
 
         if (messageType.endsWith("Event") || messageType.endsWith("Exception")) {
-            if (!responseType.equals("void")) {
+            if (!responseType.equals(void.class.getName())) {
                 reporter.reportIssue(element, "IN port [%s] must not return a value", portName);
             }
         }
@@ -106,9 +108,23 @@ class MethodCheckerVisitor implements ElementVisitor<Void, Void> {
             verificationModel.verifyAndRegisterInPortResponseType(messageType, responseType, portName, element);
         }
 
+        if (messageType.endsWith("Request") || !responseType.equals(void.class.getName())) {
+            Element enclosingClass = getEnclosingClass(element);
+
+            if (enclosingClass != null && enclosingClass.getAnnotation(Dynamic.class) != null) {
+                reporter.reportIssue(element, "IN port [%s] is a request port which is not allowed here (component %s is dynamic)", portName, enclosingClass.asType().toString());
+            }
+        }
+
         verificationModel.verifyAndRegisterInPortName(portName, element);
 
         return null;
+    }
+
+    private Element getEnclosingClass(Element element) {
+        return element == null
+                ? null
+                : (element.getKind().isClass() ? element : getEnclosingClass(element.getEnclosingElement()));
     }
 
     @Override

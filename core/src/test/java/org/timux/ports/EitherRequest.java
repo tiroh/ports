@@ -16,8 +16,8 @@
 
 package org.timux.ports;
 
-@SuccessResponse(Double.class)
-@FailureResponse(String.class)
+@Response(Double.class)
+@Response(String.class)
 public class EitherRequest {
 
     private final double value;

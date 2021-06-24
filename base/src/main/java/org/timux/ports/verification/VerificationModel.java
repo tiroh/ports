@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2021 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
  
 package org.timux.ports.verification;
 
-import org.timux.ports.types.Either;
-
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import java.util.HashMap;
@@ -28,8 +26,6 @@ class VerificationModel {
 
     private final Map<Element, HashSet<String>> inPortNames = new HashMap<>();
     private final Map<String, String> portSignatures = new HashMap<>();
-    private final Map<Element, String> successResponses = new HashMap<>();
-    private final Map<Element, String> failureResponses = new HashMap<>();
 
     private final Reporter reporter;
 
@@ -78,42 +74,6 @@ class VerificationModel {
                     reporter.reportIssue(element, mirror, notice, messageType, registeredResponseType, responseType);
                 }
             }
-        }
-    }
-
-    void verifyAndRegisterSuccessResponseType(String messageType, String successResponseType, Element element, AnnotationMirror mirror) {
-        successResponses.put(element, successResponseType);
-
-        String failureResponseType = failureResponses.remove(element);
-
-        if (failureResponseType != null) {
-            successResponses.remove(element);
-            String responseType = String.format("%s<%s,%s>", Either.class.getName(), successResponseType, failureResponseType);
-            verifyAndRegisterResponseType(messageType, responseType, element, mirror);
-        }
-    }
-
-    void verifyAndRegisterFailureResponseType(String messageType, String failureResponseType, Element element, AnnotationMirror mirror) {
-        failureResponses.put(element, failureResponseType);
-
-        String successResponseType = successResponses.remove(element);
-
-        if (successResponseType != null) {
-            failureResponses.remove(element);
-            String responseType = String.format("%s<%s,%s>", Either.class.getName(), successResponseType, failureResponseType);
-            verifyAndRegisterResponseType(messageType, responseType, element, mirror);
-        }
-    }
-
-    void verifyThatNoSuccessOrFailureResponseTypesStandAlone() {
-        for (Map.Entry<Element, String> e : successResponses.entrySet()) {
-            Element element = e.getKey();
-            reporter.reportIssue(element, "a failure response type must be provided");
-        }
-
-        for (Map.Entry<Element, String> e : failureResponses.entrySet()) {
-            Element element = e.getKey();
-            reporter.reportIssue(element, "a success response type must be provided");
         }
     }
 

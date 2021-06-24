@@ -29,4 +29,9 @@ public class IocCompC {
     private void onIocTest(IocTestEvent event) {
         result = iocTestRequest.call(new IocTestRequest(event.getData() + testData));
     }
+
+    @In
+    private Integer onIocTestRequest(IocTestRequest request) {
+        return request.getData() * 2;
+    }
 }
