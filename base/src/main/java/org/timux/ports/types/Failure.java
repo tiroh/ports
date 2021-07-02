@@ -18,6 +18,9 @@ package org.timux.ports.types;
 
 import org.timux.ports.PortsExecutionException;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.Optional;
 
 /**
@@ -41,6 +44,8 @@ public final class Failure {
 
     private boolean hasAlreadyBeenHandled = false;
 
+    private StackTraceElement[] stackTrace;
+
     private Failure(String message, Throwable throwable) {
         if (message == null) {
             throw new IllegalArgumentException("message must not be null");
@@ -48,6 +53,10 @@ public final class Failure {
 
         this.message = message;
         this.throwable = Optional.ofNullable(throwable);
+
+        this.stackTrace = throwable == null
+                ? Thread.currentThread().getStackTrace()
+                : throwable.getStackTrace();
     }
 
     /**
@@ -88,6 +97,43 @@ public final class Failure {
 
     public String getMessage() {
         return message;
+    }
+
+    public StackTraceElement[] getStackTrace() {
+        return stackTrace;
+    }
+
+    public void printStackTrace() {
+        printStackTrace(System.err);
+    }
+
+    public void printStackTrace(OutputStream outputStream) {
+        try (PrintWriter writer = new PrintWriter(outputStream)) {
+            printStackTrace(writer);
+        }
+    }
+
+    public void printStackTrace(PrintWriter printWriter) {
+        synchronized (printWriter) {
+            printWriter.println(this);
+
+            boolean preambleHasBeenSkipped = false;
+
+            for (int lineNo = 0; lineNo < stackTrace.length; lineNo++) {
+                StackTraceElement element = stackTrace[lineNo];
+
+                if (!preambleHasBeenSkipped
+                        && (element.getClassName().equals(getClass().getName()))
+                        || element.getClassName().equals(Thread.class.getName())) {
+                    continue;
+                } else {
+                    preambleHasBeenSkipped = true;
+                }
+
+                printWriter.print("    at ");
+                printWriter.println(element);
+            }
+        }
     }
 
     /**
@@ -133,7 +179,7 @@ public final class Failure {
     public Optional<Throwable> getRootCause() {
         Optional<Throwable> t = throwable;
 
-        for (;;) {
+        for (; ; ) {
             if (!t.isPresent()) {
                 return Optional.empty();
             }
@@ -152,7 +198,7 @@ public final class Failure {
     public String toString() {
         return "Failure{" +
                 (!message.isEmpty() ? "'" + message + "'" : "") +
-                (throwable.isPresent() ? (message.isEmpty() ? throwable : ", " + throwable) : "") +
+                (throwable.isPresent() ? (message.isEmpty() ? throwable.get() : ", " + throwable.get()) : "") +
                 "}";
     }
 }
