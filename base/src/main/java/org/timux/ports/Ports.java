@@ -43,6 +43,8 @@ public final class Ports {
     private static final Map<Class<?>, WeakReference<Field[]>> fieldCache = new WeakHashMap<>();
     private static final Map<Class<?>, WeakReference<Method[]>> methodCache = new WeakHashMap<>();
 
+    private static final PortsEventExceptionSender eventExceptionSender = new PortsEventExceptionSender();
+
     private Ports() {
         // Don't you instantiate this class!!
     }
@@ -116,6 +118,10 @@ public final class Ports {
     }
 
     static boolean connectDirectedInternal(Object from, Object to, EventWrapper eventWrapper, int portsOptions) throws IllegalAccessException {
+        if (from != eventExceptionSender) {
+            connectDirectedInternal(eventExceptionSender, to, PortsOptions.DEFAULT);
+        }
+
         Map<String, Method> inPortHandlerMethodsByType = getInPortHandlerMethodsByType(from, to);
 
         Map<String, Field> outPortFieldsByType;
@@ -614,6 +620,10 @@ public final class Ports {
 
     static void printError(String message) {
         System.err.println("[ports] error: " + message);
+    }
+
+    static void triggerEventException(Throwable throwable) {
+        eventExceptionSender.trigger(throwable);
     }
 
     public static String getVersionString() {

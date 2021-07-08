@@ -103,11 +103,10 @@ public class Event<T> {
                             if (owner != null) {
                                 portMethod.invoke(owner, x);
                             }
-                        } catch (IllegalAccessException e) {
-                            // TODO: feed this into an error port
-                            e.printStackTrace();
                         } catch (InvocationTargetException e) {
-                            e.getCause().printStackTrace();
+                            Ports.triggerEventException(e.getCause());
+                        } catch (Exception e) {
+                            Ports.triggerEventException(e);
                         }
                     });
         } else {
@@ -119,11 +118,10 @@ public class Event<T> {
                         if (owner != null) {
                             try {
                                 portMethod.invoke(owner, x);
-                            } catch (IllegalAccessException e) {
-                                // TODO: feed this into an error port
-                                e.printStackTrace();
                             } catch (InvocationTargetException e) {
-                                e.getCause().printStackTrace();
+                                Ports.triggerEventException(e.getCause());
+                            } catch (Exception e) {
+                                Ports.triggerEventException(e);
                             }
                         }
                     }));
@@ -210,8 +208,7 @@ public class Event<T> {
                 try {
                     Protocol.onDataSent(eventTypeName, owner, payload);
                 } catch (Exception e) {
-                    // TODO: feed this into an error port
-                    e.printStackTrace();
+                    Ports.triggerEventException(e);
                 }
             } else {
                 Ports.printWarning(String.format(
@@ -227,8 +224,7 @@ public class Event<T> {
             try {
                 Protocol.onDataSent(eventTypeName, owner, payload);
             } catch (Exception e) {
-                // TODO: feed this into an error port
-                e.printStackTrace();
+                Ports.triggerEventException(e);
             }
         }
 
