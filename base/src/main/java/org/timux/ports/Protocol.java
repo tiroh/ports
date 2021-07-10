@@ -245,15 +245,32 @@ final class Protocol {
         ConditionalActions conditionalActions = conditionalActionsMap.get(messageType);
 
         if (conditionalActions == null || conditionalActions.actions.isEmpty()) {
+            if (data instanceof PortsEventException) {
+                printEventExceptionWarning((PortsEventException) data);
+            }
+
             return;
         }
+
+        boolean actionWasExecuted = false;
 
         for (ConditionalActionsPair pair : conditionalActions.actions) {
             if (pair.predicate.test(data)) {
                 for (Action action : pair.actions) {
                     action.execute(data, owner);
+                    actionWasExecuted = true;
                 }
             }
         }
+
+        if (!actionWasExecuted && data instanceof PortsEventException) {
+            printEventExceptionWarning((PortsEventException) data);
+        }
+    }
+
+    private static void printEventExceptionWarning(PortsEventException exception) {
+        Ports.printWarning("An event port terminated with an exception which was not "
+                + "caught by a PortsEventException handler. The exception was:");
+        exception.printStackTrace();
     }
 }

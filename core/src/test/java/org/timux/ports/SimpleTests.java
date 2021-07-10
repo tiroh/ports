@@ -23,12 +23,7 @@ import org.timux.ports.types.Failure;
 
 import java.lang.reflect.InvocationTargetException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SimpleTests {
 
@@ -261,5 +256,18 @@ public class SimpleTests {
         assertEquals(1.5, response2);
 
         assertEquals(Runtime.getRuntime().availableProcessors(), domainA.getNumberOfThreadsCreated());
+    }
+
+    @Test
+    public void portsEventException() {
+        A a = new A();
+        H h = new H();
+
+        Ports.connect(a).and(h);
+
+        a.intEvent.trigger(new IntEvent(1701));
+
+        assertEquals(PortsEventException.class, h.result.getClass());
+        assertEquals("PortsEventException{org.timux.ports.MySpecialTestException: 1701}", h.result.toString());
     }
 }

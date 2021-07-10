@@ -395,4 +395,28 @@ public class ProtocolTests {
 
         assertTrue(result.value.isFailure());
     }
+
+    @Test
+    public void protocolsPortsEventException() {
+        Container<PortsEventException> result = Container.of(null);
+
+        Ports.protocol()
+            .when(PortsEventException.class)
+                .triggers()
+                .storeIn(result);
+
+        Ports.protocol()
+            .when(IntEvent.class)
+                .triggers()
+                .do_(event -> {
+                    throw new MySpecialTestException(Integer.toString(event.getData()));
+                });
+
+        Ports.protocol()
+            .with(IntEvent.class)
+                .trigger(new IntEvent(1701));
+
+        assertEquals(PortsEventException.class, result.value.getClass());
+        assertEquals("PortsEventException{org.timux.ports.MySpecialTestException: 1701}", result.value.toString());
+    }
 }

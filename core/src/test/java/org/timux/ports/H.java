@@ -16,24 +16,17 @@
 
 package org.timux.ports;
 
-public class PortsEventException {
+public class H {
 
-    private final Throwable throwable;
+    public PortsEventException result;
 
-    public PortsEventException(Throwable throwable) {
-        this.throwable = throwable;
+    @In
+    private void onInt(IntEvent event) {
+        throw new MySpecialTestException(Integer.toString(event.getData()));
     }
 
-    public Throwable getThrowable() {
-        return throwable;
-    }
-
-    public void printStackTrace() {
-        throwable.printStackTrace();
-    }
-
-    @Override
-    public String toString() {
-        return "PortsEventException{" + throwable + '}';
+    @In
+    private void onPortsEventException(PortsEventException exception) {
+        result = exception;
     }
 }
