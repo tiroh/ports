@@ -34,7 +34,7 @@ public class ProtocolTests {
 
     @AfterEach
     public void afterEach() {
-        Ports.releaseProtocols();
+        Ports.reset();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.timux.ports;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Pair;
 import org.timux.ports.types.PairX;
@@ -9,7 +10,6 @@ import org.timux.ports.types.Tuple;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -19,6 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PairTests {
+
+    @AfterEach
+    public void afterEach() {
+        Ports.reset();
+    }
 
     @Test
     public void pairTripleEquals() {

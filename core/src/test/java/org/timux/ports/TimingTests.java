@@ -1,7 +1,7 @@
 package org.timux.ports;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
@@ -11,7 +11,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TimingTests {
 
@@ -21,9 +24,9 @@ public class TimingTests {
         Executor.TEST_API_IDLE_LIFETIME_MS = 2000;
     }
 
-    @BeforeEach
-    public void beforeEach() {
-        Ports.releaseDomains();
+    @AfterEach
+    public void afterEach() {
+        Ports.reset();
     }
 
     @Test

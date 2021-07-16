@@ -16,12 +16,15 @@
 
 package org.timux.ports;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.timux.ports.types.Failure;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +33,11 @@ public class SimpleTests {
     @BeforeAll
     public static void beforeAll() {
         Executor.TEST_API_DISABLE_DEADLOCK_WARNINGS = true;
+    }
+
+    @AfterEach
+    public void afterEach() {
+        Ports.reset();
     }
 
     @Test
@@ -265,9 +273,23 @@ public class SimpleTests {
 
         Ports.connect(a).and(h);
 
-        a.intEvent.trigger(new IntEvent(1701));
+        assertDoesNotThrow(() -> a.intEvent.trigger(new IntEvent(1701)));
 
         assertEquals(PortsEventException.class, h.result.getClass());
         assertEquals("PortsEventException{org.timux.ports.MySpecialTestException: 1701}", h.result.toString());
+    }
+
+    @Test
+    @Timeout(value = 1000, unit = TimeUnit.MILLISECONDS)
+    public void errorLoopPrevention() {
+        A a = new A();
+        J j = new J();
+
+        Ports.connect(a).and(j);
+
+        assertDoesNotThrow(() -> a.intEvent.trigger(new IntEvent(1703)));
+
+        assertEquals(PortsEventException.class, j.result.getClass());
+        assertEquals("PortsEventException{org.timux.ports.MySpecialTestException: 1703}", j.result.toString());
     }
 }

@@ -612,6 +612,7 @@ public final class Ports {
         releaseProtocols();
         releaseDomains();
         CacheManager.reset();
+        eventExceptionSender.disconnect();
     }
 
     static void printWarning(String message) {

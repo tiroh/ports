@@ -19,7 +19,6 @@ package org.timux.ports.types;
 import org.timux.ports.PortsExecutionException;
 
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Optional;
 

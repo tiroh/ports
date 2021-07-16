@@ -269,8 +269,8 @@ final class Protocol {
     }
 
     private static void printEventExceptionWarning(PortsEventException exception) {
-        Ports.printWarning("An event port terminated with an exception which was not "
-                + "caught by a PortsEventException handler. The exception was:");
+        Ports.printWarning(String.format("An event port terminated with an exception which was not "
+                + "caught by an %s handler. The exception was:", PortsEventException.class.getName()));
         exception.printStackTrace();
     }
 }

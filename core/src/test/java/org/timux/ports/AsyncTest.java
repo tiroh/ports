@@ -1,14 +1,16 @@
 package org.timux.ports;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncTest {
 
@@ -99,9 +101,9 @@ public class AsyncTest {
         Executor.TEST_API_DISABLE_DEADLOCK_WARNINGS = true;
     }
 
-    @BeforeEach
-    public void beforeEach() {
-        Ports.releaseDomains();
+    @AfterEach
+    public void afterEach() {
+        Ports.reset();
     }
 
     @Test

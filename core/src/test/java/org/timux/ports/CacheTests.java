@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CacheTests {
 
+
     @AfterEach
     public void afterEach() {
         Ports.reset();

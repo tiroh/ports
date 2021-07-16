@@ -16,6 +16,7 @@
 
 package org.timux.ports;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.timux.ports.types.*;
@@ -34,6 +35,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class EitherTests {
+
+    @AfterEach
+    public void afterEach() {
+        Ports.reset();
+    }
 
     @Test
     public void eitherOf() {

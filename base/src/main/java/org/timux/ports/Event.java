@@ -187,6 +187,12 @@ public class Event<T> {
         }
     }
 
+    synchronized void disconnect() {
+        ports.clear();
+        portMethods = null;
+        domainVersion = -1;
+    }
+
     /**
      * Sends the given payload to the connected IN port(s). Whether the event will be dispatched synchronously or
      * asynchronously or whether (and how) it will be synchronized depends on the {@link Domain}(s) of the receiver(s).
