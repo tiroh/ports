@@ -183,9 +183,24 @@ public class Request<I, O> {
             if (Protocol.areProtocolsActive) {
                 try {
                     Protocol.onDataSent(requestTypeName, owner, payload);
+                } catch (Exception e) {
+                    /*
+                     * When the protocol event handler crashes, this doesn't mean that the
+                     * request itself has a problem, so we shouldn't terminate here. We just
+                     * log the stack trace and continue.
+                     */
+                    e.printStackTrace();
+                }
+
+                try {
                     Protocol.onDataReceived(requestTypeName, owner, cachedFuture);
                 } catch (Exception e) {
-                    return new PortsFuture<O>(e, responseTypeInfo).get();
+                    /*
+                     * Again: When the protocol event handler crashes, we should just log the
+                     * stack trace and continue normally.
+                     */
+                    e.printStackTrace();
+//                    return new PortsFuture<O>(e, responseTypeInfo).get();
                 }
             }
 
@@ -194,6 +209,10 @@ public class Request<I, O> {
 
         PortsFuture<O> future = callF_internal(payload);
         O response = future.get();
+
+        if (Protocol.areProtocolsActive && future.hasExceptionOccurred()) {
+            Protocol.onDataReceived(requestTypeName, owner, response);
+        }
 
         if (cache != null) {
             if (future.hasExceptionOccurred()) {
@@ -246,9 +265,24 @@ public class Request<I, O> {
             if (Protocol.areProtocolsActive) {
                 try {
                     Protocol.onDataSent(requestTypeName, owner, payload);
+                } catch (Exception e) {
+                    /*
+                     * When the protocol event handler crashes, this doesn't mean that the
+                     * request itself has a problem, so we shouldn't terminate here. We just
+                     * log the stack trace and continue.
+                     */
+                    e.printStackTrace();
+                }
+
+                try {
                     Protocol.onDataReceived(requestTypeName, owner, cachedFuture);
                 } catch (Exception e) {
-                    return new PortsFuture<O>(e, responseTypeInfo).getE();
+                    /*
+                     * Again: When the protocol event handler crashes, we should just log the
+                     * stack trace and continue normally.
+                     */
+                    e.printStackTrace();
+//                    return new PortsFuture<O>(e, responseTypeInfo).get();
                 }
             }
 
@@ -257,6 +291,10 @@ public class Request<I, O> {
 
         PortsFuture<O> future = callF_internal(payload);
         Either<O, Failure> response = future.getE();
+
+        if (Protocol.areProtocolsActive && future.hasExceptionOccurred()) {
+            Protocol.onDataReceived(requestTypeName, owner, response);
+        }
 
         if (cache != null) {
             if (response.isFailure()) {
@@ -291,9 +329,24 @@ public class Request<I, O> {
             if (Protocol.areProtocolsActive) {
                 try {
                     Protocol.onDataSent(requestTypeName, owner, payload);
+                } catch (Exception e) {
+                    /*
+                     * When the protocol event handler crashes, this doesn't mean that the
+                     * request itself has a problem, so we shouldn't terminate here. We just
+                     * log the stack trace and continue.
+                     */
+                    e.printStackTrace();
+                }
+
+                try {
                     Protocol.onDataReceived(requestTypeName, owner, cachedFuture);
                 } catch (Exception e) {
-                    return new PortsFuture<>(e, responseTypeInfo);
+                    /*
+                     * Again: When the protocol event handler crashes, we should just log the
+                     * stack trace and continue normally.
+                     */
+                    e.printStackTrace();
+//                    return new PortsFuture<O>(e, responseTypeInfo).get();
                 }
             }
 
@@ -375,8 +428,9 @@ public class Request<I, O> {
             /*
              * The following call only handles the "happy case", i.e. that no exception occurred.
              * If the 'apply' call crashed with an exception, we won't reach his point. Instead, the exception
-             * will be caught within the Task class. In the Protocol class, it will be extracted from the
-             * returned future and relayed to the receiver (if the response type allows it).
+             * will be caught within the Task class. In the 'call' and 'callE' methods above, it will be
+             * extracted from the returned future and relayed to the receiver (if the response type allows it).
+             * FIXME: The 'callF' method cannot notify the onDataReceived handlers!
              */
             Protocol.onDataReceived(requestTypeName, owner, response);
             return response;

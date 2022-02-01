@@ -147,15 +147,7 @@ final class Protocol {
         if (outPortType == Request.class) {
             try {
                 Request requestPort = (Request) outPortField.get(state.currentWithOwner);
-
-                return (x, owner) -> {
-                    PortsFuture<?> future = requestPort.callF(payload);
-                    Object response = future.get();
-
-                    if (future.hasExceptionOccurred()) {
-                        onDataReceived(state.currentWithRequestType, owner, response);
-                    }
-                };
+                return (x, owner) -> requestPort.call(payload);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -191,14 +183,7 @@ final class Protocol {
             protocolComponent.requestPort = new Request<>(
                     state.currentWithRequestType, state.currentWithResponseType, "requestPort", protocolComponent);
 
-            action = (x, owner) -> {
-                PortsFuture<?> future = protocolComponent.requestPort.callF(payload);
-                Object response = future.get();
-
-                if (future.hasExceptionOccurred()) {
-                    onDataReceived(state.currentWithRequestType, protocolComponent, response);
-                }
-            };
+            action = (x, owner) -> protocolComponent.requestPort.call(payload);
 
             try {
                 outPortField = ProtocolComponent.class.getDeclaredField("requestPort");

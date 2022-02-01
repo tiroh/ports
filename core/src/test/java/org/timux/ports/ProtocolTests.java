@@ -22,6 +22,7 @@ import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Failure;
+import org.timux.ports.types.Success;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -294,6 +295,29 @@ public class ProtocolTests {
     }
 
     @Test
+    public void protocolsFailureCaptureWithEventAtTheBeginning() {
+        F f = new F();
+        K k = new K();
+
+        Ports.register(k);
+        Ports.connect(f).and(k);
+
+        Container<Either<Integer, Failure>> result = Container.of(null);
+
+        Ports.protocol()
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+                .responds()
+                .storeIn(result);
+
+        Ports.protocol()
+            .with(MakeCallThatFailsEvent.class)
+                .trigger(new MakeCallThatFailsEvent(1701));
+
+        assertTrue(result.value.isFailure());
+        assertTrue(result.value.toString().contains("1701"));
+    }
+
+    @Test
     public void protocolsFailureCaptureWithReceiverComponentAndFaultInjection() {
         F f = new F();
 
@@ -327,17 +351,17 @@ public class ProtocolTests {
         Container<Either<Integer, Failure>> result = Container.of(null);
 
         Ports.protocol()
-                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
                 .requests()
                 .respond(request -> {
                     throw new PortsExecutionException(new MySpecialTestException(request.getMessage()));
                 })
-                .when(EitherXFailureRequest.class, Integer.class, Failure.class)
+            .when(EitherXFailureRequest.class, Integer.class, Failure.class)
                 .responds()
                 .storeIn(result);
 
         Ports.protocol()
-                .with(EitherXFailureRequest.class, Integer.class, Failure.class)
+            .with(EitherXFailureRequest.class, Integer.class, Failure.class)
                 .call(new EitherXFailureRequest("message"));
 
         result.value.on(
