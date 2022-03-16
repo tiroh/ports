@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.timux.ports.vaadinspring;
+package org.timux.ports.spring;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
@@ -29,31 +29,31 @@ import java.util.WeakHashMap;
 @Component
 public class ComponentOwnershipRegistry implements DestructionAwareBeanPostProcessor {
 
-    private final Map<Object, String> componentOwners = new WeakHashMap<>();
+  private final Map<Object, String> componentOwners = new WeakHashMap<>();
 
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+  @Override
+  public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
-            synchronized (componentOwners) {
-                componentOwners.put(bean, authentication.getName());
-            }
-        }
-
-        return bean;
+    if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
+      synchronized (componentOwners) {
+        componentOwners.put(bean, authentication.getName());
+      }
     }
 
-    @Override
-    public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
-        synchronized (componentOwners) {
-            componentOwners.remove(bean);
-        }
-    }
+    return bean;
+  }
 
-    String getOwner(Object component) {
-        synchronized (componentOwners) {
-            return componentOwners.get(component);
-        }
+  @Override
+  public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
+    synchronized (componentOwners) {
+      componentOwners.remove(bean);
     }
+  }
+
+  String getOwner(Object component) {
+    synchronized (componentOwners) {
+      return componentOwners.get(component);
+    }
+  }
 }
