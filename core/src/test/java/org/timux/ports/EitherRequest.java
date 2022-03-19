@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 
 package org.timux.ports;
 
-@SuccessResponse(Double.class)
-@FailureResponse(String.class)
+@Response(Double.class)
+@Response(String.class)
 public class EitherRequest {
 
     private final double value;

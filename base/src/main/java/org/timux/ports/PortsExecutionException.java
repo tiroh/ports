@@ -34,6 +34,11 @@ import java.util.List;
  */
 public class PortsExecutionException extends RuntimeException {
 
+    /*
+     * CAUTION: This class is referenced BY NAME (as a string) in org.timux.ports.Failure
+     * in order to avoid a hard dependency!
+     */
+
     PortsExecutionException(Throwable t) {
         super(t);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 package org.timux.ports.types;
 
-import org.timux.ports.PortsFuture;
-import org.timux.ports.Response;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -29,7 +28,7 @@ import java.util.function.Supplier;
 /**
  * A union type for two constituent types A and B.
  *
- * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
+ * <p> Use multiple {@link org.timux.ports.Response} annotations on a request type in order to indicate the
  * use of this union type.
  *
  * @param <A> The first type.
@@ -249,6 +248,26 @@ public abstract class Either<A, B> {
     }
 
     /**
+     * Iteratively maps this union using the provided mapper function while the provided condition holds.
+     * Each iteration is provided with a running counter, starting at 0.
+     */
+    public Either<A, B> whileMap(BiPredicate<Either<A, B>, Integer> condition, BiFunction<Either<A, B>, Integer, Either<A, B>> mapper) {
+        Either<A, B> result = this;
+
+        for (int i = 0; ; i++) {
+            Integer counter = i;
+
+            if (!condition.test(result, counter)) {
+                break;
+            }
+
+            result = mapper.apply(result, counter);
+        }
+
+        return result;
+    }
+
+    /**
      * Maps the constituents of this union to R.
      */
     public abstract <R> R map(Function<? super A, ? extends R> aFn, Function<? super B, ? extends R> bFn);
@@ -267,7 +286,6 @@ public abstract class Either<A, B> {
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either}.
      *
      * @see #andThenMap
-     * @see #andThenR
      */
     public abstract <R> Either<R, B> andThenMapE(Function<? super A, ? extends R> aFn);
 
@@ -281,23 +299,6 @@ public abstract class Either<A, B> {
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
      */
     public abstract Either<A, B> andThenDo(Consumer<? super A> aC);
-
-    /**
-     * A version of {@link #andThenMap} that supports working with requests. With this method (and together with
-     * {@link PortsFuture#andThenE}) you can build chains of requests.
-     *
-     * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
-     * otherwise. In this context, the A constituent is the result of a preceding request.
-     *
-     * @see PortsFuture#andThenE
-     * @see #andThenMap
-     * @see #andThenMapE
-     * @see #orElseMap
-     * @see #orElseDo
-     * @see #finallyDo
-     */
-    // TODO this is probably not necessary anymore because of the callE and callF methods of the Request class
-    public abstract <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
 
     /**
      * Maps the B constituent, if it exists, to R.
@@ -333,6 +334,18 @@ public abstract class Either<A, B> {
      * Executes the provided action on the B constituent, if it exists, and returns this union.
      */
     public abstract Either<A, B> onB(Consumer<? super B> bC);
+
+    /**
+     * Iteratively maps the A constituent of this union using the provided mapper function while
+     * the provided condition holds. Each iteration is provided with a running counter, starting at 0.
+     */
+    public abstract Either<A, B> whileMapA(BiPredicate<Either<A, B>, Integer> condition, BiFunction<? super A, Integer, Either<A, B>> mapper);
+
+    /**
+     * Iteratively maps the B constituent of this union using the provided mapper function while
+     * the provided condition holds. Each iteration is provided with a running counter, starting at 0.
+     */
+    public abstract Either<A, B> whileMapB(BiPredicate<Either<A, B>, Integer> condition, BiFunction<? super B, Integer, Either<A, B>> mapper);
 
     /**
      * Returns a {@link Pair} that represents the current state of this union, indicating a missing
@@ -519,11 +532,6 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return aFn.apply(a).getE();
-            }
-
-            @Override
             public <R> Either<A, R> orElseMap(Function<? super B, R> bFn) {
                 return Either.a(a);
             }
@@ -552,6 +560,16 @@ public abstract class Either<A, B> {
 
             @Override
             public Either<A, B> onB(Consumer<? super B> bC) {
+                return this;
+            }
+
+            @Override
+            public Either<A, B> whileMapA(BiPredicate<Either<A, B>, Integer> condition, BiFunction<? super A, Integer, Either<A, B>> mapper) {
+                return whileMap(condition, (e, i) -> e.map(a -> mapper.apply(a, i), Either::b));
+            }
+
+            @Override
+            public Either<A, B> whileMapB(BiPredicate<Either<A, B>, Integer> condition, BiFunction<? super B, Integer, Either<A, B>> mapper) {
                 return this;
             }
 
@@ -642,13 +660,6 @@ public abstract class Either<A, B> {
             }
 
             @Override
-            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return b instanceof Failure
-                        ? Either.b((Failure) b)
-                        : Either.b(Failure.of(new IllegalStateException("this Either does not store the result of a request")));
-            }
-
-            @Override
             public <R> Either<A, R> orElseMap(Function<? super B, R> bFn) {
                 if (b instanceof Failure) {
                     ((Failure) b).setHasAlreadyBeenHandled();
@@ -698,6 +709,16 @@ public abstract class Either<A, B> {
             public Either<A, B> onB(Consumer<? super B> bC) {
                 bC.accept(b);
                 return this;
+            }
+
+            @Override
+            public Either<A, B> whileMapA(BiPredicate<Either<A, B>, Integer> condition, BiFunction<? super A, Integer, Either<A, B>> mapper) {
+                return this;
+            }
+
+            @Override
+            public Either<A, B> whileMapB(BiPredicate<Either<A, B>, Integer> condition, BiFunction<? super B, Integer, Either<A, B>> mapper) {
+                return whileMap(condition, (e, i) -> e.map(Either::a, b -> mapper.apply(b, i)));
             }
 
             @Override

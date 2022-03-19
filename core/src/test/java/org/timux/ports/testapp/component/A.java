@@ -18,6 +18,7 @@ package org.timux.ports.testapp.component;
 
 import org.timux.ports.*;
 import org.timux.ports.types.Either;
+import org.timux.ports.types.Failure;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -75,10 +76,8 @@ public class A {
 
         objectRequest.callF(new ObjectRequest(1))
                 .andThenE(r -> shortRequest.callF(new ShortRequest((short) 32000)))
-                .andThenR(r -> testCommand.callF(new TestCommand()))
-                .orElseDo(throwable -> {
-                    System.out.println("OrElse: " + throwable);
-                })
+                .mapA(r -> testCommand.callF(new TestCommand()))
+                .orElseDo((Failure failure) -> System.out.println("OrElse: " + failure))
                 .finallyDo(() -> System.out.println("finally"));
 
         System.out.println("--- done with eithers ---");

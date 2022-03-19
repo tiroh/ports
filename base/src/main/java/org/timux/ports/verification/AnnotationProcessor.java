@@ -16,8 +16,15 @@
  
 package org.timux.ports.verification;
 
+import org.timux.ports.Event;
+import org.timux.ports.In;
+import org.timux.ports.Out;
+import org.timux.ports.Pure;
 import org.timux.ports.QueuePort;
-import org.timux.ports.*;
+import org.timux.ports.Request;
+import org.timux.ports.Response;
+import org.timux.ports.Responses;
+import org.timux.ports.StackPort;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 
@@ -25,9 +32,20 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.*;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -51,8 +69,6 @@ public class AnnotationProcessor extends AbstractProcessor {
         supportedAnnotationTypes.add(In.class.getName());
         supportedAnnotationTypes.add(Out.class.getName());
         supportedAnnotationTypes.add(Response.class.getName());
-        supportedAnnotationTypes.add(SuccessResponse.class.getName());
-        supportedAnnotationTypes.add(FailureResponse.class.getName());
         supportedAnnotationTypes.add(Pure.class.getName());
 
         unmodifiableSupportedAnnotationTypes = Collections.unmodifiableSet(supportedAnnotationTypes);
@@ -186,11 +202,7 @@ public class AnnotationProcessor extends AbstractProcessor {
     private void checkRequestTypes(RoundEnvironment roundEnvironment) {
         forEachAnnotatedElementDo(roundEnvironment, Responses.class, this::processMultipleResponsesAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, Response.class, this::processSingleResponseAnnotatedElement);
-        forEachAnnotatedElementDo(roundEnvironment, SuccessResponse.class, this::processSingleResponseAnnotatedElement);
-        forEachAnnotatedElementDo(roundEnvironment, FailureResponse.class, this::processSingleResponseAnnotatedElement);
         forEachAnnotatedElementDo(roundEnvironment, Pure.class, this::processPureAnnotatedElement);
-
-        verificationModel.verifyThatNoSuccessOrFailureResponseTypesStandAlone();
     }
 
     private void processMultipleResponsesAnnotatedElement(Element element, AnnotationMirror mirror) {
@@ -235,10 +247,6 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     private void processSingleResponseAnnotatedElement(Element element, AnnotationMirror mirror) {
-        boolean isSuccessResponse = mirror.getAnnotationType().toString().equals(SuccessResponse.class.getName());
-        boolean isFailureResponse = mirror.getAnnotationType().toString().equals(FailureResponse.class.getName());
-        boolean isRegularResponse = !isSuccessResponse && !isFailureResponse;
-
         String mirrorValue = getMirrorValue(mirror);
 
         String messageType = element.toString();
@@ -249,17 +257,7 @@ public class AnnotationProcessor extends AbstractProcessor {
             return;
         }
 
-        if (isRegularResponse) {
-            verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
-        }
-
-        if (isSuccessResponse) {
-            verificationModel.verifyAndRegisterSuccessResponseType(messageType, responseType, element, mirror);
-        }
-
-        if (isFailureResponse) {
-            verificationModel.verifyAndRegisterFailureResponseType(messageType, responseType, element, mirror);
-        }
+        verificationModel.verifyAndRegisterResponseType(messageType, responseType, element, mirror);
     }
 
     private void processPureAnnotatedElement(Element element, AnnotationMirror mirror) {

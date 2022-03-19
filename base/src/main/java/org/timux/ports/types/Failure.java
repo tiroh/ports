@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package org.timux.ports.types;
-
-import org.timux.ports.PortsExecutionException;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -145,7 +143,7 @@ public final class Failure {
 
     /**
      * Returns an {@link Optional} containing the first {@link Throwable} that is
-     * not a {@link PortsExecutionException}.
+     * not a {@link org.timux.ports.PortsExecutionException}.
      * If such a Throwable does not exist, an empty Optional is returned.
      *
      * @see #getRootCause()
@@ -157,8 +155,12 @@ public final class Failure {
         while (t.isPresent()) {
             Throwable tt = t.get();
 
-            // We do NOT want 'instanceof' here because of inheritance!
-            if (!(tt.getClass() == PortsExecutionException.class)) {
+            /*
+             * We do NOT want 'instanceof' here because of inheritance!
+             * We use the classes name as a string in order to avoid a hard dependency.
+             */
+
+            if (!(tt.getClass().getName().equals("org.timux.ports.PortsExecutionException"))) {
                 return t;
             }
 

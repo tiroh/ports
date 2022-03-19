@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,6 @@
  
 package org.timux.ports.types;
 
-import org.timux.ports.PortsFuture;
-import org.timux.ports.Request;
-import org.timux.ports.Response;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -28,9 +24,9 @@ import java.util.function.Supplier;
 
 /**
  * A union type for three constituent types A, B, and C. The primary use case is as a response
- * type for a {@link Request} that may return different kinds of data, depending on the situation.
+ * type for a {@link org.timux.ports.Request} that may return different kinds of data, depending on the situation.
  *
- * <p> Use multiple {@link Response} annotations on a request type in order to indicate the
+ * <p> Use multiple {@link org.timux.ports.Response} annotations on a request type in order to indicate the
  * use of this union type.
  *
  * @see Either
@@ -258,7 +254,6 @@ public abstract class Either3<A, B, C> {
      * Maps the A constituent, if it exists, to R, wrapped into a new {@link Either3}.
      *
      * @see #andThenMap
-     * @see #andThenR
      */
     public abstract <R> Either3<R, B, C> andThenMapE(Function<? super A, ? extends R> aFn);
 
@@ -272,22 +267,6 @@ public abstract class Either3<A, B, C> {
      * Applies the provided consumer to the A constituent, if it exists, or does nothing otherwise.
      */
     public abstract Either3<A, B, C> andThenDo(Consumer<? super A> aC);
-
-    /**
-     * A version of {@link #andThenMap} that supports working with requests. With this method (and together with
-     * {@link PortsFuture#andThenE}) you can build chains of requests.
-     *
-     * <p> It maps the A constituent, if it exists, to (a {@link PortsFuture} R, or returns the B constituent
-     * otherwise. In this context, the A constituent is the result of a preceding request.
-     *
-     * @see PortsFuture#andThenE
-     * @see #andThenMap
-     * @see #andThenMapE
-     * @see #orElseMap
-     * @see #orElseDo
-     * @see #finallyDo
-     */
-    public abstract <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn);
 
     /**
      * Maps the C constituent, if it exists, to R.
@@ -563,11 +542,6 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return aFn.apply(a).getE();
-            }
-
-            @Override
             public <R> Either3<A, B, R> orElseMap(Function<? super C, R> cFn) {
                 return Either3.a(a);
             }
@@ -719,11 +693,6 @@ public abstract class Either3<A, B, C> {
             }
 
             @Override
-            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return Either.b(Failure.of(new IllegalStateException("this Either3 does not store the result of a request")));
-            }
-
-            @Override
             public <R> Either3<A, B, R> orElseMap(Function<? super C, R> cFn) {
                 return Either3.b(b);
             }
@@ -872,13 +841,6 @@ public abstract class Either3<A, B, C> {
             @Override
             public Either3<A, B, C> andThenDo(Consumer<? super A> aC) {
                 return this;
-            }
-
-            @Override
-            public <R> Either<R, Failure> andThenR(Function<? super A, ? extends PortsFuture<R>> aFn) {
-                return c instanceof Failure
-                        ? Either.b((Failure) c)
-                        : Either.b(Failure.of(new IllegalStateException("this Either3 does not store the result of a request")));
             }
 
             @Override

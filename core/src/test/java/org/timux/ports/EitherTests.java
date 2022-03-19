@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1193,5 +1193,108 @@ public class EitherTests {
 
         assertNotEquals(r, e1);
         assertNotEquals(e1, r);
+    }
+
+    @Test
+    public void eitherWhileMap() {
+        Either<Integer, String> either = Either.a(10);
+        Container<Integer> count = Container.of(0);
+
+        Either<Integer, String> result =
+                either.whileMap(
+                        (e, i) -> i < 10,
+                        (e, i) -> {
+                            count.value += i;
+                            return i > 5
+                                    ? Either.a(e.map(k -> k, Integer::parseInt) + 1)
+                                    : Either.b(Integer.toString(e.map(k -> k, Integer::parseInt) * 2));
+                        });
+
+        result.on(
+                a -> assertEquals(644, a),
+                b -> fail("no string expected")
+        );
+
+        assertEquals(45, count.value);
+    }
+
+    @Test
+    public void eitherWhileMapAPositive() {
+        Either<Integer, Failure> either = Either.a(10);
+        Container<Integer> count = Container.of(0);
+
+        Either<Integer, Failure> result =
+                either.whileMapA(
+                        (e, i) -> e.map(x -> x, f -> -1) > 0,
+                        (value, i) -> {
+                            count.value += i;
+                            return Either.a(value - 1);
+                        });
+
+        int value = result.map(x -> x, f -> -2);
+
+        assertEquals(0, value);
+        assertEquals(45, count.value);
+    }
+
+    @Test
+    public void eitherWhileMapANegative() {
+        Either<Integer, Failure> either = Either.a(10);
+        Container<Integer> count = Container.of(0);
+
+        Either<Integer, Failure> result =
+                either.whileMapA(
+                        (e, i) -> e.map(x -> x, f -> -1) > 0,
+                        (value, i) -> {
+                            count.value += i;
+                            return value > 5 ? Either.a(value - 1) : Either.failure("failure at " + value);
+                        });
+
+        result.on(
+                a -> fail("no integer expected"),
+                b -> assertEquals("failure at 5", b.getMessage())
+        );
+
+        assertEquals(15, count.value);
+    }
+
+    @Test
+    public void eitherWhileBPositive() {
+        Either<String, Integer> either = Either.b(10);
+        Container<Integer> count = Container.of(0);
+
+        Either<String, Integer> result =
+                either.whileMapB(
+                        (e, i) -> e.map(s -> -1, x -> x) > 0,
+                        (value, i) -> {
+                            count.value += i;
+                            return Either.b(value - 1);
+                        });
+
+        int value = result.map(s -> -2, x -> x);
+
+        assertEquals(0, value);
+        assertEquals(45, count.value);
+    }
+
+    @Test
+    public void eitherWhileBNegative() {
+        Either<String, Integer> either = Either.b(10);
+        Container<Integer> count = Container.of(0);
+
+        Either<String, Integer> result =
+                either.whileMapB(
+                        (e, i) -> e.map(s -> -1, x -> x) > 0,
+                        (value, i) -> {
+                            count.value += i;
+                            return value > 5 ? Either.b(value - 1) : Either.a("failure at " + value);
+                        });
+
+        result.on(
+                a -> assertEquals("failure at 5", a),
+                b -> fail("no integer expected")
+        );
+
+        assertEquals(15, count.value);
     }
 }

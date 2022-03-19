@@ -18,8 +18,6 @@ package org.timux.ports;
 
 import org.timux.ports.types.Failure;
 
-import java.util.Objects;
-
 @Response(Integer.class)
 @Response(Failure.class)
 @Pure(clearCacheOn = {ClearEvent.class, PureStatelessRequest.class})

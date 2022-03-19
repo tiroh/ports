@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,18 +264,15 @@ public class PortsFuture<T> implements Future<T> {
      * <p> <em>This call is blocking.</em>
      *
      * @see #andThenE 
-     * @see Either#andThenR
      *
      * @throws PortsExecutionException If the receiver terminated unexpectedly.
      */
     public <O, R extends PortsFuture<O>> R andThen(Function<T, R> fn) {
-        // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
         return fn.apply(get());
     }
 
     /**
-     * A method that makes handling chains of requests easier. It works in conjunction with
-     * {@link Either#andThenR}.
+     * A method that makes handling chains of requests easier.
      *
      * <p> It maps the result, if it exists, to another {@link PortsFuture}, or returns a {@link Failure}
      * if the receiver terminated with an exception.
@@ -283,11 +280,9 @@ public class PortsFuture<T> implements Future<T> {
      * <p> <em>This call is blocking.</em>
      *
      * @see #andThen 
-     * @see Either#andThenR
      */
     public <O, R extends PortsFuture<O>> Either<O, Failure> andThenE(Function<T, R> fn) {
-        // TODO: see whether we can make the andThen interface better (depending on whether response type is an Either or not)
-        return getE().andThenR(fn);
+        return getE().map(t -> fn.apply(t).getE(), Either::failure);
     }
 
     /**

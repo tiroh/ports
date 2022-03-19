@@ -22,7 +22,6 @@ import org.timux.ports.types.Container;
 import org.timux.ports.types.Either;
 import org.timux.ports.types.Either3;
 import org.timux.ports.types.Failure;
-import org.timux.ports.types.Success;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;

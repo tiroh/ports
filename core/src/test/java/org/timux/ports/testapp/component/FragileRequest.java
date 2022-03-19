@@ -16,12 +16,11 @@
  
 package org.timux.ports.testapp.component;
 
-import org.timux.ports.FailureResponse;
-import org.timux.ports.SuccessResponse;
+import org.timux.ports.Response;
 import org.timux.ports.types.Failure;
 
-@SuccessResponse(Integer.class)
-@FailureResponse(Failure.class)
+@Response(Integer.class)
+@Response(Failure.class)
 public class FragileRequest {
 
     private final boolean ok;
