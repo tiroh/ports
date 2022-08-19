@@ -2,73 +2,73 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.timux.ports</groupId>
-    <artifactId>ports</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+  <groupId>org.timux.ports</groupId>
+  <artifactId>ports</artifactId>
+  <version>0.7.0-SNAPSHOT</version>
 
-    <packaging>pom</packaging>
+  <packaging>pom</packaging>
 
-    <modules>
-        <module>base</module>
-        <module>core</module>
-        <module>spring</module>
-        <module>vaadinspring</module>
-    </modules>
+  <modules>
+    <module>base</module>
+    <module>core</module>
+    <module>spring</module>
+    <module>vaadinspring</module>
+  </modules>
 
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
 
-    <licenses>
-        <license>
-            <name>The Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-        </license>
-    </licenses>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
 
-    <name>${project.groupId}:${project.artifactId}</name>
-    <description>Ports is a Java framework for inter-component communication within a JVM process.</description>
-    <url>https://www.timux.org/ports/</url>
+  <name>${project.groupId}:${project.artifactId}</name>
+  <description>Ports is a Java framework for inter-component communication within a JVM process.</description>
+  <url>https://www.timux.org/ports/</url>
 
-    <developers>
-        <developer>
-            <name>Tim Rohlfs</name>
-            <email>tiroh@users.sf.net</email>
-        </developer>
-    </developers>
+  <developers>
+    <developer>
+      <name>Tim Rohlfs</name>
+      <email>tiroh@users.sf.net</email>
+    </developer>
+  </developers>
 
-    <scm>
-        <connection>scm:git:git://github.com/trohlfs/ports.git</connection>
-        <developerConnection>scm:git:git://github.com/trohlfs/ports.git</developerConnection>
-        <url>https://github.com/trohlfs/ports/tree/master</url>
-    </scm>
+  <scm>
+    <connection>scm:git:git://github.com/tiroh/ports.git</connection>
+    <developerConnection>scm:git:git://github.com/tiroh/ports.git</developerConnection>
+    <url>https://github.com/tiroh/ports/tree/master</url>
+  </scm>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.2.0</version>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.2.0</version>
 
-                <configuration>
-                    <additionalOptions>-Xdoclint:none</additionalOptions>
-                    <additionalJOption>-Xdoclint:none</additionalJOption>
-                </configuration>
+        <configuration>
+          <additionalOptions>-Xdoclint:none</additionalOptions>
+          <additionalJOption>-Xdoclint:none</additionalJOption>
+        </configuration>
 
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
