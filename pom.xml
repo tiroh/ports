@@ -15,7 +15,7 @@
     <module>core</module>
     <module>spring</module>
     <module>vaadinspring</module>
-    <module>ports-hilla</module>
+    <module>hilla</module>
   </modules>
 
   <properties>
