@@ -87,6 +87,10 @@ public class Request<I, O> {
         this(requestTypeName, getResponseTypeName(outPortField), memberName, owner);
     }
 
+    public String getRequestTypeName() {
+        return requestTypeName;
+    }
+
     private static String getResponseTypeName(Field outPortField) {
         String t = TypeUtils.extractTypeParameter(outPortField.getGenericType().getTypeName(), null);
         int firstSpacePos = t.indexOf(' ');

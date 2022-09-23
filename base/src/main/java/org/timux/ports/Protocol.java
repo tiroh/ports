@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,10 @@ package org.timux.ports;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,19 +30,21 @@ import java.util.function.Predicate;
 @SuppressWarnings({"unchecked", "rawtypes"})
 final class Protocol {
 
-    static class ConditionalActionsPair {
+    static class ConditionalActionsTriple {
 
+        final String protocolIdentifier;
         final Predicate predicate;
         final List<Action> actions;
 
-        ConditionalActionsPair(Predicate predicate, List<Action> actions) {
+        ConditionalActionsTriple(String protocolIdentifier, Predicate predicate, List<Action> actions) {
+            this.protocolIdentifier = protocolIdentifier;
             this.predicate = predicate;
             this.actions = actions;
         }
     }
 
     static class ConditionalActions {
-        final List<ConditionalActionsPair> actions = new ArrayList<>();
+        final List<ConditionalActionsTriple> actions = new ArrayList<>();
     }
 
     static class ResponseRegistry {
@@ -56,9 +60,9 @@ final class Protocol {
     private static final Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();
     private static final Map<String, ConditionalActions> conditionsOnReceived = new HashMap<>();
 
-    private static final Map<Object, ResponseRegistry> responseRegistries = new HashMap<>();
+    private static final Map<Object, ResponseRegistry> responseRegistries = new WeakHashMap<>();
 
-    private static final List<Object> componentRegistry = new ArrayList<>();
+    private static final Map<Object, Void> componentRegistry = new WeakHashMap<>();
 
     private static final AtomicInteger nextProtocolId = new AtomicInteger();
 
@@ -80,8 +84,43 @@ final class Protocol {
         DomainManager.invalidate();
     }
 
+    private static void removeActions(Map<String, ConditionalActions> m, String protocolIdentifier) {
+        for (Iterator<ConditionalActions> i = m.values().iterator(); i.hasNext(); ) {
+            ConditionalActions actions = i.next();
+
+            for (Iterator<ConditionalActionsTriple> it = actions.actions.iterator(); it.hasNext(); ) {
+                ConditionalActionsTriple triple = it.next();
+
+                if (triple.protocolIdentifier.equals(protocolIdentifier)) {
+                    it.remove();
+                }
+            }
+
+            if (actions.actions.isEmpty()) {
+                i.remove();
+            }
+        }
+    }
+
+    synchronized static void release(String protocolIdentifier) {
+        synchronized (responseRegistries) {
+            removeActions(conditionsOnSent, protocolIdentifier);
+            removeActions(conditionsOnReceived, protocolIdentifier);
+        }
+
+        DomainManager.invalidate();
+    }
+
     static void registerComponent(Object component) {
-        componentRegistry.add(component);
+        synchronized (responseRegistries) {
+            componentRegistry.put(component, null);
+        }
+    }
+
+    static void unregisterComponent(Object component) {
+        synchronized (responseRegistries) {
+            componentRegistry.remove(component);
+        }
     }
 
     static <T> void registerConditionOnSent(Predicate<T> predicate, ProtocolParserState state) {
@@ -198,7 +237,7 @@ final class Protocol {
 
         outPortField.setAccessible(true);
 
-        for (Object component : componentRegistry) {
+        for (Object component : componentRegistry.keySet()) {
             try {
                 Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component, PortsOptions.FORCE_CONNECT_ALL);
             } catch (IllegalAccessException e) {
@@ -239,7 +278,7 @@ final class Protocol {
 
         boolean actionWasExecuted = false;
 
-        for (ConditionalActionsPair pair : conditionalActions.actions) {
+        for (ConditionalActionsTriple pair : conditionalActions.actions) {
             if (pair.predicate.test(data)) {
                 for (Action action : pair.actions) {
                     action.execute(data, owner);

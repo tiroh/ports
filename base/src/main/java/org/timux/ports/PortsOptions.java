@@ -25,26 +25,36 @@ package org.timux.ports;
  */
 public class PortsOptions {
 
+    /* Note that we use Integers instead of ints because there are cases were these constants
+     * are used as arguments to generic functions. Using an int would result in boxing the
+     * values again and again. */
+
     /**
-     * The default behavior is to connect only unconnected ports and to fail with an exception if a port cannot be
-     * connected due to a missing handler.
+     * The default behavior is to connect only unconnected ports and to fail with an exception
+     * if a port cannot be connected due to a missing handler.
      */
     public static final Integer DEFAULT = 0;
 
     /**
-     * Connect all ports, even those that are already connected. (By default, ports that are already connected would
-     * not be reconnected.)
+     * Connect all ports, even those that are already connected. (By default, ports that are already
+     * connected would not be reconnected.)
      */
     public static final Integer FORCE_CONNECT_ALL = 1;
 
     /**
-     * Connect all event ports, even those that are already connected. Also connect Request ports, but do not reconnect
-     * those.
+     * Connect all event ports, even those that are already connected. Also connect Request ports,
+     * but do not reconnect those.
      */
     public static final Integer FORCE_CONNECT_EVENT_PORTS = 2;
 
     /**
-     * If an OUT port cannot be connected because of a missing IN port, fail with an error.
+     * If an OUT port cannot be connected because of a missing IN port, fail with an exception.
      */
     public static final Integer DO_NOT_ALLOW_MISSING_PORTS = 4;
+
+    /**
+     * If a request port is already connected but a further connection candidate is encountered,
+     * fail with an exception.
+     */
+    public static final Integer FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS = 8;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 
 package org.timux.ports;
+
+import org.timux.ports.types.Either;
+import org.timux.ports.types.Nothing;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -44,6 +47,12 @@ public final class Ports {
     private static final Map<Class<?>, WeakReference<Method[]>> methodCache = new WeakHashMap<>();
 
     private static final PortsEventExceptionSender eventExceptionSender = new PortsEventExceptionSender();
+
+    /* This map exists so that the user can register arbitrary data with Ports.
+     * This is useful when Spring Boot live-reloads Java classes and destroys their
+     * state (including static state). In the default scenario, the classes in the Ports
+     * packages will not be reloaded so that their state is preserved. */
+    private static final Map<String, Object> customDataRegistry = new HashMap<>();
 
     private Ports() {
         // Don't you instantiate this class!!
@@ -225,6 +234,10 @@ public final class Ports {
 
         if (outPortField.getType() == Request.class) {
             Request request = (Request) outPortField.get(from);
+
+            if (request.isConnected() && (portsOptions & PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS) != 0) {
+                throw new AmbiguousRequestConnectionException(request.getRequestTypeName(), from.getClass().getName(), to.getClass().getName());
+            }
 
             if (!request.isConnected() || ((portsOptions & PortsOptions.FORCE_CONNECT_ALL) != 0)) {
                 request.connect(inPortHandlerMethod, to);
@@ -495,8 +508,11 @@ public final class Ports {
     }
 
     /**
-     * Registers the given components for use in protocols. This is only necessary if the 'with' syntax without
-     * explicitly provided port owner shall be used.
+     * Registers the provided components for use in protocols. This is only necessary if the 'with' syntax
+     * without explicitly provided port owner shall be used.
+     *
+     * <p>Note that you are responsible for taking care that the components are not garbage-collected
+     * while you still need them. The protocols will not prevent them from being GC'd.
      *
      * @since 0.5.0
      */
@@ -518,16 +534,53 @@ public final class Ports {
     }
 
     /**
-     * Begins declaration of a new protocol. When using this when writing unit tests, remember to call
-     * {@link #releaseProtocols()} before each individual test so that each test starts with a clean
-     * protocol setup.
+     * Unregisters the provided components from the protocols.
+     *
+     * @since 0.7.0
+     */
+    public static void unregister(Object... components) {
+        for (Object component : components) {
+            Protocol.unregisterComponent(component);
+        }
+    }
+
+    /**
+     * Begins declaration of a new protocol with the empty string as protocol identifier.
+     * See {@link #protocol(String)} for details.
      *
      * @since 0.5.0
      */
     public static ConditionOrAction<?> protocol() {
+        return protocol("");
+    }
+
+  /**
+   * Begins declaration of a new protocol identified by the provided protocol identifier. When using
+   * this in tests, remember to call {@link #releaseProtocols()} before each individual test so that
+   * each test starts with a clean protocol setup.
+   *
+   * <p>The protocol identifier can be used later to release individual protocols from the registry.
+   * See {@link #releaseProtocol(String)} for details.
+   *
+   * <p>It is admissible to make multiple calls to this method using the same protocol identifier.
+   * In this case, the named protocol will be augmented with the specified actions.
+   *
+   * @since 0.7.0
+   */
+  public static ConditionOrAction<?> protocol(String protocolIdentifier) {
         Protocol.areProtocolsActive = true;
         DomainManager.invalidate();
-        return new ConditionOrAction<>(new ProtocolParserState());
+        return new ConditionOrAction<>(new ProtocolParserState(protocolIdentifier));
+    }
+
+    /**
+     * Releases the protocol with the provided identifier from the registry.
+     *
+     * @see #releaseProtocols()
+     * @since 0.7.0
+     */
+    public static void releaseProtocol(String protocolIdentifier) {
+        Protocol.release(protocolIdentifier);
     }
 
     /**
@@ -535,8 +588,9 @@ public final class Ports {
      * after each individual test method so that subsequent tests are not influenced by the preceding tests'
      * protocols.
      *
-     * <p> When using JUnit, it is recommended to create an 'afterEach' method calling this method.
-     *
+     * <p>When using JUnit, it is recommended to create an 'afterEach' method calling this method.
+     * 
+     * @see #releaseProtocol(String)
      * @since 0.5.0
      */
     public static void releaseProtocols() {
@@ -613,6 +667,69 @@ public final class Ports {
         releaseDomains();
         CacheManager.reset();
         eventExceptionSender.disconnect();
+        clearCustomData();
+    }
+
+    /**
+     * Puts the provided key/value pair into the custom data registry.
+     * This is useful when a permanent static storage is required, for example
+     * when Spring Boot live-reloads the application's Java classes and
+     * destroys their static state.
+     *
+     * @since 0.7.0
+     */
+    public static void putCustomData(String key, Object value) {
+        synchronized (customDataRegistry) {
+            customDataRegistry.put(key, value);
+        }
+    }
+
+    /**
+     * Returns the custom data registry value associated with the provided key or
+     * {@link Nothing}, if it doesn't exist.
+     *
+     * @since 0.7.0
+     */
+    public static Either<Object, Nothing> getCustomData(String key) {
+        synchronized (customDataRegistry) {
+            return Either.ofNullable(customDataRegistry.get(key));
+        }
+    }
+
+    /**
+     * Returns true if the custom data registry contains the provided key,
+     * or false otherwise.
+     *
+     * @since 0.7.0
+     */
+    public static boolean containsCustomData(String key) {
+        synchronized (customDataRegistry) {
+            return customDataRegistry.containsKey(key);
+        }
+    }
+
+    /**
+     * Removes the provided key from the custom data registry.
+     *
+     * @return True if the registry contained the provided key, false otherwise.
+     *
+     * @since 0.7.0
+     */
+    public static boolean removeCustomData(String key) {
+        synchronized (customDataRegistry) {
+            return customDataRegistry.remove(key) != null;
+        }
+    }
+
+    /**
+     * Clears the custom data registry.
+     *
+     * @since 0.7.0
+     */
+    public static void clearCustomData() {
+        synchronized (customDataRegistry) {
+            customDataRegistry.clear();
+        }
     }
 
     static void printWarning(String message) {

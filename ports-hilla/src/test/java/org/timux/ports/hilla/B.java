@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Tim Rohlfs
+ * Copyright 2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package org.timux.ports.spring;
+package org.timux.ports.hilla;
 
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
+import org.timux.ports.In;
 
-@Configuration
-@ComponentScan("org.timux.ports")
-public class PortsConfiguration {}
+public class B {
+
+  public String data;
+
+  @In
+  private void onTest(TestEvent event) {
+    this.data = event.getData();
+  }
+}

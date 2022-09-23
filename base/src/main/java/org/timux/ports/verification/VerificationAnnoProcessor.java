@@ -49,7 +49,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-public class AnnotationProcessor extends AbstractProcessor {
+public class VerificationAnnoProcessor extends AbstractProcessor {
 
     private final static String EVENT_TYPE = Event.class.getName();
     private final static String REQUEST_TYPE = Request.class.getName();
@@ -93,16 +93,16 @@ public class AnnotationProcessor extends AbstractProcessor {
     }
 
     @Override
-    public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
-        if (set.isEmpty()) {
-            return true;
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
+        if (annotations.isEmpty()) {
+            return false;
         }
 
         checkOutPort(roundEnvironment);
         checkInPorts(roundEnvironment);
         checkRequestTypes(roundEnvironment);
 
-        return true;
+        return false;
     }
 
     private void checkOutPort(RoundEnvironment roundEnvironment) {

@@ -190,8 +190,8 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
       boolean a;
       boolean b;
 
-      a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-      b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+      a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
+      b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
 
       if (a && b) {
         logConnection(bean, beanName, otherBean, otherBeanName, true);

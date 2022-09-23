@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 Tim Rohlfs
+ * Copyright 2018-2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 
 class ProtocolParserState {
 
+    final String protocolIdentifier;
     String currentConditionMessageType = null;
     String currentWithRequestType = null;
     String currentWithResponseType = null;
@@ -34,6 +35,10 @@ class ProtocolParserState {
 
     private Protocol.ConditionalActions currentConditionalActions = null;
     private List<Action> currentActions = null;
+
+    ProtocolParserState(String protocolIdentifier) {
+        this.protocolIdentifier = protocolIdentifier;
+    }
 
     void reset() {
         currentConditionMessageType = null;
@@ -75,7 +80,7 @@ class ProtocolParserState {
 
     <T> void registerCondition(Predicate<T> predicate) {
         currentActions = new ArrayList<>();
-        currentConditionalActions.actions.add(new Protocol.ConditionalActionsPair(predicate, currentActions));
+        currentConditionalActions.actions.add(new Protocol.ConditionalActionsTriple(protocolIdentifier, predicate, currentActions));
     }
 
     void registerAction(Action action) {

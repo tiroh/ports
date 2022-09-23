@@ -83,6 +83,16 @@ public class SimpleTests {
     }
 
     @Test
+    public void errorOnAmbiguousRequestConnections() {
+        A a = new A();
+        B b = new B();
+        L l = new L();
+
+        assertDoesNotThrow(() -> Ports.connect(b).and(a, PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS));
+        assertThrows(AmbiguousRequestConnectionException.class, () -> Ports.connect(b).and(l, PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS));
+    }
+
+    @Test
     public void disconnect() {
         A a = new A();
         C c1 = new C();

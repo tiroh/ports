@@ -21,24 +21,24 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic;
 
-class Reporter {
+public class Reporter {
 
     private final static Diagnostic.Kind DIAGNOSTIC_MESSAGE_KIND = Diagnostic.Kind.ERROR;
 
     private ProcessingEnvironment processingEnv;
 
-    Reporter(ProcessingEnvironment processingEnv) {
+    public Reporter(ProcessingEnvironment processingEnv) {
         this.processingEnv = processingEnv;
     }
 
-    void reportIssue(Element element, String message, Object... args) {
+    public void reportIssue(Element element, String message, Object... args) {
         processingEnv.getMessager().printMessage(
                 DIAGNOSTIC_MESSAGE_KIND,
                 String.format(message, args),
                 element);
     }
 
-    void reportIssue(Element element, AnnotationMirror mirror, String message, Object... args) {
+    public void reportIssue(Element element, AnnotationMirror mirror, String message, Object... args) {
         processingEnv.getMessager().printMessage(
                 DIAGNOSTIC_MESSAGE_KIND,
                 String.format(message, args),

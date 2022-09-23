@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2022 Tim Rohlfs
+ * Copyright 2022 Tim Rohlfs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-package org.timux.ports.spring;
+package org.timux.ports;
 
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
+/**
+ * @since 0.7.0
+ * @author Tim Rohlfs
+ */
+public class AmbiguousRequestConnectionException extends RuntimeException {
 
-@Configuration
-@ComponentScan("org.timux.ports")
-public class PortsConfiguration {}
+  public AmbiguousRequestConnectionException(
+      String type, String connectedComponent, String otherCandidateComponent) {
+    super(
+        String.format(
+            "Cannot auto-connect request <%s> due to multiple connection candidates (port is already connected to %s, new candidate is %s)",
+            type, connectedComponent, otherCandidateComponent));
+  }
+}

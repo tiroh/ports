@@ -209,20 +209,20 @@ public class PortConnector implements DestructionAwareBeanPostProcessor, BeanFac
             boolean b;
 
             if (isBeanScopeInUi == isScopeInUi) {
-                a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
+                b = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
             } else if (isBeanScopeInUi) {
                 UI ui = beans.get(bean).getUi();
                 EventWrapper eventWrapper = createEventWrapper(ui);
 
-                a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(otherBean, bean, eventWrapper, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                a = Ports.connectDirected(bean, otherBean, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
+                b = Ports.connectDirected(otherBean, bean, eventWrapper, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
             } else {
                 UI ui = beans.get(otherBean).getUi();
                 EventWrapper eventWrapper = createEventWrapper(ui);
 
-                a = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
-                b = Ports.connectDirected(bean, otherBean, eventWrapper, PortsOptions.FORCE_CONNECT_EVENT_PORTS);
+                a = Ports.connectDirected(otherBean, bean, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
+                b = Ports.connectDirected(bean, otherBean, eventWrapper, PortsOptions.FORCE_CONNECT_EVENT_PORTS | PortsOptions.FAIL_ON_AMBIGUOUS_REQUEST_CONNECTIONS);
             }
 
             if (a && b) {
