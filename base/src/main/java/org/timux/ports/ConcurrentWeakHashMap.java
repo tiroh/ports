@@ -16,6 +16,9 @@
 
 package org.timux.ports;
 
+import org.timux.ports.types.NoSuchConstituentException;
+
+import java.util.Iterator;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.locks.Lock;
@@ -24,7 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @SuppressWarnings("unchecked")
-class ConcurrentWeakHashMap<K, V> {
+class ConcurrentWeakHashMap<K, V> implements Iterable<K> {
 
     private static final int NUMBER_OF_PARTITIONS =
             (int) Math.pow(2.0, Math.ceil(Math.log(4.0 * Runtime.getRuntime().availableProcessors()) / Math.log(2.0)));
@@ -69,6 +72,65 @@ class ConcurrentWeakHashMap<K, V> {
         }
     }
 
+    public V remove(K key) {
+        int p = key.hashCode() & HASH_MASK;
+        Map<K, V> map = maps[p];
+        Lock lock = locks[p];
+
+        lock.lock();
+
+        try {
+            return map.remove(key);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private class It implements Iterator<K> {
+
+        private int currentIndex = 0;
+        private Iterator<K> currentIt;
+
+        @Override
+        public boolean hasNext() {
+            if (currentIndex >= maps.length) {
+                return false;
+            }
+
+            if (currentIt == null) {
+                for (; currentIndex < maps.length; currentIndex++) {
+                    if (!maps[currentIndex].isEmpty()) {
+                        currentIt = maps[currentIndex].keySet().iterator();
+                        break;
+                    }
+                }
+
+                if (currentIt == null) {
+                    return false;
+                }
+            }
+
+            return currentIt.hasNext() || (currentIndex + 1 < maps.length && !maps[currentIndex + 1].isEmpty());
+        }
+
+        @Override
+        public K next() {
+            K key = currentIt.next();
+
+            if (!currentIt.hasNext()) {
+                currentIt = null;
+                currentIndex++;
+            }
+
+            return key;
+        }
+    }
+
+    @Override
+    public Iterator<K> iterator() {
+        return new It();
+    }
+
     public V compute(K key, BiFunction<K, V, V> mapper) {
         int p = key.hashCode() & HASH_MASK;
         Map<K, V> map = maps[p];
@@ -94,6 +156,19 @@ class ConcurrentWeakHashMap<K, V> {
             return map.computeIfAbsent(key, mapper);
         } finally {
             lock.unlock();
+        }
+    }
+
+    public void clear() {
+        for (int i = 0; i < maps.length; i++) {
+            Lock lock = locks[i];
+            lock.lock();
+
+            try {
+                maps[i].clear();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -57,14 +57,16 @@ final class Protocol {
     }
 
     // keys = message type names
-    private static final Map<String, ConditionalActions> conditionsOnSent = new HashMap<>();
-    private static final Map<String, ConditionalActions> conditionsOnReceived = new HashMap<>();
+    private static final Map<String, ConditionalActions> conditionsOnSent = new ConcurrentHashMap<>();
+    private static final Map<String, ConditionalActions> conditionsOnReceived = new ConcurrentHashMap<>();
 
-    private static final Map<Object, ResponseRegistry> responseRegistries = new WeakHashMap<>();
+    private static final ConcurrentWeakHashMap<Object, ResponseRegistry> responseRegistries = new ConcurrentWeakHashMap<>();
 
-    private static final Map<Object, Void> componentRegistry = new WeakHashMap<>();
+    private static final ConcurrentWeakHashMap<Object, Void> componentRegistry = new ConcurrentWeakHashMap<>();
 
     private static final AtomicInteger nextProtocolId = new AtomicInteger();
+
+    private static final Object monitor = new Object();
 
     static boolean areProtocolsActive = false;
 
@@ -73,7 +75,7 @@ final class Protocol {
     }
 
     synchronized static void clear() {
-        synchronized (responseRegistries) {
+        synchronized (monitor) {
             areProtocolsActive = false;
             conditionsOnSent.clear();
             conditionsOnReceived.clear();
@@ -103,7 +105,7 @@ final class Protocol {
     }
 
     synchronized static void release(String protocolIdentifier) {
-        synchronized (responseRegistries) {
+        synchronized (monitor) {
             removeActions(conditionsOnSent, protocolIdentifier);
             removeActions(conditionsOnReceived, protocolIdentifier);
         }
@@ -112,32 +114,36 @@ final class Protocol {
     }
 
     static void registerComponent(Object component) {
-        synchronized (responseRegistries) {
+        synchronized (monitor) {
             componentRegistry.put(component, null);
         }
     }
 
     static void unregisterComponent(Object component) {
-        synchronized (responseRegistries) {
+        synchronized (monitor) {
             componentRegistry.remove(component);
         }
     }
 
     static <T> void registerConditionOnSent(Predicate<T> predicate, ProtocolParserState state) {
-        state.registerConditionMessageType(conditionsOnSent);
-        state.registerCondition(predicate);
+        synchronized (monitor) {
+            state.registerConditionMessageType(conditionsOnSent);
+            state.registerCondition(predicate);
+        }
     }
 
     static <T> void registerConditionOnReceived(Predicate<T> predicate, ProtocolParserState state) {
-        state.registerConditionMessageType(conditionsOnReceived);
-        state.registerCondition(predicate);
+        synchronized (monitor) {
+            state.registerConditionMessageType(conditionsOnReceived);
+            state.registerCondition(predicate);
+        }
     }
 
     static void registerRespondAction(Function<?, ?> response, ProtocolParserState state) {
         final String conditionMessageType = state.currentConditionMessageType;
 
         state.registerAction((x, owner) -> {
-            synchronized (responseRegistries) {
+            synchronized (monitor) {
                 ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
                 registry.responseData.put(conditionMessageType, response);
             }
@@ -237,11 +243,13 @@ final class Protocol {
 
         outPortField.setAccessible(true);
 
-        for (Object component : componentRegistry.keySet()) {
-            try {
-                Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component, PortsOptions.FORCE_CONNECT_ALL);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
+        synchronized (monitor) {
+            for (Object component : componentRegistry) {
+                try {
+                    Ports.connectSinglePort(outPortField, portSignature, protocolComponent, component, PortsOptions.FORCE_CONNECT_ALL);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -249,18 +257,22 @@ final class Protocol {
     }
 
     static Function<?, ?> getResponseProviderIfAvailable(String messageType, Object owner) {
-        synchronized (responseRegistries) {
+        synchronized (monitor) {
             ResponseRegistry registry = responseRegistries.computeIfAbsent(owner, k -> new ResponseRegistry());
             return registry.responseData.remove(messageType);
         }
     }
 
     static void onDataSent(String messageType, Object owner, Object data) {
-        onDataEvent(conditionsOnSent, messageType, owner, data);
+        synchronized (monitor) {
+            onDataEvent(conditionsOnSent, messageType, owner, data);
+        }
     }
 
     static <O> void onDataReceived(String messageType, Object owner, O data) {
-        onDataEvent(conditionsOnReceived, messageType, owner, data);
+        synchronized (monitor) {
+            onDataEvent(conditionsOnReceived, messageType, owner, data);
+        }
     }
 
     private static void onDataEvent(
@@ -278,9 +290,9 @@ final class Protocol {
 
         boolean actionWasExecuted = false;
 
-        for (ConditionalActionsTriple pair : conditionalActions.actions) {
-            if (pair.predicate.test(data)) {
-                for (Action action : pair.actions) {
+        for (ConditionalActionsTriple triple : conditionalActions.actions) {
+            if (triple.predicate.test(data)) {
+                for (Action action : triple.actions) {
                     action.execute(data, owner);
                     actionWasExecuted = true;
                 }
